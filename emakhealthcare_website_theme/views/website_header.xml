@@ -94,7 +94,8 @@
               <!-- Recherche : MASQUÉE (la barre de recherche est dans le hero) -->
 
               <!-- Panier -->
-              <t t-set="my_sale_order" t-value="website.sale_get_order()" />
+              <t t-set="sale_order_id" t-value="request.session.get('sale_order_id')" />
+              <t t-set="my_sale_order" t-value="request.env['sale.order'].sudo().browse(sale_order_id).exists() if sale_order_id else None" />
               <t t-set="website_sale_cart_quantity" t-value="request.session.get('website_sale_cart_quantity', my_sale_order.cart_quantity if my_sale_order else 0)" />
               <t t-set="cart_amount" t-value="my_sale_order.amount_total if my_sale_order else 0.0" />
               <a href="/shop/cart" class="d-flex align-items-center gap-2 text-decoration-none" style="color: #2E7D32;">
@@ -108,15 +109,16 @@
               </a>
 
               <!-- Compte Utilisateur -->
-              <t t-if="not user_id._is_public()">
+              <t t-if="request.session.uid">
+                <t t-set="my_user" t-value="request.env['res.users'].sudo().browse(request.session.uid)" />
                 <div class="dropdown">
                   <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                     <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
-                      <t t-esc="user_id.name[0].upper()"/>
+                      <t t-esc="my_user.name[0].upper() if my_user.name else ''"/>
                     </div>
                     <div class="d-flex flex-column lh-1 d-none d-lg-flex pe-2">
                       <span class="text-muted" style="font-size: 0.75rem;">Bonjour,</span>
-                      <span class="fw-semibold" style="font-size: 0.85rem;"><t t-esc="user_id.name.split()[0]"/> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
+                      <span class="fw-semibold" style="font-size: 0.85rem;"><t t-esc="my_user.name.split()[0] if my_user.name else ''"/> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
                     </div>
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute mt-2">
