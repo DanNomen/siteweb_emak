@@ -23,9 +23,10 @@ du module de base emakhealthcare_website.
         'stock',
     ],
     'data': [
-        'views/marquee_banner.xml',
         'views/homepage_templates.xml',
+        'views/marquee_banner.xml',
         'views/website_header.xml',
+        'views/website_footer.xml',
         'views/products_page.xml',
         'views/categories_page.xml',
         'views/res_company_views.xml',

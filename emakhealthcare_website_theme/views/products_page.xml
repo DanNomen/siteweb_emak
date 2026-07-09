@@ -394,6 +394,13 @@
                                                         <button class="qty-btn qty-plus" type="button">+</button>
                                                     </div>
                                                 </div>
+
+                                                <!-- Stock disponible en rouge sans décimales -->
+                                                <t t-set="stock_qty" t-value="int(product.sudo().qty_available)"/>
+                                                <div class="mt-2 fw-bold" style="color: #CC0000; font-size: 0.82rem;">
+                                                    En stock : <t t-esc="stock_qty"/>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
