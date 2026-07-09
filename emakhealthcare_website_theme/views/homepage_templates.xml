@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================================================================
+         Template de la page d'accueil Emakhealthcare
+         Design basé sur la maquette avec fond gris clair, hero vert pâle,
+         cartes arrondies, et style épuré.
+         ================================================================== -->
+    <template id="homepage_content" name="Emakhealthcare - Contenu page d'accueil">
+        <t t-call="website.layout">
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+            <div id="wrap" class="oe_emakhc" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif;">
+
+                <!-- 1. HERO CAROUSEL : Diaporama automatique toutes les 30s -->
+                <section class="py-4 emakhc-hero-section">
+                    <div class="container">
+                        <div id="emakhcHeroCarousel" class="carousel slide emakhc-hero-carousel"
+                             data-bs-ride="carousel"
+                             data-bs-interval="30000">
+
+                            <!-- Indicateurs (points de navigation) -->
+                            <div class="carousel-indicators">
+                                <button type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide-to="0"
+                                        class="active" aria-current="true" aria-label="Slide 1"/>
+                                <button type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide-to="1"
+                                        aria-label="Slide 2"/>
+                                <button type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide-to="2"
+                                        aria-label="Slide 3"/>
+                                <button type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide-to="3"
+                                        aria-label="Slide 4"/>
+                                <button type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide-to="4"
+                                        aria-label="Slide 5"/>
+                            </div>
+
+                            <div class="carousel-inner">
+
+                                <!-- ── SLIDE 1 : Votre santé, notre priorité ── -->
+                                <div class="carousel-item active">
+                                    <div class="row align-items-center position-relative overflow-hidden emakhc-hero-slide"
+                                         style="background-color: #E8F5E9; border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+
+                                        <!-- Image droite avec animation zoom -->
+                                        <div class="d-none d-lg-block position-absolute h-100 w-50 emakhc-animate-zoomin"
+                                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website_theme/static/src/img/votre_sante.png'); background-size: cover; background-position: center;"/>
+
+                                        <div class="col-lg-7 z-1">
+                                            <h1 class="display-4 fw-bold mb-3 emakhc-animate-fadeup delay-1" style="color: #212121; letter-spacing: -1px; font-family: 'Poppins', sans-serif; font-weight: 800;">
+                                                Votre santé,<br/>
+                                                notre <span style="color: #2E7D32;">priorité</span>
+                                            </h1>
+                                            <p class="mb-4 emakhc-animate-fadeup delay-2" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                                Découvrez notre large gamme de produits pharmaceutiques
+                                                et de matériel médical de qualité.
+                                            </p>
+
+                                            <!-- Barre de recherche -->
+                                            <form action="/shop" method="get" class="d-flex mb-5 bg-white rounded-3 shadow-sm p-1 emakhc-animate-fadeup delay-3" style="max-width: 480px;">
+                                                <input type="text" name="search" class="form-control border-0 shadow-none px-3"
+                                                       placeholder="Rechercher un produit, une marque..."
+                                                       style="background: transparent; color: #6B7280;"/>
+                                                <button type="submit" class="btn text-white rounded-2 px-3" style="background-color: #2E7D32;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ── SLIDE 2 : Livraison rapide et gratuite ── -->
+                                <div class="carousel-item">
+                                    <div class="row align-items-center position-relative overflow-hidden emakhc-hero-slide"
+                                         style="background: linear-gradient(135deg, #f0fff4 0%, #c8e6c9 100%); border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+
+                                        <!-- Image droite animée -->
+                                        <div class="d-none d-lg-block position-absolute h-100 w-50 emakhc-animate-zoomin"
+                                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website_theme/static/src/img/livraison_rapide.png'); background-size: cover; background-position: center;"/>
+
+                                        <div class="col-lg-6 z-1">
+                                            <div class="emakhc-animate-fadeup delay-1" style="color: #2E7D32; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">
+                                                <i class="fa fa-truck me-2"/>Service Logistique
+                                            </div>
+                                            <h1 class="display-4 fw-bold mb-4 emakhc-animate-fadeup delay-2" style="color: #111827; font-family: 'Poppins', sans-serif; font-weight: 800; line-height: 1.1;">
+                                                Livraison<br/>rapide et<br/>gratuite
+                                            </h1>
+                                            <p class="mb-4 emakhc-animate-fadeup delay-3" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                                Faites-vous livrer vos produits de santé et équipements médicaux partout au Mali, en toute sécurité.
+                                            </p>
+                                            <div class="d-flex gap-3 flex-wrap emakhc-animate-fadeup delay-3">
+                                                <a href="/shop" class="btn fw-bold px-4 py-2"
+                                                   style="background-color: #2E7D32; color: #fff; border-radius: 4px; font-size: 0.9rem;">
+                                                    ▶ DÉCOUVRIR
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ── SLIDE 3 : Paiement à la livraison ou via Sarali ── -->
+                                <div class="carousel-item">
+                                    <div class="row align-items-center position-relative overflow-hidden emakhc-hero-slide"
+                                         style="background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%); border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+
+                                        <div class="d-none d-lg-block position-absolute h-100 w-50 emakhc-animate-zoomin"
+                                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website_theme/static/src/img/paiement_securise.png'); background-size: cover; background-position: center;"/>
+
+                                        <div class="col-lg-6 z-1">
+                                            <div class="emakhc-animate-fadeup delay-1" style="color: #2E7D32; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">
+                                                <i class="fa fa-lock me-2"/>100% Sécurisé
+                                            </div>
+                                            <h1 class="display-4 fw-bold mb-4 emakhc-animate-fadeup delay-2" style="color: #111827; font-family: 'Poppins', sans-serif; font-weight: 800; line-height: 1.1;">
+                                                Paiement à<br/>la livraison ou<br/>via Sarali
+                                            </h1>
+                                            <p class="mb-4 emakhc-animate-fadeup delay-3" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                                Profitez de méthodes de paiement flexibles et totalement sécurisées pour toutes vos commandes.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ── SLIDE 4 : Ingénieur qualifié ── -->
+                                <div class="carousel-item">
+                                    <div class="row align-items-center position-relative overflow-hidden emakhc-hero-slide"
+                                         style="background: linear-gradient(135deg, #f0fff4 0%, #c8e6c9 100%); border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+
+                                        <div class="d-none d-lg-block position-absolute h-100 w-50 emakhc-animate-zoomin"
+                                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website_theme/static/src/img/ingenieur_qualifie.png'); background-size: cover; background-position: center;"/>
+
+                                        <div class="col-lg-6 z-1">
+                                            <div class="emakhc-animate-fadeup delay-1" style="color: #2E7D32; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">
+                                                <i class="fa fa-user-md me-2"/>Expertise Technique
+                                            </div>
+                                            <h1 class="display-4 fw-bold mb-4 emakhc-animate-fadeup delay-2" style="color: #111827; font-family: 'Poppins', sans-serif; font-weight: 800; line-height: 1.1;">
+                                                Ingénieurs<br/>biomédicaux<br/>qualifiés
+                                            </h1>
+                                            <p class="mb-4 emakhc-animate-fadeup delay-3" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                                Une équipe d'experts à votre disposition pour l'installation et la maintenance de votre matériel médical.
+                                            </p>
+                                            <div class="d-flex gap-3 flex-wrap emakhc-animate-fadeup delay-3">
+                                                <a href="/contactus" class="btn fw-bold px-4 py-2"
+                                                   style="background-color: #2E7D32; color: #fff; border-radius: 4px; font-size: 0.9rem;">
+                                                    ▶ CONTACTER UN EXPERT
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ── SLIDE 5 : SAV 24/24h ── -->
+                                <div class="carousel-item">
+                                    <div class="row align-items-center position-relative overflow-hidden emakhc-hero-slide"
+                                         style="background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%); border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+
+                                        <div class="d-none d-lg-block position-absolute h-100 w-50 emakhc-animate-zoomin"
+                                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website_theme/static/src/img/sav_24_24.png'); background-size: cover; background-position: center;"/>
+
+                                        <div class="col-lg-6 z-1">
+                                            <div class="emakhc-animate-fadeup delay-1" style="color: #2E7D32; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;">
+                                                <i class="fa fa-headphones me-2"/>Support Client
+                                            </div>
+                                            <h1 class="display-4 fw-bold mb-4 emakhc-animate-fadeup delay-2" style="color: #111827; font-family: 'Poppins', sans-serif; font-weight: 800; line-height: 1.1;">
+                                                SAV 24/24h<br/>à votre écoute
+                                            </h1>
+                                            <p class="mb-4 emakhc-animate-fadeup delay-3" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                                Notre service après-vente est disponible jour et nuit pour répondre à vos urgences.
+                                            </p>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /.carousel-inner -->
+
+                            <!-- Flèches de navigation -->
+                            <button class="carousel-control-prev" type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"/>
+                                <span class="visually-hidden">Précédent</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#emakhcHeroCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"/>
+                                <span class="visually-hidden">Suivant</span>
+                            </button>
+
+                        </div><!-- /#emakhcHeroCarousel -->
+                    </div>
+                </section>
+
+            <!-- 2. CATEGORIES POPULAIRES -->
+            <section class="py-4">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <h5 class="fw-bold mb-0" style="color: #212121; font-family: 'Poppins', sans-serif;">Catégories populaires</h5>
+                        <a href="/categories" class="text-decoration-none fw-medium" style="color: #2E7D32; font-size: 0.9rem;">
+                            Voir toutes les catégories <i class="fa fa-chevron-right ms-1" style="font-size: 0.7em;"/>
+                        </a>
+                    </div>
+                    <div class="row g-3">
+                        <t t-set="categories" t-value="request.env['product.category'].sudo().search([('name', 'in', ['PROTHÈSE ET IMPLANT', 'BANDAGES ET ORTHESES', 'MATERIELS MEDICAUX', 'PARAPHARMACIE', 'PHARMACIE', 'MOBILIERS MÉDICAUX'])], limit=6)"/>
+                        
+                        <t t-foreach="categories" t-as="cat">
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <a t-attf-href="/produits?categ_id=#{cat.id}" class="text-decoration-none">
+                                    <div class="card h-100 border-0 shadow-sm text-center py-4 transition-all" style="background-color: white; border-radius: 16px;">
+                                        <div class="mb-3 d-flex justify-content-center">
+                                            <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);display:flex;align-items:center;justify-content:center;">
+                                                <i class="fa fa-tag" style="font-size:1.3rem;color:#2E7D32;"></i>
+                                            </div>
+                                        </div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.85rem;"><t t-esc="cat.name"/></div>
+                                    </div>
+                                </a>
+                            </div>
+                        </t>
+                        <t t-if="not categories">
+                            <div class="col-12 text-muted fst-italic">
+                                Aucune catégorie publiée.
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. OFFRES SPECIALES (masquée si aucune promotion en stock) -->
+            <t t-set="all_companies" t-value="request.env['res.company'].sudo().search([])"/>
+            <t t-set="all_offers"
+               t-value="request.env['product.template'].sudo().with_context(allowed_company_ids=all_companies.ids).search([
+                    ('website_published', '=', True),
+                    '|',
+                    ('website_ribbon_id.name', 'ilike', 'Promotion'),
+                    ('promotion_start_date', '!=', False)
+               ])"/>
+            
+            <t t-set="offers" t-value="all_offers.filtered(lambda p: p.type == 'service' or p.qty_available &gt; 0)[:4]"/>
+
+            <t t-if="offers">
+                <section class="py-4">
+                    <div class="container">
+                        <div class="d-flex justify-content-between align-items-end mb-3">
+                            <h5 class="fw-bold mb-0" style="color: #212121; font-family: 'Poppins', sans-serif;">Offres spéciales</h5>
+                            <a href="/promotions" class="text-decoration-none fw-medium" style="color: #2E7D32; font-size: 0.9rem;">
+                                Voir toutes les offres <i class="fa fa-chevron-right ms-1" style="font-size: 0.7em;"/>
+                            </a>
+                        </div>
+                        <div class="row g-3">
+                            <t t-foreach="offers" t-as="product">
+                                <t t-set="discount" t-value="int(round((product.compare_list_price - product.list_price) * 100 / product.compare_list_price)) if product.compare_list_price else 0"/>
+                                
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden" style="background-color: white; border-radius: 16px;">
+                                        
+                                        <!-- En-tête : Badge PROMOTION et Coeur -->
+                                        <div class="position-absolute w-100 p-3 d-flex justify-content-between align-items-start z-1">
+                                            <span class="badge rounded-pill fw-bold" style="background-color: #d32f2f; font-size: 0.72rem; padding: 0.4em 0.7em; letter-spacing: 0.5px;">PROMOTION</span>
+                                            <button class="btn btn-sm text-muted rounded-circle bg-white border shadow-sm d-flex align-items-center justify-content-center" 
+                                                    style="width: 28px; height: 28px; padding: 0;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Image Produit -->
+                                        <a href="/promotions" class="d-block pt-4 pb-2 px-3 text-center">
+                                            <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
+                                                 class="img-fluid" style="height: 140px; object-fit: contain;" alt="Produit"/>
+                                        </a>
+
+                                        <!-- Infos Produit -->
+                                        <div class="card-body d-flex flex-column pt-1">
+                                            <a href="/promotions" class="text-decoration-none">
+                                                <h6 class="fw-bold text-dark mb-1 text-truncate" t-field="product.name" style="font-size: 0.95rem;"/>
+                                            </a>
+                                            
+                                            <div class="mt-auto">
+                                                <div class="fw-bold" style="color: #2E7D32; font-size: 1.15rem;">
+                                                    <span t-field="product.list_price" t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <!-- 4. BANDEAU CTA -->
+            <section class="py-5">
+                <div class="container">
+                    <div class="p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center position-relative overflow-hidden"
+                         style="background: linear-gradient(135deg, #5CA383 0%, #2E7D32 100%); border-radius: 20px;">
+                        
+                        <div class="z-1 text-white text-center text-md-start mb-4 mb-md-0">
+                            <h4 class="fw-bold mb-2" style="font-family: 'Poppins', sans-serif;">Ensemble, bâtissons un système de santé fort et durable en Afrique.</h4>
+                            <p class="mb-0" style="opacity: 0.9; max-width: 500px; font-size: 0.95rem;">
+                                Des produits de qualité, sélectionnés avec soin pour votre bien-être au quotidien.
+                            </p>
+                        </div>
+                        <div class="z-1">
+                            <a href="/produits" class="btn fw-bold px-4 py-2"
+                               style="background-color: #FFFFFF; color: #111827; border-radius: 8px;">
+                                Découvrir nos produits <i class="fa fa-chevron-right ms-2 text-muted" style="font-size: 0.8rem;"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+        </t>
+    </template>
+
+</odoo>

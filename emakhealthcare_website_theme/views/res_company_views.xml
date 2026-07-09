@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_inherit_emakhealthcare" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.emakhealthcare</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <!-- Autoriser : visible si pas encore autorisé -->
+                    <button name="action_authorize_emakhealthcare_stock"
+                            type="object"
+                            string="✅ Autoriser Stock Emakhealthcare"
+                            class="oe_highlight"
+                            invisible="authorize_emakhealthcare_stock == True"
+                            help="Les produits EN STOCK de cette société seront visibles et vendables sur Emakhealthcare. Les produits sans stock restent bloqués."/>
+                    <!-- Révoquer : visible si déjà autorisé -->
+                    <button name="action_unauthorize_emakhealthcare_stock"
+                            type="object"
+                            string="❌ Révoquer Stock Emakhealthcare"
+                            class="btn-danger"
+                            invisible="authorize_emakhealthcare_stock == False"
+                            help="Les produits de cette société ne seront plus visibles sur le site Emakhealthcare."/>
+                </header>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Emakhealthcare" name="emakhealthcare_config">
+                    <group string="Configuration du site Emakhealthcare">
+                        <field name="authorize_emakhealthcare_stock" widget="boolean_toggle"/>
+                        <div class="text-muted" colspan="2">
+                            <i class="fa fa-info-circle"/>
+                            Quand autorisée, les produits de cette société <strong>avec du stock disponible</strong>
+                            apparaissent sur le site Emakhealthcare.
+                            Les produits en rupture de stock restent bloqués (comportement normal).
+                        </div>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="emakhc_website_header" inherit_id="website_emakmed.custom_website_header">
+    <!-- Hide the website_emakmed header if we are on Emakhealthcare -->
+    <xpath expr="//header" position="attributes">
+      <attribute name="t-attf-class" separator=" " add="{{ 'd-none' if website and website.name == 'Emakhealthcare' else '' }}"/>
+    </xpath>
+    
+    <!-- Show our hardcoded header if we are on Emakhealthcare -->
+    <xpath expr="//header" position="after">
+      <header t-if="website and website.name == 'Emakhealthcare'" class="shadow-sm bg-white">
+        <!-- Barre utilitaire supérieure, style charte EMAK -->
+        <div class="d-none d-md-flex justify-content-between align-items-center px-3 py-1" style="background-color: #2E7D32; font-size: 0.8rem;">
+          <div class="d-flex align-items-center gap-3 text-white">
+            <a t-if="website.company_id.email" t-attf-href="mailto:#{website.company_id.email}" class="text-white text-decoration-none d-flex align-items-center gap-1">
+              <i class="fa fa-envelope"></i> <t t-esc="website.company_id.email"/>
+            </a>
+            <span t-if="website.company_id.phone" class="d-flex align-items-center gap-1">
+              <i class="fa fa-phone"></i> <t t-esc="website.company_id.phone"/>
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <a href="/my" class="text-dark fw-bold text-decoration-none px-3 py-1 rounded-1" style="background-color: #8BC34A; font-size: 0.75rem;">
+              ESPACE CLIENTS
+            </a>
+          </div>
+        </div>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+          <div class="container d-flex align-items-center justify-content-between">
+            
+            <!-- LOGO -->
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+              <img t-if="website.company_id.logo"
+                   t-att-src="image_data_uri(website.company_id.logo)"
+                   alt="Logo"
+                   style="height: 45px; width: auto;" />
+              <span t-if="not website.company_id.logo" class="fw-bold fs-4" style="color: #2E7D32;">Emakhealthcare</span>
+            </a>
+
+            <!-- Bouton mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#emakhcNav">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- MENU PRINCIPAL -->
+            <div class="collapse navbar-collapse justify-content-center" id="emakhcNav">
+              <ul class="navbar-nav gap-4 align-items-center fw-medium" style="font-size: 0.95rem; color: #111827;">
+                <li class="nav-item">
+                  <a class="nav-link border-bottom border-2 pb-1" style="color: #2E7D32; border-color: #2E7D32 !important;" href="/">Accueil</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link text-dark" href="/produits">Produits</a>
+                </li>
+                <li class="nav-item d-flex align-items-center gap-2">
+                  <a class="nav-link text-dark" href="/produits?sort_by=newest">Promotions</a>
+                </li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle text-dark" href="#" data-bs-toggle="dropdown">
+                    Réclamations
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <a class="dropdown-item" href="/claim/create">Créer une réclamation</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/claim/your_claims">Vos réclamations</a>
+                    </li>
+                  </ul>
+                </li>
+                <li class="nav-item dropdown" t-if="not request.env.user._is_public()">
+                  <a class="nav-link dropdown-toggle text-dark" href="#" data-bs-toggle="dropdown">
+                    Espace client
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <a class="dropdown-item" href="/my_officine/invoices">Factures</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/my_officine/credits">Avoirs</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/my_officine/statements">Relevés</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/my">Mon compte</a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <!-- PARTIE DROITE -->
+            <div class="d-flex align-items-center gap-4">
+              <!-- Recherche -->
+              <a href="#" class="text-dark" data-bs-toggle="modal" data-bs-target="#searchModalEmakhc">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </a>
+
+              <!-- Panier -->
+              <t t-set="website_sale_cart_quantity" t-value="request.session.get('website_sale_cart_quantity', website.sale_get_order().cart_quantity if website.sale_get_order() else 0)" />
+              <t t-set="cart_amount" t-value="website.sale_get_order().amount_total if website.sale_get_order() else 0.0" />
+              <a href="/shop/cart" class="d-flex align-items-center gap-2 text-decoration-none" style="color: #2E7D32;">
+                <div class="position-relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill my_cart_quantity" style="font-size: 0.6rem; background-color: #8BC34A;" t-esc="website_sale_cart_quantity">3</span>
+                </div>
+                <div class="d-flex flex-column lh-1 d-none d-lg-flex">
+                   <span class="fw-bold" style="font-size: 0.8rem;"><t t-esc="cart_amount" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/></span>
+                </div>
+              </a>
+
+              <!-- Compte Utilisateur -->
+              <t t-if="not request.env.user._is_public()">
+                <div class="dropdown">
+                  <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
+                      <t t-esc="request.env.user.name[0].upper()"/>
+                    </div>
+                    <div class="d-flex flex-column lh-1 d-none d-lg-flex pe-2">
+                      <span class="text-muted" style="font-size: 0.75rem;">Bonjour,</span>
+                      <span class="fw-semibold" style="font-size: 0.85rem;"><t t-esc="request.env.user.name.split()[0]"/> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
+                    </div>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute mt-2">
+                    <li><a class="dropdown-item py-2" href="/my"><i class="fa fa-user me-2"></i>Mon compte</a></li>
+                    <li><hr class="dropdown-divider"/></li>
+                    <li><a class="dropdown-item py-2 text-danger" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Se déconnecter</a></li>
+                  </ul>
+                </div>
+              </t>
+              <t t-else="">
+                <a href="/web/login" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
+                  <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
+                    <i class="fa fa-user"></i>
+                  </div>
+                  <div class="d-flex flex-column lh-1 d-none d-lg-flex">
+                    <span class="text-muted" style="font-size: 0.75rem;">Mon compte</span>
+                    <span class="fw-semibold" style="font-size: 0.85rem;">Se connecter</span>
+                  </div>
+                </a>
+              </t>
+            </div>
+
+          </div>
+        </nav>
+      </header>
+    </xpath>
+  </template>
+</odoo>

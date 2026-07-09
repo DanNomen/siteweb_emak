@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================================================
+         Page liste de tous les produits Emakhealthcare
+         Route : /produits
+         Design : carte produit avec bouton panier → sélecteur quantité
+         =================================================== -->
+    <template id="products_page" name="Emakhealthcare - Liste des produits">
+        <t t-call="website.layout">
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+            <div id="wrap" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif; min-height: 80vh;">
+
+                <!-- Styles + Script pour le comportement panier -->
+                <style>
+                    .emakhc-product-card {
+                        background: #fff;
+                        border-radius: 16px;
+                        border: 1px solid #E5E7EB;
+                        transition: box-shadow 0.2s ease, transform 0.2s ease;
+                        overflow: hidden;
+                    }
+                    .emakhc-product-card:hover {
+                        box-shadow: 0 8px 28px rgba(0,0,0,0.10);
+                        transform: translateY(-3px);
+                    }
+                    .emakhc-product-card .product-img {
+                        height: 160px;
+                        object-fit: contain;
+                        padding: 12px;
+                        width: 100%;
+                    }
+                    /* Bouton Ajouter */
+                    .btn-add-to-cart {
+                        background-color: #2E7D32;
+                        color: #fff;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 8px 14px;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        width: 100%;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 6px;
+                        transition: background-color 0.2s;
+                    }
+                    .btn-add-to-cart:hover {
+                        background-color: #1B5E20;
+                    }
+                    /* Sélecteur de quantité */
+                    .qty-selector {
+                        display: none;
+                        align-items: center;
+                        justify-content: space-between;
+                        border: 2px solid #2E7D32;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        width: 100%;
+                        height: 38px;
+                    }
+                    .qty-selector.active {
+                        display: flex;
+                    }
+                    .qty-btn {
+                        background: #2E7D32;
+                        color: white;
+                        border: none;
+                        width: 40px;
+                        height: 100%;
+                        font-size: 1.1rem;
+                        font-weight: bold;
+                        cursor: pointer;
+                        flex-shrink: 0;
+                        transition: background-color 0.15s;
+                    }
+                    .qty-btn:hover { background-color: #1B5E20; }
+                    .qty-display {
+                        flex: 1;
+                        text-align: center;
+                        font-weight: 700;
+                        font-size: 0.95rem;
+                        color: #111827;
+                    }
+                    /* Badge promo */
+                    .badge-promo {
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        background-color: #EF4444;
+                        color: white;
+                        font-size: 0.72rem;
+                        font-weight: 700;
+                        padding: 3px 8px;
+                        border-radius: 20px;
+                    }
+                    /* Sidebar category active */
+                    .cat-link { display: block; text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 0.88rem; color: #374151; margin-bottom: 4px; transition: background 0.15s; }
+                    .cat-link:hover { background: #F0FDF4; color: #2E7D32; }
+                    .cat-link.active { background: #D1FAE5; color: #2E7D32; font-weight: 700; }
+                </style>
+
+                <script type="text/javascript">
+                    document.addEventListener('DOMContentLoaded', function() {
+                        function updateCart(productId, addQty, setQty, onSuccess, onError) {
+                            var params = { product_id: parseInt(productId), display: false };
+                            if (addQty !== undefined) params.add_qty = addQty;
+                            if (setQty !== undefined) params.set_qty = setQty;
+
+                            fetch('/shop/cart/update_json', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: params
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                // On journalise toujours la réponse brute pour pouvoir diagnostiquer
+                                // facilement depuis la console navigateur (F12) en cas de souci.
+                                console.debug('[emakhc] /shop/cart/update_json ->', data);
+
+                                if (data &amp;&amp; data.error) {
+                                    console.error('[emakhc] Erreur serveur lors de l\'ajout au panier', data.error);
+                                    if (onError) onError(data.error);
+                                    return;
+                                }
+
+                                // IMPORTANT : un objet vide {} est "truthy" en JS. On vérifie donc
+                                // explicitement la présence de cart_quantity plutôt que juste
+                                // "data.result" pour ne pas afficher un faux succès à l'utilisateur.
+                                if (data &amp;&amp; data.result &amp;&amp; data.result.warning) {
+                                    // Odoo a refusé (ex : rupture de stock) mais répond proprement.
+                                    console.warn('[emakhc] Odoo a refusé la mise à jour du panier', data.result.warning);
+                                    if (onError) onError(data.result.warning);
+                                    return;
+                                }
+
+                                if (data &amp;&amp; data.result &amp;&amp; typeof data.result.cart_quantity !== 'undefined') {
+                                    document.querySelectorAll('.my_cart_quantity').forEach(el => {
+                                        el.textContent = data.result.cart_quantity;
+                                    });
+                                    if (onSuccess) onSuccess(data.result);
+                                } else {
+                                    console.error('[emakhc] Réponse inattendue, produit probablement non ajouté', data);
+                                    if (onError) onError(data);
+                                }
+                            })
+                            .catch(function(err) {
+                                console.error('[emakhc] Erreur réseau lors de l\'ajout au panier', err);
+                                if (onError) onError(err);
+                            });
+                        }
+
+                        document.querySelectorAll('.btn-add-to-cart').forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                var card = btn.closest('.cart-action-wrap');
+                                var productId = btn.dataset.productId;
+                                var qtySelector = card.querySelector('.qty-selector');
+                                var qtyDisplay = card.querySelector('.qty-display');
+
+                                btn.disabled = true;
+                                updateCart(productId, 1, undefined, function() {
+                                    btn.style.display = 'none';
+                                    btn.disabled = false;
+                                    qtySelector.classList.add('active');
+                                    qtySelector.style.display = 'flex';
+                                    qtyDisplay.value = '1';
+                                    qtySelector.dataset.qty = '1';
+                                    qtySelector.dataset.productId = productId;
+                                }, function(reason) {
+                                    btn.disabled = false;
+                                    alert(typeof reason === 'string' ? reason : "Impossible d'ajouter ce produit au panier.");
+                                });
+                            });
+                        });
+
+                        // Bouton +
+                        document.querySelectorAll('.qty-plus').forEach(function(plusBtn) {
+                            plusBtn.addEventListener('click', function() {
+                                var selector = plusBtn.closest('.qty-selector');
+                                var currentQty = parseInt(selector.dataset.qty);
+                                var productId = selector.dataset.productId;
+                                
+                                plusBtn.disabled = true;
+                                updateCart(productId, 1, undefined, function() {
+                                    var newQty = currentQty + 1;
+                                    selector.dataset.qty = newQty;
+                                    selector.querySelector('.qty-display').value = newQty;
+                                    plusBtn.disabled = false;
+                                }, function(reason) {
+                                    plusBtn.disabled = false;
+                                    alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                });
+                            });
+                        });
+
+                        // Bouton -
+                        document.querySelectorAll('.qty-minus').forEach(function(minusBtn) {
+                            minusBtn.addEventListener('click', function() {
+                                var selector = minusBtn.closest('.qty-selector');
+                                var currentQty = parseInt(selector.dataset.qty);
+                                var productId = selector.dataset.productId;
+                                var card = minusBtn.closest('.cart-action-wrap');
+                                var addBtn = card.querySelector('.btn-add-to-cart');
+
+                                minusBtn.disabled = true;
+                                if (currentQty &lt;= 1) {
+                                    updateCart(productId, undefined, 0, function() {
+                                        selector.classList.remove('active');
+                                        selector.style.display = 'none';
+                                        addBtn.style.display = 'flex';
+                                        selector.dataset.qty = '0';
+                                        minusBtn.disabled = false;
+                                    }, function(reason) {
+                                        minusBtn.disabled = false;
+                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    });
+                                } else {
+                                    updateCart(productId, -1, undefined, function() {
+                                        var newQty = currentQty - 1;
+                                        selector.dataset.qty = newQty;
+                                        selector.querySelector('.qty-display').value = newQty;
+                                        minusBtn.disabled = false;
+                                    }, function(reason) {
+                                        minusBtn.disabled = false;
+                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    });
+                                }
+                            });
+                        });
+
+                        // Saisie manuelle
+                        document.querySelectorAll('.qty-display').forEach(function(input) {
+                            input.addEventListener('change', function() {
+                                var selector = input.closest('.qty-selector');
+                                var productId = selector.dataset.productId;
+                                var card = input.closest('.cart-action-wrap');
+                                var addBtn = card.querySelector('.btn-add-to-cart');
+                                var newQty = parseInt(input.value);
+
+                                input.disabled = true;
+                                if (isNaN(newQty) || newQty &lt;= 0) {
+                                    updateCart(productId, undefined, 0, function() {
+                                        selector.classList.remove('active');
+                                        selector.style.display = 'none';
+                                        addBtn.style.display = 'flex';
+                                        selector.dataset.qty = '0';
+                                        input.value = '1';
+                                        input.disabled = false;
+                                    }, function(reason) {
+                                        input.value = selector.dataset.qty;
+                                        input.disabled = false;
+                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    });
+                                } else {
+                                    updateCart(productId, undefined, newQty, function() {
+                                        selector.dataset.qty = newQty;
+                                        input.disabled = false;
+                                    }, function(reason) {
+                                        input.value = selector.dataset.qty;
+                                        input.disabled = false;
+                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    });
+                                }
+                            });
+                        });
+                    });
+                </script>
+
+                <div class="container py-4">
+
+                    <!-- En-tête -->
+                    <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h2 class="fw-bold mb-1" style="color: #111827;">Nos produits</h2>
+                            <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                                <t t-esc="product_count"/> produit(s) trouvé(s)
+                            </p>
+                        </div>
+                        <!-- Barre de recherche rapide -->
+                        <form action="/produits" method="get" class="d-flex align-items-center" style="max-width: 320px; width: 100%;">
+                            <input t-if="category" type="hidden" name="category" t-att-value="category"/>
+                            <input t-if="sort_by" type="hidden" name="sort_by" t-att-value="sort_by"/>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control"
+                                       style="border-radius: 8px 0 0 8px; font-size: 0.88rem; border-color: #D1D5DB;"
+                                       placeholder="Rechercher un produit..."
+                                       t-att-value="search"/>
+                                <button class="btn text-white px-3" style="background-color: #2E7D32; border-radius: 0 8px 8px 0;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Sidebar filtres -->
+                        <div class="col-12 col-lg-2">
+                            <div class="card border-0 shadow-sm p-3" style="border-radius: 14px; position: sticky; top: 90px;">
+                                <h6 class="fw-bold mb-3 pb-2 border-bottom" style="color: #111827; font-size: 0.9rem;">Catégories</h6>
+                                <a t-attf-href="/produits?search=#{search}"
+                                   t-attf-class="cat-link #{'active' if not category else ''}">
+                                    Tous les produits
+                                </a>
+                                <t t-foreach="categories" t-as="cat">
+                                    <a t-attf-href="/produits?category=#{cat.id}&amp;search=#{search}&amp;sort_by=#{sort_by}"
+                                       t-attf-class="cat-link #{'active' if category == cat.id else ''}">
+                                        <t t-esc="cat.name"/>
+                                    </a>
+                                </t>
+
+                                <!-- Tri -->
+                                <h6 class="fw-bold mb-2 mt-4 pb-2 border-bottom" style="color: #111827; font-size: 0.9rem;">Trier par</h6>
+                                <a t-attf-href="/produits?sort_by=name&amp;search=#{search}&amp;category=#{category or ''}"
+                                   t-attf-class="cat-link #{'active' if sort_by == 'name' else ''}">Nom A-Z</a>
+                                <a t-attf-href="/produits?sort_by=price_asc&amp;search=#{search}&amp;category=#{category or ''}"
+                                   t-attf-class="cat-link #{'active' if sort_by == 'price_asc' else ''}">Prix croissant</a>
+                                <a t-attf-href="/produits?sort_by=price_desc&amp;search=#{search}&amp;category=#{category or ''}"
+                                   t-attf-class="cat-link #{'active' if sort_by == 'price_desc' else ''}">Prix décroissant</a>
+                                <a t-attf-href="/produits?sort_by=newest&amp;search=#{search}&amp;category=#{category or ''}"
+                                   t-attf-class="cat-link #{'active' if sort_by == 'newest' else ''}">Plus récents</a>
+                            </div>
+                        </div>
+
+                        <!-- Grille produits -->
+                        <div class="col-12 col-lg-10">
+
+                            <!-- Grille -->
+                            <div class="row g-3" t-if="products">
+                                <t t-foreach="products" t-as="product">
+                                    <t t-set="has_promo" t-value="product.compare_list_price and product.compare_list_price > product.list_price"/>
+                                    <t t-set="discount" t-value="round(100 - (product.list_price * 100 / product.compare_list_price)) if has_promo else 0"/>
+                                    <t t-set="variant_id" t-value="product.product_variant_id.id"/>
+
+                                    <div class="col-6 col-md-4 col-xl-3">
+                                        <div class="emakhc-product-card h-100 d-flex flex-column" style="position: relative;">
+
+                                            <!-- Badge promo -->
+                                            <span t-if="has_promo" class="badge-promo">-<t t-esc="discount"/>%</span>
+
+                                            <!-- Image → clique désactivé -->
+                                            <a href="#" onclick="return false;" class="d-block" style="cursor: default;">
+                                                <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
+                                                     class="product-img"
+                                                     alt="produit"
+                                                     loading="lazy"
+                                                     onerror="this.src='/web/static/img/placeholder.png'"/>
+                                            </a>
+
+                                            <!-- Infos -->
+                                            <div class="px-3 pb-3 d-flex flex-column flex-grow-1">
+                                                <!-- Catégorie -->
+                                                <div class="text-muted mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                    <t t-if="product.public_categ_ids">
+                                                        <t t-esc="product.public_categ_ids[0].name"/>
+                                                    </t>
+                                                </div>
+                                                <!-- Nom -->
+                                                <a href="#" onclick="return false;" class="text-decoration-none" style="cursor: default;">
+                                                    <h6 class="fw-semibold text-dark mb-2" style="font-size: 0.88rem; line-height: 1.3; min-height: 36px;" t-field="product.name"/>
+                                                </a>
+
+                                                <!-- Prix -->
+                                                <div class="mb-3 mt-auto">
+                                                    <span class="fw-bold" style="color: #2E7D32; font-size: 1.05rem;"
+                                                          t-field="product.list_price"
+                                                          t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                    <span t-if="has_promo" class="ms-2 text-muted text-decoration-line-through" style="font-size: 0.82rem;"
+                                                          t-field="product.compare_list_price"
+                                                          t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                </div>
+
+                                                <!-- Action panier -->
+                                                <div class="cart-action-wrap">
+                                                    <!-- Bouton initial -->
+                                                    <button class="btn-add-to-cart" t-att-data-product-id="variant_id">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                                                        Ajouter au panier
+                                                    </button>
+                                                    <!-- Sélecteur de quantité (caché par défaut) -->
+                                                    <div class="qty-selector" data-qty="0">
+                                                        <button class="qty-btn qty-minus" type="button">−</button>
+                                                        <input type="number" class="qty-display" value="1" min="1" style="width: 40px; text-align: center; border: none; outline: none; font-weight: bold; background: transparent; -moz-appearance: textfield;"/>
+                                                        <button class="qty-btn qty-plus" type="button">+</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+
+                            <!-- Pas de produits -->
+                            <div t-if="not products" class="text-center py-5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                <h5 class="fw-semibold text-muted">Aucun produit trouvé</h5>
+                                <p class="text-muted mb-3">Essayez d'autres critères de recherche.</p>
+                                <a href="/produits" class="btn text-white px-4" style="background-color: #2E7D32; border-radius: 8px;">Voir tous les produits</a>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div t-if="page_count > 1" class="d-flex justify-content-center mt-5">
+                                <nav>
+                                    <ul class="pagination gap-1">
+                                        <li t-attf-class="page-item #{'disabled' if page == 1 else ''}">
+                                            <a class="page-link border-0 rounded-pill px-3"
+                                               t-attf-href="/produits?page=#{page-1}&amp;search=#{search}&amp;sort_by=#{sort_by}&amp;category=#{category or ''}"
+                                               style="color: #2E7D32;">‹ Prec.</a>
+                                        </li>
+                                        <t t-set="start_page" t-value="max(1, page - 2)"/>
+                                        <t t-set="end_page" t-value="min(page_count, page + 2)"/>
+                                        
+                                        <!-- Première page et points de suspension -->
+                                        <t t-if="start_page > 1">
+                                            <li class="page-item">
+                                                <a class="page-link border-0 rounded-pill px-3 fw-semibold"
+                                                   t-attf-href="/produits?page=1&amp;search=#{search}&amp;sort_by=#{sort_by}&amp;category=#{category or ''}"
+                                                   style="color:#374151;">1</a>
+                                            </li>
+                                            <li t-if="start_page > 2" class="page-item disabled">
+                                                <a class="page-link border-0 rounded-pill px-3 fw-semibold" style="color:#374151;">...</a>
+                                            </li>
+                                        </t>
+
+                                        <!-- Pages du milieu -->
+                                        <t t-foreach="range(start_page, end_page + 1)" t-as="p">
+                                            <li t-attf-class="page-item #{'active' if p == page else ''}">
+                                                <a class="page-link border-0 rounded-pill px-3 fw-semibold"
+                                                   t-attf-href="/produits?page=#{p}&amp;search=#{search}&amp;sort_by=#{sort_by}&amp;category=#{category or ''}"
+                                                   t-attf-style="#{'background-color:#2E7D32; color:white;' if p == page else 'color:#374151;'}">
+                                                    <t t-esc="p"/>
+                                                </a>
+                                            </li>
+                                        </t>
+
+                                        <!-- Dernière page et points de suspension -->
+                                        <t t-if="end_page &lt; page_count">
+                                            <li t-if="end_page &lt; page_count - 1" class="page-item disabled">
+                                                <a class="page-link border-0 rounded-pill px-3 fw-semibold" style="color:#374151;">...</a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link border-0 rounded-pill px-3 fw-semibold"
+                                                   t-attf-href="/produits?page=#{page_count}&amp;search=#{search}&amp;sort_by=#{sort_by}&amp;category=#{category or ''}"
+                                                   style="color:#374151;"><t t-esc="page_count"/></a>
+                                            </li>
+                                        </t>
+                                        <li t-attf-class="page-item #{'disabled' if page == page_count else ''}">
+                                            <a class="page-link border-0 rounded-pill px-3"
+                                               t-attf-href="/produits?page=#{page+1}&amp;search=#{search}&amp;sort_by=#{sort_by}&amp;category=#{category or ''}"
+                                               style="color: #2E7D32;">Suiv. ›</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

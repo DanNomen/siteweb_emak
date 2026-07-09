@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="client_portal_page" name="Page Compte Client">
+        <t t-call="website.layout">
+            <main class="container py-5">
+                <h2 class="text-center rounded-1 shadow-sm mb-5"
+                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Bienvenue dans votre Compte Client
+                </h2>
+
+                <!-- FontAwesome -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+                <style>
+                    .tab-nav { display: flex; gap: 8px; border-bottom: 2px solid #e0e0e0; margin-bottom: 24px; }
+                    .tab-btn {
+                        padding: 10px 22px; border: none; background: none;
+                        font-weight: 600; color: #555; cursor: pointer; border-bottom: 3px solid transparent;
+                        transition: color 0.2s, border-color 0.2s;
+                    }
+                    .tab-btn.active { color: #38A935; border-bottom-color: #38A935; }
+                    .tab-btn:hover { color: #38A935; }
+                    .tab-pane { display: none; }
+                    .tab-pane.active { display: block; }
+                    .monthly-badge {
+                        display: inline-block; background: linear-gradient(90deg, #38A935, #93C123);
+                        color: white; padding: 3px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+                    }
+                </style>
+
+                <!-- Onglets -->
+                <div class="tab-nav" id="portalTabs">
+                    <button class="tab-btn active" data-tab="information">
+                        <i class="fa fa-info-circle me-1"></i>Informations Générales
+                    </button>
+                    <button class="tab-btn" data-tab="achats-mensuels">
+                        <i class="fa fa-calendar-alt me-1"></i>Achats Mensuels
+                    </button>
+                </div>
+
+                <!-- Sélecteur mobile -->
+                <div class="d-md-none mb-3">
+                    <select id="info-select" class="form-control">
+                        <option value="information">Informations générales</option>
+                        <option value="achats-mensuels">Achats Mensuels</option>
+                    </select>
+                </div>
+
+                <!-- Contenu -->
+                <div id="content-area">
+
+                    <!-- ===================== INFORMATIONS GÉNÉRALES ===================== -->
+                    <div id="information" class="tab-pane active">
+                        <h4 class="mb-4" style="color: #38A935;">
+                            <i class="fa fa-info-circle me-2"></i>Information générale
+                        </h4>
+                        <table class="table table-striped table-bordered">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-semibold" style="width:200px;">Nom :</td>
+                                    <td class="text-success"><t t-esc="partner.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold">Adresse :</td>
+                                    <td class="text-success"><t t-esc="partner.street"/></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold">Pays :</td>
+                                    <td class="text-success"><t t-esc="partner.country_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold">Téléphone :</td>
+                                    <td class="text-success"><t t-esc="partner.phone"/></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold">Email :</td>
+                                    <td class="text-success"><t t-esc="partner.email"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ===================== ACHATS MENSUELS ===================== -->
+                    <div id="achats-mensuels" class="tab-pane">
+                        <h4 class="mb-4" style="color: #38A935;">
+                            <i class="fa fa-calendar-alt me-2"></i>Tableau de bord des achats mensuels
+                        </h4>
+
+                        <t t-if="monthly_purchases">
+                            <div class="table-responsive shadow-sm rounded">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead style="background: linear-gradient(90deg, #38A935, #93C123); color: white;">
+                                        <tr>
+                                            <th class="py-3 ps-4">Mois</th>
+                                            <th class="py-3 text-end">Nb. Factures</th>
+                                            <th class="py-3 text-end">Total HT</th>
+                                            <th class="py-3 text-end">Total TTC</th>
+                                            <th class="py-3 text-end pe-4">Réglé</th>
+                                            <th class="py-3 text-end pe-4">Restant dû</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="monthly_purchases" t-as="row">
+                                            <tr>
+                                                <td class="ps-4 fw-semibold">
+                                                    <span class="monthly-badge"><t t-esc="row['month']"/></span>
+                                                </td>
+                                                <td class="text-end text-muted">
+                                                    <t t-esc="row['count']"/>
+                                                </td>
+                                                <td class="text-end fw-semibold">
+                                                    <t t-esc="'{:,.0f}'.format(row['total_ht']).replace(',', ' ')"/>
+                                                    <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
+                                                </td>
+                                                <td class="text-end fw-semibold" style="color: #2E7D32;">
+                                                    <t t-esc="'{:,.0f}'.format(row['total_ttc']).replace(',', ' ')"/>
+                                                    <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
+                                                </td>
+                                                <td class="text-end text-success pe-4">
+                                                    <t t-esc="'{:,.0f}'.format(row['total_regle']).replace(',', ' ')"/>
+                                                    <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
+                                                </td>
+                                                <td class="text-end pe-4">
+                                                    <t t-if="row['total_restant'] &gt; 0">
+                                                        <span class="text-danger fw-bold">
+                                                            <t t-esc="'{:,.0f}'.format(row['total_restant']).replace(',', ' ')"/>
+                                                            <small class="ms-1"><t t-esc="row['currency']"/></small>
+                                                        </span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="badge bg-success">Soldé</span>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <!-- Totaux -->
+                                    <tfoot style="background: #f0f9f0; border-top: 2px solid #38A935;">
+                                        <tr class="fw-bold">
+                                            <td class="ps-4" colspan="2">TOTAL GÉNÉRAL</td>
+                                            <td class="text-end">
+                                                <t t-esc="'{:,.0f}'.format(sum(r['total_ht'] for r in monthly_purchases)).replace(',', ' ')"/>
+                                                <small class="text-muted ms-1"><t t-esc="currency_symbol"/></small>
+                                            </td>
+                                            <td class="text-end" style="color: #2E7D32;">
+                                                <t t-esc="'{:,.0f}'.format(sum(r['total_ttc'] for r in monthly_purchases)).replace(',', ' ')"/>
+                                                <small class="text-muted ms-1"><t t-esc="currency_symbol"/></small>
+                                            </td>
+                                            <td class="text-end text-success pe-4">
+                                                <t t-esc="'{:,.0f}'.format(sum(r['total_regle'] for r in monthly_purchases)).replace(',', ' ')"/>
+                                                <small class="text-muted ms-1"><t t-esc="currency_symbol"/></small>
+                                            </td>
+                                            <td class="text-end text-danger pe-4">
+                                                <t t-esc="'{:,.0f}'.format(sum(r['total_restant'] for r in monthly_purchases)).replace(',', ' ')"/>
+                                                <small class="text-muted ms-1"><t t-esc="currency_symbol"/></small>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="alert alert-info text-center mt-4">
+                                <i class="fa fa-info-circle me-2"></i>Aucun achat enregistré pour le moment.
+                            </div>
+                        </t>
+                    </div>
+
+                </div><!-- /content-area -->
+
+                <!-- JS onglets -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const tabs = document.querySelectorAll('.tab-btn');
+                        const panes = document.querySelectorAll('.tab-pane');
+                        const select = document.getElementById('info-select');
+
+                        tabs.forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                tabs.forEach(function(t) { t.classList.remove('active'); });
+                                panes.forEach(function(p) { p.classList.remove('active'); });
+                                btn.classList.add('active');
+                                document.getElementById(btn.dataset.tab).classList.add('active');
+                                if (select) select.value = btn.dataset.tab;
+                            });
+                        });
+
+                        if (select) {
+                            select.addEventListener('change', function() {
+                                panes.forEach(function(p) { p.classList.remove('active'); });
+                                tabs.forEach(function(t) { t.classList.remove('active'); });
+                                document.getElementById(select.value).classList.add('active');
+                                tabs.forEach(function(t) {
+                                    if (t.dataset.tab === select.value) t.classList.add('active');
+                                });
+                            });
+                        }
+                    });
+                </script>
+
+            </main>
+        </t>
+    </template>
+</odoo>

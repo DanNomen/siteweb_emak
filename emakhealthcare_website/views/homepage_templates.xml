@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================================================================
+         Template de la page d'accueil Emakhealthcare
+         Design basé sur la maquette avec fond gris clair, hero vert pâle,
+         cartes arrondies, et style épuré.
+         ================================================================== -->
+    <template id="homepage_content" name="Emakhealthcare - Contenu page d'accueil">
+        <t t-call="website.layout">
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+            <div id="wrap" class="oe_emakhc" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif;">
+
+                <!-- 1. HERO : Fond vert très clair arrondi -->
+                <section class="py-4">
+                    <div class="container">
+                        <div class="row align-items-center position-relative overflow-hidden" 
+                             style="background-color: #E8F5E9; border-radius: 24px; padding: 3rem 2rem; min-height: 480px;">
+                        
+                        <!-- L'image de fond (trousses, médicaments) en position absolue à droite -->
+                        <div class="d-none d-lg-block position-absolute h-100 w-50" 
+                             style="right: 0; top: 0; background-image: url('/emakhealthcare_website/static/src/img/hero-mockup.png'); background-size: cover; background-position: right center;">
+                        </div>
+
+                        <div class="col-lg-7 z-1">
+                            <h1 class="display-4 fw-bold mb-3" style="color: #212121; letter-spacing: -1px; font-family: 'Poppins', sans-serif; font-weight: 800;">
+                                Votre santé,<br/>
+                                notre <span style="color: #2E7D32;">priorité</span>
+                            </h1>
+                            <p class="mb-4" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
+                                Découvrez notre large gamme de produits pharmaceutiques
+                                et de matériel médical de qualité.
+                            </p>
+
+                            <!-- Barre de recherche -->
+                            <form action="/shop" method="get" class="d-flex mb-5 bg-white rounded-3 shadow-sm p-1" style="max-width: 480px;">
+                                <input type="text" name="search" class="form-control border-0 shadow-none px-3"
+                                       placeholder="Rechercher un produit, une marque..."
+                                       style="background: transparent; color: #6B7280;"/>
+                                <button type="submit" class="btn text-white rounded-2 px-3"
+                                        style="background-color: #2E7D32;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                </button>
+                            </form>
+
+                            <!-- Badges de réassurance -->
+                            <div class="row text-start gy-3">
+                                <div class="col-4 d-flex align-items-center">
+                                    <div class="me-2 text-center" style="width: 36px; height: 36px; flex-shrink: 0; display:flex; align-items:center; justify-content:center;">
+                                        <!-- Truck Icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                          <rect x="1" y="3" width="15" height="13"></rect>
+                                          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="lh-sm">
+                                        <div class="fw-bold" style="font-size: 0.85rem; color: #111827;">Livraison rapide</div>
+                                        <div style="font-size: 0.75rem; color: #6B7280;">Partout au Mali</div>
+                                    </div>
+                                </div>
+                                <div class="col-4 d-flex align-items-center">
+                                    <div class="me-2 text-center" style="width: 36px; height: 36px; flex-shrink: 0; display:flex; align-items:center; justify-content:center;">
+                                        <!-- Lock Icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="lh-sm">
+                                        <div class="fw-bold" style="font-size: 0.85rem; color: #111827;">Paiement sécurisé</div>
+                                        <div style="font-size: 0.75rem; color: #6B7280;">100% sécurisé</div>
+                                    </div>
+                                </div>
+                                <div class="col-4 d-flex align-items-center">
+                                    <div class="me-2 text-center" style="width: 36px; height: 36px; flex-shrink: 0; display:flex; align-items:center; justify-content:center;">
+                                        <!-- Shield Icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                          <path d="M9 12l2 2 4-4"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="lh-sm">
+                                        <div class="fw-bold" style="font-size: 0.85rem; color: #111827;">Produits de qualité</div>
+                                        <div style="font-size: 0.75rem; color: #6B7280;">Sélection rigoureuse</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. CATEGORIES POPULAIRES -->
+            <section class="py-4">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <h5 class="fw-bold mb-0" style="color: #212121; font-family: 'Poppins', sans-serif;">Catégories populaires</h5>
+                        <a href="/shop" class="text-decoration-none fw-medium" style="color: #2E7D32; font-size: 0.9rem;">
+                            Voir toutes les catégories <i class="fa fa-chevron-right ms-1" style="font-size: 0.7em;"/>
+                        </a>
+                    </div>
+                    <div class="row g-3">
+                        <t t-set="categories" t-value="request.env['product.public.category'].sudo().search([('parent_id','=',False)], limit=6)"/>
+                        
+                        <t t-foreach="categories" t-as="cat">
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <a t-attf-href="/shop/category/#{slug(cat)}" class="text-decoration-none">
+                                    <div class="card h-100 border-0 shadow-sm text-center py-4 transition-all" style="background-color: white; border-radius: 16px;">
+                                        <div class="mb-3 d-flex justify-content-center">
+                                            <t t-if="cat_index == 0">
+                                                <!-- Pill -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <path d="M10.5 20.5L3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"></path>
+                                                  <path d="M8.5 8.5l7 7"></path>
+                                                </svg>
+                                            </t>
+                                            <t t-if="cat_index == 1">
+                                                <!-- Stethoscope -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <path d="M10 2v7a6 6 0 0 0 12 0V2"></path>
+                                                  <path d="M8 2h4"></path>
+                                                  <path d="M20 2h4"></path>
+                                                  <path d="M16 9v3a6 6 0 0 1-12 0v-2"></path>
+                                                  <circle cx="4" cy="8" r="2"></circle>
+                                                </svg>
+                                            </t>
+                                            <t t-if="cat_index == 2">
+                                                <!-- Lotus -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <path d="M12 22c-4 0-8-4-8-10a8 8 0 0 1 16 0c0 6-4 10-8 10z"></path>
+                                                  <path d="M12 2v20"></path>
+                                                  <path d="M12 12c3-1 6-2 6-6-3 1-6 2-6 6z"></path>
+                                                  <path d="M12 12c-3-1-6-2-6-6 3 1 6 2 6 6z"></path>
+                                                </svg>
+                                            </t>
+                                            <t t-if="cat_index == 3">
+                                                <!-- Baby bottle -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <path d="M9 2h6v4H9z"></path>
+                                                  <path d="M10 6h4l2 4v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10l2-4z"></path>
+                                                  <line x1="8" y1="14" x2="16" y2="14"></line>
+                                                  <line x1="8" y1="18" x2="16" y2="18"></line>
+                                                  <path d="M10 2c0-2 4-2 4 0"></path>
+                                                </svg>
+                                            </t>
+                                            <t t-if="cat_index == 4">
+                                                <!-- Bath/Soap -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <rect x="6" y="9" width="12" height="13" rx="2"></rect>
+                                                  <path d="M12 9V4"></path>
+                                                  <path d="M8 4h8"></path>
+                                                  <path d="M10 2h4"></path>
+                                                </svg>
+                                            </t>
+                                            <t t-if="cat_index == 5">
+                                                <!-- First aid kit -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                                  <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+                                                  <line x1="12" y1="11" x2="12" y2="17"></line>
+                                                  <line x1="9" y1="14" x2="15" y2="14"></line>
+                                                </svg>
+                                            </t>
+                                        </div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.85rem;" t-field="cat.name"/>
+                                    </div>
+                                </a>
+                            </div>
+                        </t>
+                        <t t-if="not categories">
+                            <div class="col-12 text-muted fst-italic">
+                                Aucune catégorie publiée.
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. OFFRES SPECIALES -->
+            <section class="py-4">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <h5 class="fw-bold mb-0" style="color: #212121; font-family: 'Poppins', sans-serif;">Offres spéciales</h5>
+                        <a href="/shop" class="text-decoration-none fw-medium" style="color: #2E7D32; font-size: 0.9rem;">
+                            Voir toutes les offres <i class="fa fa-chevron-right ms-1" style="font-size: 0.7em;"/>
+                        </a>
+                    </div>
+                    <div class="row g-3">
+                        <t t-set="offers"
+                           t-value="request.env['product.template'].sudo().search([
+                                ('website_published', '=', True),
+                                ('compare_list_price', '&gt;', 0)], limit=4)"/>
+                        
+                        <t t-foreach="offers" t-as="product">
+                            <t t-set="discount"
+                               t-value="round(100 - (product.list_price * 100 / product.compare_list_price)) if product.compare_list_price else 0"/>
+                            
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden" style="background-color: white; border-radius: 16px;">
+                                    
+                                    <!-- En-tête : Badge % et Coeur -->
+                                    <div class="position-absolute w-100 p-3 d-flex justify-content-between align-items-start z-1">
+                                        <span class="badge rounded-pill fw-bold" style="background-color: #2E7D32; font-size: 0.75rem; padding: 0.4em 0.6em;">
+                                            -<t t-esc="discount"/>%
+                                        </span>
+                                        <button class="btn btn-sm text-muted rounded-circle bg-white border shadow-sm d-flex align-items-center justify-content-center" 
+                                                style="width: 28px; height: 28px; padding: 0;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Image Produit -->
+                                    <a t-attf-href="/shop/#{slug(product)}" class="d-block pt-4 pb-2 px-3 text-center">
+                                        <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
+                                             class="img-fluid" style="height: 140px; object-fit: contain;" alt="Produit"/>
+                                    </a>
+
+                                    <!-- Infos Produit -->
+                                    <div class="card-body d-flex flex-column pt-1">
+                                        <a t-attf-href="/shop/#{slug(product)}" class="text-decoration-none">
+                                            <h6 class="fw-bold text-dark mb-1 text-truncate" t-field="product.name" style="font-size: 0.95rem;"/>
+                                        </a>
+                                        <div class="text-muted mb-3 text-truncate" style="font-size: 0.8rem;">
+                                            Produit parapharmacie
+                                        </div>
+                                        
+                                        <div class="mt-auto d-flex justify-content-between align-items-end">
+                                            <div class="lh-1">
+                                                <div class="fw-bold mb-1" style="color: #2E7D32; font-size: 1.15rem;">
+                                                    <span t-field="product.list_price" t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                </div>
+                                                <div class="text-muted text-decoration-line-through" style="font-size: 0.8rem;">
+                                                    <span t-field="product.compare_list_price" t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Bouton Panier (Rond vert) -->
+                                            <a t-attf-href="/shop/cart/update?product_id=#{product.product_variant_id.id}&amp;add_qty=1"
+                                               class="btn rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                                               style="width: 36px; height: 36px; background-color: #2E7D32; color: white;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-if="not offers">
+                            <div class="col-12 text-muted fst-italic">
+                                Aucune offre spéciale en cours.
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. BANDEAU CTA -->
+            <section class="py-5">
+                <div class="container">
+                    <div class="p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center position-relative overflow-hidden"
+                         style="background: linear-gradient(135deg, #5CA383 0%, #2E7D32 100%); border-radius: 20px;">
+                        
+                        <div class="z-1 text-white text-center text-md-start mb-4 mb-md-0">
+                            <h4 class="fw-bold mb-2" style="font-family: 'Poppins', sans-serif;">Ensemble, bâtissons un système de santé fort et durable en Afrique.</h4>
+                            <p class="mb-0" style="opacity: 0.9; max-width: 500px; font-size: 0.95rem;">
+                                Des produits de qualité, sélectionnés avec soin pour votre bien-être au quotidien.
+                            </p>
+                        </div>
+                        <div class="z-1">
+                            <a href="/produits" class="btn fw-bold px-4 py-2"
+                               style="background-color: #FFFFFF; color: #111827; border-radius: 8px;">
+                                Découvrir nos produits <i class="fa fa-chevron-right ms-2 text-muted" style="font-size: 0.8rem;"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+        </t>
+    </template>
+
+</odoo>

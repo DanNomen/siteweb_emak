@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        ============================================================
+        Emakhealthcare – Bandeau d'avantages clients (Marquee v2)
+        ============================================================
+        Positionnement : juste SOUS la section hero carousel
+        de la page d'accueil, à l'intérieur du div#wrap.
+
+        Pour désactiver : archiver la vue emakhc_inject_marquee_banner.
+        ============================================================
+    -->
+
+    <!-- ── 1. Template du bandeau ── -->
+    <template id="emakhc_marquee_banner" name="Emakhealthcare – Bandeau avantages clients">
+        <t t-if="website and website.name == 'Emakhealthcare'">
+            <div class="emakhc-marquee-bar" role="marquee" aria-label="Avantages clients Emakhealthcare">
+                <div class="emakhc-marquee-track">
+
+                    <!-- Copie 1 -->
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">🚚</span>
+                        <span class="emakhc-mi-text">Livraison rapide et gratuite</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">💳</span>
+                        <span class="emakhc-mi-text">Paiement à la livraison ou via Sarali</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">👷</span>
+                        <span class="emakhc-mi-text">Ingénieurs qualifiés</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">🛠</span>
+                        <span class="emakhc-mi-text">SAV 24/24h</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <!-- Copie 2 (seamless loop) -->
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">🚚</span>
+                        <span class="emakhc-mi-text">Livraison rapide et gratuite</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">💳</span>
+                        <span class="emakhc-mi-text">Paiement à la livraison ou via Sarali</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">👷</span>
+                        <span class="emakhc-mi-text">Ingénieurs qualifiés</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                    <span class="emakhc-marquee-item">
+                        <span class="emakhc-mi-icon">🛠</span>
+                        <span class="emakhc-mi-text">SAV 24/24h</span>
+                    </span>
+                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ── 2. Injection : juste après la section hero carousel ── -->
+    <template id="emakhc_inject_marquee_banner"
+              name="Emakhealthcare – Injection bandeau avantages"
+              inherit_id="emakhealthcare_website_theme.homepage_content">
+        <!--
+            On cible la section hero (class emakhc-hero-section) et on ajoute
+            le bandeau APRÈS elle, à l'intérieur du div#wrap.
+        -->
+        <xpath expr="//section[contains(@class,'emakhc-hero-section')]" position="after">
+            <t t-call="emakhealthcare_website_theme.emakhc_marquee_banner"/>
+        </xpath>
+    </template>
+
+    <!-- ── 3. Assets (Odoo 18 ir.asset) ── -->
+    <record id="emakhc_marquee_css" model="ir.asset">
+        <field name="name">Emakhealthcare – Marquee Banner CSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">emakhealthcare_website_theme/static/src/css/marquee_banner.css</field>
+    </record>
+
+    <record id="emakhc_marquee_js" model="ir.asset">
+        <field name="name">Emakhealthcare – Marquee Banner JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">emakhealthcare_website_theme/static/src/js/marquee_banner.js</field>
+    </record>
+
+    <!-- ── Mobile Design CSS ── -->
+    <record id="emakhc_mobile_css" model="ir.asset">
+        <field name="name">Emakhealthcare – Mobile Design CSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">emakhealthcare_website_theme/static/src/css/mobile.css</field>
+    </record>
+
+    <!-- ── Mobile Design JS (bottom nav, touch feedback…) ── -->
+    <record id="emakhc_mobile_js" model="ir.asset">
+        <field name="name">Emakhealthcare – Mobile Design JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">emakhealthcare_website_theme/static/src/js/mobile.js</field>
+    </record>
+
+</odoo>

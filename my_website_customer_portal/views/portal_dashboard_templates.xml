@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_dashboard" name="Tableau de bord Client">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Tableau de bord</t>
+            </t>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white pb-0 border-0">
+                            <h5 class="mb-0 text-success">Mes achats sur les 12 derniers mois</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="dashboardChart" width="400" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Include Chart.js (Odoo has it in its core web assets, usually already loaded, but we inject the script here) -->
+            <script type="text/javascript" src="/web/static/lib/Chart/Chart.js"></script>
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    var ctx = document.getElementById('dashboardChart').getContext('2d');
+                    var chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: <t t-out="dashboard_labels"/>,
+                            datasets: [{
+                                label: 'Achats (CFA)',
+                                data: <t t-out="dashboard_data"/>,
+                                backgroundColor: 'rgba(46, 125, 50, 0.6)',
+                                borderColor: 'rgba(46, 125, 50, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                yAxes: [{
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                }]
+                            }
+                        }
+                    });
+                });
+            </script>
+        </t>
+    </template>
+</odoo>

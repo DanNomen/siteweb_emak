@@ -1,0 +1,201 @@
+/* ============================================================
+ * Emakhealthcare – Trust Benefits Marquee (v2 – animée)
+ * ============================================================ */
+
+/* ─── Bandeau principal ─── */
+.emakhc-marquee-bar {
+    background: linear-gradient(90deg, #1B5E20 0%, #2E7D32 40%, #388E3C 60%, #1B5E20 100%);
+    color: #FFFFFF;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    font-family: 'Poppins', 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    /* Fade effet sur les bords */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    /* Animation d'entrée */
+    animation: emakhc-bar-fadein 0.6s ease-out both;
+}
+
+/* Ligne brillante animée sur le dessus du bandeau */
+.emakhc-marquee-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: emakhc-shimmer 3s linear infinite;
+    z-index: 2;
+}
+
+/* ─── Piste de défilement ─── */
+.emakhc-marquee-track {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    animation: emakhc-scroll 32s linear infinite;
+    will-change: transform;
+}
+
+.emakhc-marquee-track:hover {
+    animation-play-state: paused;
+}
+
+/* ─── Item individuel ─── */
+.emakhc-marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 28px;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+}
+
+.emakhc-marquee-item:hover {
+    opacity: 0.85;
+}
+
+/* Icône avec animation de pulse légère */
+.emakhc-mi-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-block;
+    animation: emakhc-icon-pulse 4s ease-in-out infinite;
+}
+
+/* Décalage de l'animation pour chaque icône */
+.emakhc-marquee-item:nth-child(5n+1) .emakhc-mi-icon  { animation-delay: 0s; }
+.emakhc-marquee-item:nth-child(5n+3) .emakhc-mi-icon  { animation-delay: 1s; }
+.emakhc-marquee-item:nth-child(5n+5) .emakhc-mi-icon  { animation-delay: 2s; }
+.emakhc-marquee-item:nth-child(5n+7) .emakhc-mi-icon  { animation-delay: 3s; }
+
+.emakhc-mi-text {
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* ─── Séparateur ─── */
+.emakhc-marquee-sep {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 1.1rem;
+    padding: 0 2px;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+/* ─── Keyframes ─── */
+@keyframes emakhc-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+@keyframes emakhc-bar-fadein {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emakhc-shimmer {
+    0%   { left: -60%; }
+    100% { left: 160%; }
+}
+
+@keyframes emakhc-icon-pulse {
+    0%, 90%, 100% { transform: scale(1); }
+    95%           { transform: scale(1.18); }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 575.98px) {
+    .emakhc-marquee-bar {
+        font-size: 0.78rem;
+        height: 40px;
+    }
+    .emakhc-marquee-item {
+        padding: 0 18px;
+        gap: 6px;
+    }
+}
+
+/* ============================================================
+ * Hero Carousel Animations
+ * ============================================================ */
+
+/* On masque les éléments à animer par défaut */
+.emakhc-hero-slide .emakhc-animate-fadeup {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* Au moment où le slide devient actif, on lance l'animation */
+.carousel-item.active .emakhc-animate-fadeup {
+    animation: emakhc-fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.carousel-item.active .emakhc-animate-zoomin {
+    animation: emakhc-zoomInBg 15s linear forwards;
+}
+
+/* Délais en cascade pour un bel effet */
+.carousel-item.active .delay-1 { animation-delay: 0.1s; }
+.carousel-item.active .delay-2 { animation-delay: 0.3s; }
+.carousel-item.active .delay-3 { animation-delay: 0.5s; }
+
+@keyframes emakhc-fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emakhc-zoomInBg {
+    from { transform: scale(1); }
+    to   { transform: scale(1.08); }
+}
+
+/* ============================================================
+ * Personnalisation : Prix en évidence et Champ de quantité
+ * ============================================================ */
+
+/* Prix sur la page produit */
+.oe_price {
+    font-size: 2.2rem !important; /* Plus grand */
+    font-weight: 900 !important; /* Très gras */
+    color: #2E7D32 !important; /* Couleur verte de la marque */
+}
+
+/* Prix dans le panier */
+div[name="website_sale_cart_line_price"] span {
+    font-size: 1.5rem !important; /* Plus grand */
+    font-weight: 800 !important; /* Gras */
+    color: #2E7D32 !important;
+}
+
+/* Champ de quantité cliquable et modifiable */
+.css_quantity input.js_quantity,
+.css_quantity input.quantity,
+.css_quantity input[name="add_qty"] {
+    pointer-events: auto !important; /* Forcer le clic */
+    user-select: auto !important; /* Forcer la sélection */
+    cursor: text !important; /* Afficher le curseur de texte */
+    background-color: #ffffff !important; /* Fond blanc pour montrer que c'est un champ */
+    border: 1px solid #ced4da !important; /* Bordures visibles */
+    font-weight: bold !important;
+    min-width: 50px !important;
+    color: #111827 !important;
+    text-align: center !important;
+}
+.css_quantity input.js_quantity:focus,
+.css_quantity input.quantity:focus,
+.css_quantity input[name="add_qty"]:focus {
+    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25) !important;
+    border-color: #2E7D32 !important;
+    outline: none !important;
+}

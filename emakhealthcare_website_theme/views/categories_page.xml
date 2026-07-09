@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="categories_page" name="Emakhealthcare - Toutes les catégories">
+        <t t-call="website.layout">
+            <div id="wrap" style="background-color: #F8F9FA; min-height: 80vh; font-family: 'Inter', sans-serif;">
+
+                <style>
+                    .cat-card {
+                        background: #fff;
+                        border-radius: 16px;
+                        border: 1px solid #E5E7EB;
+                        transition: box-shadow 0.2s ease, transform 0.2s ease;
+                        cursor: pointer;
+                        text-decoration: none;
+                        display: block;
+                    }
+                    .cat-card:hover {
+                        box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+                        transform: translateY(-4px);
+                        border-color: #38A935;
+                    }
+                    .cat-icon {
+                        width: 64px; height: 64px; border-radius: 50%;
+                        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+                        display: flex; align-items: center; justify-content: center;
+                        margin: 0 auto 12px;
+                    }
+                    .cat-count {
+                        display: inline-block;
+                        background: linear-gradient(90deg, #38A935, #93C123);
+                        color: white; border-radius: 20px;
+                        padding: 2px 10px; font-size: 0.75rem; font-weight: 600;
+                    }
+                </style>
+
+                <!-- Bannière -->
+                <div class="py-5 mb-4" style="background: linear-gradient(90deg, #38A935, #93C123);">
+                    <div class="container text-center text-white">
+                        <h2 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;">
+                            <i class="fa fa-th-large me-2"></i>Toutes les catégories
+                        </h2>
+                        <p class="mb-3 opacity-75">Explorez nos produits par catégorie</p>
+                        <a href="/produits" class="btn btn-outline-light btn-sm">
+                            <i class="fa fa-list me-1"></i>Voir tous les produits
+                        </a>
+                    </div>
+                </div>
+
+                <div class="container pb-5">
+                    <t t-if="all_categories">
+                        <div class="row g-4">
+                            <t t-foreach="all_categories" t-as="cat">
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <a t-attf-href="/produits?categ_id=#{cat['id']}" class="cat-card p-4 text-center text-decoration-none">
+                                        <div class="cat-icon">
+                                            <i class="fa fa-tag" style="font-size: 1.6rem; color: #2E7D32;"></i>
+                                        </div>
+                                        <div class="fw-bold text-dark mb-2" style="font-size: 0.95rem;">
+                                            <t t-esc="cat['name']"/>
+                                        </div>
+                                        <span class="cat-count">
+                                            <t t-esc="cat['product_count']"/> article<t t-if="cat['product_count'] != 1">s</t>
+                                        </span>
+                                    </a>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div class="alert alert-info text-center mt-5">
+                            <i class="fa fa-info-circle me-2"></i>Aucune catégorie disponible.
+                        </div>
+                    </t>
+                </div>
+
+            </div>
+        </t>
+    </template>
+</odoo>

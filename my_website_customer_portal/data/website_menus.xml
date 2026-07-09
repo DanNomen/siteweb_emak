@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- We use noupdate="1" so we don't overwrite if the user edits them in the backend -->
+        
+        <!-- Find the main website menu for Emakhealthcare (website 2) -->
+        <!-- But it's safer to just create a new menu without a website_id so it applies to all or the default -->
+        <!-- Or we just rely on standard Odoo menu linking. -->
+        
+        <!-- Menu principal ESPACE CLIENTS -->
+        <record id="menu_espace_clients_root" model="website.menu">
+            <field name="name">ESPACE CLIENTS</field>
+            <field name="url">/my</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">60</field>
+            <!-- Visible for Portal and Internal User -->
+            <field name="group_ids" eval="[(6, 0, [ref('base.group_portal'), ref('base.group_user')])]"/>
+        </record>
+
+        <!-- Sous-menu : Tableau de bord -->
+        <record id="menu_espace_clients_dashboard" model="website.menu">
+            <field name="name">Tableau de bord</field>
+            <field name="url">/my/dashboard</field>
+            <field name="parent_id" ref="my_website_customer_portal.menu_espace_clients_root"/>
+            <field name="sequence" type="int">10</field>
+        </record>
+
+        <!-- Sous-menu : Mes Factures -->
+        <record id="menu_espace_clients_invoices" model="website.menu">
+            <field name="name">Mes Factures</field>
+            <field name="url">/my/invoices</field>
+            <field name="parent_id" ref="my_website_customer_portal.menu_espace_clients_root"/>
+            <field name="sequence" type="int">20</field>
+        </record>
+
+        <!-- Sous-menu : Vos Commandes -->
+        <record id="menu_espace_clients_orders" model="website.menu">
+            <field name="name">Vos commandes</field>
+            <field name="url">/my/orders</field>
+            <field name="parent_id" ref="my_website_customer_portal.menu_espace_clients_root"/>
+            <field name="sequence" type="int">30</field>
+        </record>
+    </data>
+</odoo>

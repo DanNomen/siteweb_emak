@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Rendre le champ téléphone obligatoire dans le formulaire d'adresse du checkout -->
+    <template id="address_phone_required" inherit_id="website_sale.address" name="Téléphone obligatoire">
+        <xpath expr="//input[@name='phone']" position="attributes">
+            <attribute name="required">required</attribute>
+        </xpath>
+    </template>
+
+
+    <template id="confirmation_create_account_banner"
+              inherit_id="website_sale.confirmation"
+              name="Emakhealthcare - Proposition de création de compte">
+        <xpath expr="//div[@id='oe_structure_website_sale_confirmation_2']" position="after">
+            <div class="container my-4"
+                 t-if="order and order.partner_id and not order.partner_id.user_ids and website.is_public_user()">
+                <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-3"
+                     role="alert">
+                    <div>
+                        <strong>Créez votre espace client</strong><br/>
+                        Enregistrez vos coordonnées et votre adresse de livraison
+                        pour vos prochaines commandes.
+                    </div>
+                    <a t-attf-href="/mon-espace/creer-compte?order_id=#{order.id}&amp;access_token=#{order.access_token}"
+                       class="btn btn-primary">
+                        Créer mon compte
+                    </a>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!--
+        Formulaire de création de compte (identifiant libre + mot de passe).
+        Page autonome, indépendante du processus de commande standard.
+    -->
+    <template id="create_account_page" name="Emakhealthcare - Créer mon espace client">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <div class="container my-5" style="max-width: 480px;">
+                    <h1 class="mb-4">Mon espace client</h1>
+
+                    <t t-if="already_has_account">
+                        <div class="alert alert-info">
+                            Un compte existe déjà avec ces informations.
+                        </div>
+                        <a href="/web/login" class="btn btn-primary">Me connecter</a>
+                    </t>
+
+                    <t t-if="not already_has_account">
+                        <t t-if="success">
+                            <div class="alert alert-success">
+                                Votre compte a bien été créé. Vous êtes maintenant connecté(e).
+                            </div>
+                            <a href="/my" class="btn btn-primary">Accéder à mon espace client</a>
+                        </t>
+
+                        <t t-if="not success">
+                            <p class="text-muted">
+                                Commande <strong t-esc="order.name"/> — vos coordonnées
+                                (nom, adresse de livraison, e-mail, téléphone) sont déjà
+                                enregistrées. Choisissez simplement un identifiant et un
+                                mot de passe pour les retrouver lors de vos prochaines
+                                commandes.
+                            </p>
+
+                            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+
+                            <form method="post"
+                                  t-attf-action="/mon-espace/creer-compte?order_id=#{order.id}&amp;access_token=#{order.access_token}">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Nom</label>
+                                    <input type="text" class="form-control"
+                                           t-att-value="order.partner_id.name" disabled="disabled"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">E-mail</label>
+                                    <input type="text" class="form-control"
+                                           t-att-value="order.partner_id.email" disabled="disabled"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="emk_login">Identifiant</label>
+                                    <input type="text" id="emk_login" name="login" class="form-control"
+                                           required="required" minlength="4"
+                                           placeholder="ex: adupont"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="emk_password">Mot de passe</label>
+                                    <input type="password" id="emk_password" name="password"
+                                           class="form-control" required="required" minlength="6"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="emk_password2">Confirmer le mot de passe</label>
+                                    <input type="password" id="emk_password2" name="password2"
+                                           class="form-control" required="required" minlength="6"/>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">Créer mon compte</button>
+                                <a href="/shop" class="btn btn-link">Non merci, continuer sans compte</a>
+                            </form>
+                        </t>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

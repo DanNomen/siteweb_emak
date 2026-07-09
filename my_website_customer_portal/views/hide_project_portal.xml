@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Désactiver l'entrée "Projets / Tâches" dans l'espace client portail de manière directe -->
+    <record id="project.portal_my_home" model="ir.ui.view">
+        <field name="active" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,520 @@
+/* =============================================================
+   EMAKHEALTHCARE — DESIGN MOBILE
+   Version: 1.0.0
+   Actif uniquement sur écrans ≤ 768px (smartphones)
+   ============================================================= */
+
+/* ── 1. VARIABLES & RESET ── */
+:root {
+    --emak-green:      #2E7D32;
+    --emak-light:      #8BC34A;
+    --emak-bg:         #F4F6F8;
+    --emak-white:      #FFFFFF;
+    --emak-text:       #1A1A2E;
+    --emak-muted:      #6B7280;
+    --emak-red:        #D32F2F;
+    --emak-nav-h:      64px;
+    --emak-topbar-h:   56px;
+}
+
+/* =============================================================
+   2. HEADER MOBILE : simplifié, compact, collant en haut
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Cache la top-bar verte (email/tel) et le menu desktop collapse */
+    body.website .emakhc-topbar,
+    body.website header .d-none.d-md-flex,
+    body.website header .navbar-collapse {
+        display: none !important;
+    }
+
+    /* Rend le header compact */
+    body.website header.sticky-top {
+        box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
+        padding: 0 !important;
+    }
+
+    body.website header .navbar {
+        padding-top: 0.6rem !important;
+        padding-bottom: 0.6rem !important;
+        min-height: var(--emak-topbar-h);
+    }
+
+    /* Logo légèrement plus petit */
+    body.website header .navbar-brand img {
+        height: 36px !important;
+    }
+
+    /* Zone droite du header (loupe + panier) */
+    body.website header .d-flex.align-items-center.gap-4 {
+        gap: 1rem !important;
+    }
+
+    /* Cacher le bouton hamburger (on a la bottom nav) */
+    body.website header .navbar-toggler,
+    header .navbar-toggler,
+    .navbar-toggler {
+        display: none !important;
+    }
+
+    /* Cacher le montant du panier en texte sur mobile */
+    body.website header .my_cart_quantity + div {
+        display: none !important;
+    }
+}
+
+/* =============================================================
+   3. BARRE DE NAVIGATION BAS D'ÉCRAN (Bottom Tab Bar)
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Espace en bas pour ne pas cacher le contenu */
+    body.website #wrapwrap,
+    body.website #wrap {
+        padding-bottom: var(--emak-nav-h) !important;
+    }
+
+    /* La barre elle-même */
+    #emakhc-mobile-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 2000;
+        background: var(--emak-white);
+        border-top: 1px solid #E5E7EB;
+        box-shadow: 0 -4px 20px rgba(0,0,0,.10);
+        height: var(--emak-nav-h);
+        align-items: stretch;
+    }
+
+    #emakhc-mobile-nav .emakhc-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        text-decoration: none;
+        color: var(--emak-muted);
+        font-size: 0.62rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        transition: color .2s, background .2s;
+        position: relative;
+        padding: 4px 0;
+        border: none;
+        background: none;
+    }
+
+    #emakhc-mobile-nav .emakhc-nav-item:hover,
+    #emakhc-mobile-nav .emakhc-nav-item.active {
+        color: var(--emak-green);
+    }
+
+    #emakhc-mobile-nav .emakhc-nav-item.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 20%;
+        right: 20%;
+        height: 3px;
+        background: var(--emak-green);
+        border-radius: 0 0 4px 4px;
+    }
+
+    #emakhc-mobile-nav .emakhc-nav-item svg,
+    #emakhc-mobile-nav .emakhc-nav-item i {
+        font-size: 1.25rem;
+        width: 22px;
+        height: 22px;
+    }
+
+    /* Badge panier dans la bottom nav */
+    #emakhc-mobile-nav .emakhc-cart-badge {
+        position: absolute;
+        top: 6px;
+        left: calc(50% + 4px);
+        background: var(--emak-light);
+        color: white;
+        font-size: 0.55rem;
+        font-weight: 700;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+}
+
+/* Sur écrans larges, cacher complètement la bottom nav */
+@media (min-width: 769px) {
+    #emakhc-mobile-nav {
+        display: none !important;
+    }
+}
+
+/* =============================================================
+   4. HERO SECTION MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    .emakhc-hero-section {
+        padding: 0.75rem 0 0 !important;
+    }
+
+    .emakhc-hero-section .container {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /* Slide hero : fond plein, sans image droite */
+    .emakhc-hero-slide {
+        border-radius: 18px !important;
+        padding: 1.75rem 1.5rem 2rem !important;
+        min-height: 200px !important;
+    }
+
+    /* Masquer la photo droite sur mobile */
+    .emakhc-hero-slide .d-none.d-lg-block {
+        display: none !important;
+    }
+
+    /* Titre plus petit */
+    .emakhc-hero-slide h1 {
+        font-size: 1.6rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .emakhc-hero-slide p {
+        font-size: 0.85rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* Champ de recherche dans le hero */
+    .emakhc-hero-slide form.d-flex {
+        max-width: 100% !important;
+        margin-bottom: 0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 16px rgba(46,125,50,.15) !important;
+    }
+
+    .emakhc-hero-slide form input {
+        font-size: 0.85rem !important;
+        padding: 0.55rem 0.75rem !important;
+    }
+
+    /* Indicateurs (points) */
+    .emakhc-hero-section .carousel-indicators {
+        bottom: -12px;
+    }
+
+    .emakhc-hero-section .carousel-indicators button {
+        width: 6px !important;
+        height: 6px !important;
+        border-radius: 50% !important;
+        background-color: #C8E6C9 !important;
+        border: none !important;
+        margin: 0 3px !important;
+    }
+
+    .emakhc-hero-section .carousel-indicators .active {
+        background-color: var(--emak-green) !important;
+        width: 18px !important;
+        border-radius: 3px !important;
+    }
+
+    /* Cacher les flèches de navigation du carousel */
+    .emakhc-hero-section .carousel-control-prev,
+    .emakhc-hero-section .carousel-control-next {
+        display: none !important;
+    }
+}
+
+/* =============================================================
+   5. BANDEAUX DE CONFIANCE (icônes livraison / paiement / qualité)
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Section trust icons : scroll horizontal */
+    .emakhc-trust-row {
+        display: flex;
+        overflow-x: auto;
+        gap: 12px;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .emakhc-trust-row::-webkit-scrollbar { display: none; }
+
+    .emakhc-trust-row .emakhc-trust-item {
+        flex: 0 0 auto;
+        min-width: 100px;
+        text-align: center;
+        padding: 12px 8px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+}
+
+/* =============================================================
+   6. CATÉGORIES POPULAIRES MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* En-tête de section */
+    section .d-flex.justify-content-between.align-items-end.mb-3 h5 {
+        font-size: 1rem !important;
+    }
+
+    section .d-flex.justify-content-between.align-items-end.mb-3 a {
+        font-size: 0.78rem !important;
+    }
+
+    /* Grille catégories : 3 colonnes fixes */
+    section .row.g-3 > .col-6.col-md-4.col-lg-2 {
+        width: 33.33% !important;
+        flex: 0 0 33.33% !important;
+        max-width: 33.33% !important;
+        padding: 4px !important;
+    }
+
+    /* Carte catégorie */
+    section .row.g-3 > .col-6.col-md-4.col-lg-2 .card {
+        border-radius: 12px !important;
+        padding: 12px 6px !important;
+    }
+
+    /* Icône catégorie */
+    section .row.g-3 > .col-6.col-md-4.col-lg-2 .card div[style*="50px"] {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    section .row.g-3 > .col-6.col-md-4.col-lg-2 .card .fa-tag {
+        font-size: 1rem !important;
+    }
+
+    /* Nom de catégorie */
+    section .row.g-3 > .col-6.col-md-4.col-lg-2 .card .fw-bold {
+        font-size: 0.72rem !important;
+        line-height: 1.3 !important;
+    }
+}
+
+/* =============================================================
+   7. OFFRES SPÉCIALES MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Scroll horizontal pour les offres */
+    .emakhc-offers-row-mobile {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 12px !important;
+        padding-bottom: 12px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .emakhc-offers-row-mobile::-webkit-scrollbar { display: none; }
+
+    /* Largeur fixe de chaque carte d'offre */
+    .emakhc-offers-row-mobile > .col-12.col-sm-6.col-lg-3 {
+        flex: 0 0 160px !important;
+        width: 160px !important;
+        max-width: 160px !important;
+        padding: 0 !important;
+    }
+
+    /* Carte d'offre */
+    .emakhc-offers-row-mobile > .col-12.col-sm-6.col-lg-3 .card {
+        border-radius: 14px !important;
+        height: auto !important;
+    }
+
+    /* Image produit dans les offres */
+    .emakhc-offers-row-mobile > .col-12.col-sm-6.col-lg-3 .card img {
+        height: 100px !important;
+    }
+
+    /* Nom du produit */
+    .emakhc-offers-row-mobile > .col-12.col-sm-6.col-lg-3 .card h6 {
+        font-size: 0.78rem !important;
+        white-space: normal !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Prix */
+    .emakhc-offers-row-mobile > .col-12.col-sm-6.col-lg-3 .card .fw-bold[style*="1.15rem"] {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* =============================================================
+   8. BANDEAU CTA MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    section .p-4.p-md-5 {
+        border-radius: 16px !important;
+        padding: 1.5rem 1.25rem !important;
+        text-align: center !important;
+    }
+
+    section .p-4.p-md-5 h4 {
+        font-size: 1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    section .p-4.p-md-5 p {
+        font-size: 0.82rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    section .p-4.p-md-5 a.btn {
+        font-size: 0.82rem !important;
+        padding: 0.55rem 1.25rem !important;
+    }
+}
+
+/* =============================================================
+   9. PAGES PRODUITS & PROMOTIONS MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Grille produits : 2 colonnes */
+    .col-6.col-md-4.col-lg-3 {
+        width: 50% !important;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    /* Carte produit */
+    .col-6.col-md-4.col-lg-3 .card {
+        border-radius: 12px !important;
+    }
+
+    /* Image produit */
+    .col-6.col-md-4.col-lg-3 .card img {
+        height: 120px !important;
+    }
+
+    /* Nom produit */
+    .col-6.col-md-4.col-lg-3 .card .fw-bold,
+    .col-6.col-md-4.col-lg-3 .card h6 {
+        font-size: 0.78rem !important;
+    }
+
+    /* Bouton ajouter au panier */
+    .col-6.col-md-4.col-lg-3 .card button[type="submit"],
+    .col-6.col-md-4.col-lg-3 .card .btn-promo-details {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.5rem !important;
+    }
+
+    /* Widget quantité + / - */
+    .col-6.col-md-4.col-lg-3 .css_quantity {
+        max-width: 100% !important;
+    }
+
+    .col-6.col-md-4.col-lg-3 .css_quantity input {
+        font-size: 0.85rem !important;
+        padding: 0.3rem !important;
+    }
+
+    /* Filtres en haut des pages */
+    .emakhc-filters-bar {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+    }
+
+    .emakhc-filters-bar::-webkit-scrollbar { display: none; }
+}
+
+/* =============================================================
+   10. FOOTER MOBILE : simplifié
+   ============================================================= */
+@media (max-width: 768px) {
+
+    footer {
+        padding-bottom: calc(var(--emak-nav-h) + 12px) !important;
+        font-size: 0.82rem !important;
+    }
+
+    footer .row > div {
+        margin-bottom: 1.25rem !important;
+    }
+}
+
+/* =============================================================
+   11. ANIMATIONS LÉGÈRES MOBILE
+   ============================================================= */
+@media (max-width: 768px) {
+
+    /* Désactiver les animations lourdes pour de meilleures performances */
+    .emakhc-animate-zoomin,
+    .emakhc-animate-fadeup {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    /* Transition douce sur les cartes */
+    .card {
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .card:active {
+        transform: scale(.97);
+    }
+}
+
+/* =============================================================
+   12. BARRE DE RECHERCHE FLOTTANTE (modal search)
+   ============================================================= */
+@media (max-width: 768px) {
+
+    .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .modal-content {
+        border-radius: 0 0 20px 20px !important;
+        border: none !important;
+    }
+
+    .modal-header {
+        padding: 1rem 1.25rem 0.5rem !important;
+        border: none !important;
+    }
+
+    .modal-body input[type="search"],
+    .modal-body input[type="text"] {
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.95rem !important;
+        border: 2px solid #E5E7EB !important;
+        box-shadow: none !important;
+    }
+
+    .modal-body input:focus {
+        border-color: var(--emak-green) !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(46,125,50,.12) !important;
+    }
+}
