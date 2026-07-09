@@ -97,50 +97,55 @@
               </a>
 
               <!-- Panier -->
-              <t t-set="sale_order_id" t-value="request.session.get('sale_order_id')" />
-              <t t-set="my_sale_order" t-value="request.env['sale.order'].sudo().browse(sale_order_id).exists() if sale_order_id else None" />
-              <t t-set="website_sale_cart_quantity" t-value="request.session.get('website_sale_cart_quantity', my_sale_order.cart_quantity if my_sale_order else 0)" />
-              <t t-set="cart_amount" t-value="my_sale_order.amount_total if my_sale_order else 0.0" />
-              <a href="/shop/cart" class="d-flex align-items-center gap-2 text-decoration-none" style="color: #2E7D32;">
-                <div class="position-relative">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill my_cart_quantity" style="font-size: 0.6rem; background-color: #8BC34A;" t-esc="website_sale_cart_quantity">3</span>
-                </div>
-                <div class="d-flex flex-column lh-1 d-none d-lg-flex">
-                   <span class="fw-bold" style="font-size: 0.8rem;"><t t-esc="cart_amount" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/></span>
-                </div>
-              </a>
-
-              <!-- Compte Utilisateur -->
-              <t t-if="request.session.uid">
-                <t t-set="my_user" t-value="request.env['res.users'].sudo().browse(request.session.uid)" />
-                <div class="dropdown">
-                  <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
-                      <t t-esc="my_user.name[0].upper() if my_user.name else ''"/>
-                    </div>
-                    <div class="d-flex flex-column lh-1 d-none d-lg-flex pe-2">
-                      <span class="text-muted" style="font-size: 0.75rem;">Bonjour,</span>
-                      <span class="fw-semibold" style="font-size: 0.85rem;"><t t-esc="my_user.name.split()[0] if my_user.name else ''"/> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
-                    </div>
-                  </a>
-                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute mt-2">
-                    <li><a class="dropdown-item py-2" href="/my"><i class="fa fa-user me-2"></i>Mon compte</a></li>
-                    <li><hr class="dropdown-divider"/></li>
-                    <li><a class="dropdown-item py-2 text-danger" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Se déconnecter</a></li>
-                  </ul>
-                </div>
-              </t>
-              <t t-else="">
-                <a href="/web/login" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
-                  <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
-                    <i class="fa fa-user"></i>
+              <t t-nocache="The cart and amount must not be cached">
+                <t t-set="sale_order_id" t-value="request.session.get('sale_order_id')" />
+                <t t-set="my_sale_order" t-value="request.env['sale.order'].sudo().browse(sale_order_id).exists() if sale_order_id else None" />
+                <t t-set="website_sale_cart_quantity" t-value="request.session.get('website_sale_cart_quantity', my_sale_order.cart_quantity if my_sale_order else 0)" />
+                <t t-set="cart_amount" t-value="my_sale_order.amount_total if my_sale_order else 0.0" />
+                <a href="/shop/cart" class="d-flex align-items-center gap-2 text-decoration-none" style="color: #2E7D32;">
+                  <div class="position-relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill my_cart_quantity" style="font-size: 0.6rem; background-color: #8BC34A;" t-esc="website_sale_cart_quantity">3</span>
                   </div>
                   <div class="d-flex flex-column lh-1 d-none d-lg-flex">
-                    <span class="text-muted" style="font-size: 0.75rem;">Mon compte</span>
-                    <span class="fw-semibold" style="font-size: 0.85rem;">Se connecter</span>
+                     <span class="fw-bold" style="font-size: 0.8rem;"><t t-esc="cart_amount" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/></span>
                   </div>
                 </a>
+              </t>
+
+              <!-- Compte Utilisateur -->
+              <t t-nocache="The user block must not be cached">
+                <t t-if="request.session.uid">
+                  <t t-set="my_user" t-value="request.env['res.users'].sudo().browse(request.session.uid)" />
+                  <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                      <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 35px; height: 35px; font-size: 1rem;">
+                        <t t-esc="my_user.name[0].upper() if my_user.name else ''"/>
+                      </div>
+                      <div class="d-flex flex-column lh-1 d-none d-lg-flex pe-2">
+                        <span class="text-muted" style="font-size: 0.75rem;">Bonjour,</span>
+                        <span class="fw-semibold" style="font-size: 0.85rem;"><t t-esc="my_user.name.split()[0] if my_user.name else ''"/> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
+                      </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute mt-2">
+                      <li><a class="dropdown-item py-2" href="/my/home"><i class="fa fa-user me-2"></i>Mon Profil</a></li>
+                      <li><a class="dropdown-item py-2" href="/client_orders/all"><i class="fa fa-shopping-bag me-2"></i>Mes Commandes</a></li>
+                      <li><hr class="dropdown-divider"/></li>
+                      <li><a class="dropdown-item py-2 text-danger" href="/web/session/logout?redirect=/"><i class="fa fa-sign-out me-2"></i>Déconnexion</a></li>
+                    </ul>
+                  </div>
+                </t>
+                <t t-else="">
+                  <a href="/web/login" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted" style="width: 35px; height: 35px;">
+                      <i class="fa fa-user"></i>
+                    </div>
+                    <div class="d-flex flex-column lh-1 d-none d-lg-flex">
+                      <span class="text-muted" style="font-size: 0.75rem;">Bienvenue</span>
+                      <span class="fw-semibold" style="font-size: 0.85rem;">Se connecter</span>
+                    </div>
+                  </a>
+                </t>
               </t>
             </div>
 
