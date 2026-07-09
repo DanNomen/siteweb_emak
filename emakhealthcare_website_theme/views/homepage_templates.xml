@@ -12,12 +12,12 @@
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
             <div id="wrap" class="oe_emakhc" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif;">
 
-                <!-- 1. HERO CAROUSEL : Diaporama automatique toutes les 30s -->
+                <!-- 1. HERO CAROUSEL : Diaporama automatique toutes les 5s -->
                 <section class="py-4 emakhc-hero-section">
                     <div class="container">
                         <div id="emakhcHeroCarousel" class="carousel slide emakhc-hero-carousel"
                              data-bs-ride="carousel"
-                             data-bs-interval="30000">
+                             data-bs-interval="5000">
 
                             <!-- Indicateurs (points de navigation) -->
                             <div class="carousel-indicators">
