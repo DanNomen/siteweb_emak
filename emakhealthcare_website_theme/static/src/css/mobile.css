@@ -58,6 +58,14 @@
         display: none !important;
     }
 
+    /* Cacher la bottom nav bar standard de Odoo 18 (pour afficher la notre) */
+    .o_header_mobile_bottom_nav,
+    .o_header_mobile_bottom_nav_container,
+    .o_header_sales_four_bot,
+    #bottom {
+        display: none !important;
+    }
+
     /* Cacher le montant du panier en texte sur mobile */
     body.website header .my_cart_quantity + div {
         display: none !important;

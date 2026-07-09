@@ -179,18 +179,16 @@
                                     qtySelector.dataset.productId = productId;
                                 }, function(reason) {
                                     btn.disabled = false;
-                                    alert(typeof reason === 'string' ? reason : "Impossible d'ajouter ce produit au panier.");
+                                    console.warn(typeof reason === 'string' ? reason : "Impossible d'ajouter ce produit au panier.");
                                 });
                             });
                         });
 
-                        // Bouton +
                         document.querySelectorAll('.qty-plus').forEach(function(plusBtn) {
                             plusBtn.addEventListener('click', function() {
                                 var selector = plusBtn.closest('.qty-selector');
                                 var currentQty = parseInt(selector.dataset.qty);
                                 var productId = selector.dataset.productId;
-                                
                                 plusBtn.disabled = true;
                                 updateCart(productId, 1, undefined, function() {
                                     var newQty = currentQty + 1;
@@ -199,7 +197,7 @@
                                     plusBtn.disabled = false;
                                 }, function(reason) {
                                     plusBtn.disabled = false;
-                                    alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
                                 });
                             });
                         });
@@ -223,7 +221,7 @@
                                         minusBtn.disabled = false;
                                     }, function(reason) {
                                         minusBtn.disabled = false;
-                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                        console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
                                     });
                                 } else {
                                     updateCart(productId, -1, undefined, function() {
@@ -233,20 +231,20 @@
                                         minusBtn.disabled = false;
                                     }, function(reason) {
                                         minusBtn.disabled = false;
-                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                        console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
                                     });
                                 }
                             });
                         });
 
-                        // Saisie manuelle
+                        // Input direct
                         document.querySelectorAll('.qty-display').forEach(function(input) {
                             input.addEventListener('change', function() {
                                 var selector = input.closest('.qty-selector');
                                 var productId = selector.dataset.productId;
+                                var newQty = parseInt(input.value);
                                 var card = input.closest('.cart-action-wrap');
                                 var addBtn = card.querySelector('.btn-add-to-cart');
-                                var newQty = parseInt(input.value);
 
                                 input.disabled = true;
                                 if (isNaN(newQty) || newQty &lt;= 0) {
@@ -260,7 +258,7 @@
                                     }, function(reason) {
                                         input.value = selector.dataset.qty;
                                         input.disabled = false;
-                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                        console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
                                     });
                                 } else {
                                     updateCart(productId, undefined, newQty, function() {
@@ -269,7 +267,7 @@
                                     }, function(reason) {
                                         input.value = selector.dataset.qty;
                                         input.disabled = false;
-                                        alert(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                        console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
                                     });
                                 }
                             });
