@@ -8,6 +8,19 @@ _logger = logging.getLogger(__name__)
 class WebsiteEmakhealthcare(models.Model):
     _inherit = 'website'
 
+    def has_ecommerce_access(self):
+        """
+        Fix pour Odoo 18 production : self.env.user peut renvoyer un
+        recordset vide sur certaines pages système (login, réclamations…),
+        ce qui provoque l'erreur 500 'Expected singleton: res.users()'.
+        On intercepte ce cas et on retourne True (accès public) comme
+        le ferait Odoo si l'utilisateur était l'utilisateur public.
+        """
+        try:
+            return super().has_ecommerce_access()
+        except Exception:
+            return True
+
     def _get_product_available_qty(self, product, **kwargs):
         """
         Override pour le site Emakhealthcare :

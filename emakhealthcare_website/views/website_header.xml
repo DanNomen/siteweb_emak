@@ -108,7 +108,7 @@
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill my_cart_quantity" style="font-size: 0.6rem; background-color: #8BC34A;" t-esc="website_sale_cart_quantity">3</span>
                   </div>
                   <div class="d-flex flex-column lh-1 d-none d-lg-flex">
-                     <span class="fw-bold" style="font-size: 0.8rem;"><t t-esc="cart_amount" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/></span>
+                     <span class="fw-bold" style="font-size: 0.8rem;"><t t-esc="cart_amount" t-options="{'widget': 'monetary', 'display_currency': website.sudo().currency_id}"/></span>
                   </div>
                 </a>
               </t>
