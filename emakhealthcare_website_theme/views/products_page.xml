@@ -304,7 +304,7 @@
                     <div class="row g-4">
                         <!-- Sidebar filtres -->
                         <div class="col-12 col-lg-2">
-                            <div class="card border-0 shadow-sm p-3" style="border-radius: 14px; position: sticky; top: 90px;">
+                            <div class="card border-0 shadow-sm p-3 mb-3 mb-lg-0" style="border-radius: 14px; position: sticky; top: 120px; z-index: 1020;">
                                 <h6 class="fw-bold mb-3 pb-2 border-bottom" style="color: #111827; font-size: 0.9rem;">Catégories</h6>
                                 <a t-attf-href="/produits?search=#{search}"
                                    t-attf-class="cat-link #{'active' if not category else ''}">
