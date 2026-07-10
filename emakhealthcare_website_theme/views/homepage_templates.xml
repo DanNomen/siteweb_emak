@@ -86,12 +86,7 @@
                                             <p class="mb-4 emakhc-animate-fadeup delay-3" style="color: #4B5563; font-size: 1.1rem; max-width: 450px;">
                                                 Faites-vous livrer vos produits de santé et équipements médicaux partout au Mali, en toute sécurité.
                                             </p>
-                                            <div class="d-flex gap-3 flex-wrap emakhc-animate-fadeup delay-3">
-                                                <a href="/shop" class="btn fw-bold px-4 py-2"
-                                                   style="background-color: #2E7D32; color: #fff; border-radius: 4px; font-size: 0.9rem;">
-                                                    ▶ DÉCOUVRIR
-                                                </a>
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
