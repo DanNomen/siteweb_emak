@@ -34,5 +34,28 @@
         <xpath expr="//div[@id='div_state']" position="attributes">
             <attribute name="class" separator=" " add="d-none"/>
         </xpath>
+
+        <!-- Rename "Street and Number" → "Adresse de livraison" -->
+        <xpath expr="//div[@id='div_street']/label" position="replace">
+            <label class="col-form-label" for="o_street">Adresse de livraison</label>
+        </xpath>
+
+        <!-- Move "Se connecter" block to its own line (below email input, not float-end) -->
+        <xpath expr="//div[@id='div_email_public']/div[contains(@class,'float-end')]" position="replace">
+            <div t-if="website.account_on_checkout != 'disabled'"
+                 class="d-flex align-items-center gap-2 mt-2 mb-1">
+                <span class="text-muted" style="font-size: 0.9rem;">Vous avez déjà un compte ?</span>
+                <a role="button"
+                   href="/web/login?redirect=/shop/checkout"
+                   class="btn btn-primary btn-sm">
+                    Se connecter
+                </a>
+            </div>
+        </xpath>
+
+        <!-- Change "Continue checkout" button text → "Valider la commande" -->
+        <xpath expr="//button[@id='save_address']/t[@t-if='is_anonymous_cart']" position="replace">
+            <t t-if="is_anonymous_cart">Valider la commande</t>
+        </xpath>
     </template>
 </odoo>

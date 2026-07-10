@@ -146,9 +146,17 @@
                                 }
 
                                 if (data &amp;&amp; data.result &amp;&amp; typeof data.result.cart_quantity !== 'undefined') {
+                                    var qty = data.result.cart_quantity;
+                                    // Mettre à jour tous les badges panier (header + bottom nav)
                                     document.querySelectorAll('.my_cart_quantity').forEach(el => {
-                                        el.textContent = data.result.cart_quantity;
+                                        el.textContent = qty;
                                     });
+                                    // Badge de la bottom nav mobile (#emakhc-mobile-nav)
+                                    var mobileCartBadge = document.querySelector('#emakhc-mobile-nav .emakhc-cart-badge');
+                                    if (mobileCartBadge) {
+                                        mobileCartBadge.textContent = qty;
+                                        mobileCartBadge.style.display = qty > 0 ? 'flex' : 'none';
+                                    }
                                     if (onSuccess) onSuccess(data.result);
                                 } else {
                                     console.error('[emakhc] Réponse inattendue, produit probablement non ajouté', data);
