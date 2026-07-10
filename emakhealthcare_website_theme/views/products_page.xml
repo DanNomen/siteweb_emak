@@ -310,23 +310,10 @@
                                    t-attf-class="cat-link #{'active' if not category else ''}">
                                     Tous les produits
                                 </a>
-                                <t t-foreach="categories" t-as="cat">
-                                    <a t-attf-href="/produits?category=#{cat.id}&amp;search=#{search}&amp;sort_by=#{sort_by}"
-                                       t-attf-class="cat-link #{'active' if category == cat.id else ''}">
-                                        <t t-esc="cat.name"/>
-                                    </a>
-                                </t>
-
-                                <!-- Tri -->
-                                <h6 class="fw-bold mb-2 mt-4 pb-2 border-bottom" style="color: #111827; font-size: 0.9rem;">Trier par</h6>
-                                <a t-attf-href="/produits?sort_by=name&amp;search=#{search}&amp;category=#{category or ''}"
-                                   t-attf-class="cat-link #{'active' if sort_by == 'name' else ''}">Nom A-Z</a>
-                                <a t-attf-href="/produits?sort_by=price_asc&amp;search=#{search}&amp;category=#{category or ''}"
-                                   t-attf-class="cat-link #{'active' if sort_by == 'price_asc' else ''}">Prix croissant</a>
-                                <a t-attf-href="/produits?sort_by=price_desc&amp;search=#{search}&amp;category=#{category or ''}"
-                                   t-attf-class="cat-link #{'active' if sort_by == 'price_desc' else ''}">Prix décroissant</a>
-                                <a t-attf-href="/produits?sort_by=newest&amp;search=#{search}&amp;category=#{category or ''}"
-                                   t-attf-class="cat-link #{'active' if sort_by == 'newest' else ''}">Plus récents</a>
+                                <a href="/categories" class="btn w-100 mt-2 fw-bold d-flex justify-content-between align-items-center" style="background-color: #e8f5e9; color: #2E7D32; border-radius: 8px; font-size: 0.85rem;">
+                                    <span>Voir toutes les catégories</span>
+                                    <i class="fa fa-chevron-right" style="font-size: 0.7rem;"></i>
+                                </a>
                             </div>
                         </div>
 

@@ -72,18 +72,6 @@
         </t>
     </template>
 
-    <!-- ── 2. Injection : juste après la section hero carousel ── -->
-    <template id="emakhc_inject_marquee_banner"
-              name="Emakhealthcare – Injection bandeau avantages"
-              inherit_id="emakhealthcare_website_theme.homepage_content">
-        <!--
-            On cible la section hero (class emakhc-hero-section) et on ajoute
-            le bandeau APRÈS elle, à l'intérieur du div#wrap.
-        -->
-        <xpath expr="//section[contains(@class,'emakhc-hero-section')]" position="after">
-            <t t-call="emakhealthcare_website_theme.emakhc_marquee_banner"/>
-        </xpath>
-    </template>
 
     <!-- ── 3. Assets (Odoo 18 ir.asset) ── -->
     <record id="emakhc_marquee_css" model="ir.asset">

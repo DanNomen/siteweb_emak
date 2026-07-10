@@ -147,6 +147,9 @@
 
           </div>
         </nav>
+        
+        <!-- Marquee Banner : Bandeau avantages qui défile -->
+        <t t-call="emakhealthcare_website_theme.emakhc_marquee_banner"/>
       </header>
     </xpath>
   </template>
