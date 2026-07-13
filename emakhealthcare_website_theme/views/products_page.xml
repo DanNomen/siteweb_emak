@@ -151,6 +151,12 @@
                                     document.querySelectorAll('.my_cart_quantity').forEach(el => {
                                         el.textContent = qty;
                                     });
+                                    if (typeof data.result.amount !== 'undefined') {
+                                        var formattedAmt = new Intl.NumberFormat('fr-FR').format(data.result.amount).replace(',', ' ') + ' CFA';
+                                        document.querySelectorAll('.my_cart_amount').forEach(el => {
+                                            el.textContent = formattedAmt;
+                                        });
+                                    }
                                     // Badge de la bottom nav mobile (#emakhc-mobile-nav)
                                     var mobileCartBadge = document.querySelector('#emakhc-mobile-nav .emakhc-cart-badge');
                                     if (mobileCartBadge) {
@@ -335,11 +341,21 @@
                                     <t t-set="discount" t-value="round(100 - (product.list_price * 100 / product.compare_list_price)) if has_promo else 0"/>
                                     <t t-set="variant_id" t-value="product.product_variant_id.id"/>
 
+                                    <!-- Logique des étiquettes (Tags) -->
+                                    <t t-set="all_tags" t-value="product.sudo().product_tag_ids"/>
+                                    <t t-set="promo_tags" t-value="all_tags.filtered(lambda t: t.name.lower() == 'promotion')"/>
+                                    <t t-set="other_tags" t-value="all_tags - promo_tags"/>
+
                                     <div class="col-6 col-md-4 col-xl-3">
                                         <div class="emakhc-product-card h-100 d-flex flex-column" style="position: relative;">
 
-                                            <!-- Badge promo -->
-                                            <span t-if="has_promo" class="badge-promo">-<t t-esc="discount"/>%</span>
+                                            <!-- Badges Promotion (Prix barré OU Étiquette) -->
+                                            <t t-if="has_promo">
+                                                <span class="badge-promo">-<t t-esc="discount"/>%</span>
+                                            </t>
+                                            <t t-elif="promo_tags">
+                                                <span class="badge-promo">Promo</span>
+                                            </t>
 
                                             <!-- Image → clique désactivé -->
                                             <a href="#" onclick="return false;" class="d-block" style="cursor: default;">
@@ -352,6 +368,16 @@
 
                                             <!-- Infos -->
                                             <div class="px-3 pb-3 d-flex flex-column flex-grow-1">
+                                                <!-- Affichage des Autres Étiquettes -->
+                                                <div t-if="other_tags" class="mb-2 d-flex flex-wrap gap-1">
+                                                    <t t-foreach="other_tags" t-as="tag">
+                                                        <span class="badge rounded-pill fw-normal" 
+                                                              style="background-color: #E5E7EB; color: #374151; font-size: 0.7rem; border: 1px solid #D1D5DB;">
+                                                            <t t-esc="tag.name"/>
+                                                        </span>
+                                                    </t>
+                                                </div>
+
                                                 <!-- Catégorie -->
                                                 <div class="text-muted mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
                                                     <t t-if="product.public_categ_ids">

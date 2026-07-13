@@ -14,25 +14,5 @@
             <attribute name="class" separator=" " add="d-none"/>
         </xpath>
 
-        <!-- Hide City -->
-        <xpath expr="//div[@id='div_city']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-
-        <!-- Hide Zip (both occurrences) -->
-        <xpath expr="//t[@t-if='zip_before_city']/div[@id='div_zip']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-        <xpath expr="//t[@t-if='not zip_before_city']/div[@id='div_zip']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-
-        <!-- Hide Country and State -->
-        <xpath expr="//div[@id='div_country']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-        <xpath expr="//div[@id='div_state']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
     </template>
 </odoo>

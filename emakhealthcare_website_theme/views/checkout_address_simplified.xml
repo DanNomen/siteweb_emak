@@ -1,61 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="address_simplified" inherit_id="website_sale.address" name="Simplified Address Form">
-        <!-- Hide Company Name and VAT -->
-        <xpath expr="//div[@id='company_name_div']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
+    <template id="address_simplified_v2" inherit_id="website_sale.address" name="Simplified Address Form">
+
+        <!-- Hide Company Name and VAT (Safe to hide, never required) -->
+        <xpath expr="//div[@id='company_name_div']" position="replace">
+            <input type="hidden" name="company_name" id="o_company_name" t-att-value="partner_sudo.commercial_company_name"/>
         </xpath>
-        <xpath expr="//div[@id='div_vat']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-        
-        <!-- Hide Street 2 -->
-        <xpath expr="//div[@id='div_street2']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
+        <xpath expr="//div[@id='div_vat']" position="replace">
+            <input type="hidden" name="vat" id="o_vat" t-att-value="partner_sudo.vat"/>
         </xpath>
 
-        <!-- Hide City -->
-        <xpath expr="//div[@id='div_city']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
+        <!-- Hide Street 2 (Safe to hide, never required) -->
+        <xpath expr="//div[@id='div_street2']" position="replace">
+            <input type="hidden" name="street2" id="o_street2" t-att-value="partner_sudo.street2"/>
         </xpath>
 
-        <!-- Hide Zip (both occurrences) -->
-        <xpath expr="//t[@t-if='zip_before_city']/div[@id='div_zip']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-        <xpath expr="//t[@t-if='not zip_before_city']/div[@id='div_zip']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
+        <!-- City, Zip, Country, State are VISIBLE -->
+
+        <!-- Override required fields for backend so it doesn't fail server-side -->
+        <xpath expr="//input[@name='required_fields']" position="attributes">
+            <attribute name="t-att-value">'name,phone,street'</attribute>
         </xpath>
 
-        <!-- Hide Country and State -->
-        <xpath expr="//div[@id='div_country']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-        <xpath expr="//div[@id='div_state']" position="attributes">
-            <attribute name="class" separator=" " add="d-none"/>
-        </xpath>
-
-        <!-- Rename "Street and Number" → "Adresse de livraison" -->
+        <!-- 1. RENAME label "Adresse de livraison" -->
         <xpath expr="//div[@id='div_street']/label" position="replace">
             <label class="col-form-label" for="o_street">Adresse de livraison</label>
         </xpath>
 
-        <!-- Move "Se connecter" block to its own line (below email input, not float-end) -->
-        <xpath expr="//div[@id='div_email_public']/div[contains(@class,'float-end')]" position="replace">
-            <div t-if="website.account_on_checkout != 'disabled'"
-                 class="d-flex align-items-center gap-2 mt-2 mb-1">
-                <span class="text-muted" style="font-size: 0.9rem;">Vous avez déjà un compte ?</span>
-                <a role="button"
-                   href="/web/login?redirect=/shop/checkout"
-                   class="btn btn-primary btn-sm">
-                    Se connecter
-                </a>
+        <!-- 2. Replace top email block: show "Se connecter" on its own line -->
+        <xpath expr="//div[@id='div_email_public']" position="replace">
+            <div id="div_email_public_custom" class="col-lg-12 mb-3">
+                <t t-if="website.account_on_checkout != 'disabled'">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="text-muted" style="font-size: 0.9rem;">Vous avez déjà un compte ?</span>
+                        <a role="button" href="/web/login?redirect=/shop/checkout" class="btn btn-primary btn-sm">
+                            Se connecter
+                        </a>
+                    </div>
+                </t>
             </div>
         </xpath>
 
-        <!-- Change "Continue checkout" button text → "Valider la commande" -->
-        <xpath expr="//button[@id='save_address']/t[@t-if='is_anonymous_cart']" position="replace">
-            <t t-if="is_anonymous_cart">Valider la commande</t>
+        <!-- 3. Add email field AFTER div_name (Nom complet) -->
+        <xpath expr="//div[@id='div_name']" position="after">
+            <div id="div_email_moved" class="col-lg-12 mb-2">
+                <label class="col-form-label" for="o_email_moved">E-mail</label>
+                <input
+                    id="o_email_moved"
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    t-att-value="partner_sudo.email"
+                    required="required"
+                />
+            </div>
         </xpath>
+
+        <!-- 4. Replace button: Valider la commande -->
+        <xpath expr="//button[@id='save_address']" position="replace">
+            <button id="save_address" class="btn btn-primary w-100 w-md-auto order-1 order-md-3">
+                <t t-if="is_anonymous_cart">Valider la commande</t>
+                <t t-else="">Enregistrer l'adresse</t>
+                <i class="fw-light fa fa-angle-right ms-2"/>
+            </button>
+        </xpath>
+
+        <!-- 5. JAVASCRIPT FIX: Remove 'required' from hidden fields right before submission -->
+        <xpath expr="//form" position="inside">
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    var btn = document.getElementById('save_address');
+                    if (btn) {
+                        btn.addEventListener('click', function() {
+                            // Enlever required des champs cachés pour ne pas bloquer le HTML5 validation
+                            document.querySelectorAll('form.checkout_autoformat input[required], form.checkout_autoformat select[required]').forEach(function(field) {
+                                if (field.offsetParent === null || field.closest('.d-none') || window.getComputedStyle(field).display === 'none') {
+                                    field.removeAttribute('required');
+                                }
+                            });
+                        });
+                    }
+                });
+            </script>
+        </xpath>
+
     </template>
 </odoo>

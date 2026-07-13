@@ -65,6 +65,52 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         # Comportement original pour tous les autres sites (ex. APPROMED MALI)
         return super().index(**kw)
 
+    @http.route('/promotions', auth="public", website=True, sitemap=True)
+    def promotions(self, **kw):
+        """Page listant tous les produits en promotion pour Emakhealthcare."""
+        current_website = request.website
+        if not (current_website and current_website.name == EMAKHEALTHCARE_WEBSITE_NAME):
+            return request.not_found()
+
+        ProductTemplate = request.env['product.template'].sudo()
+        ProductTag = request.env['product.tag'].sudo()
+        all_companies = request.env['res.company'].sudo().search([])
+
+        # Chercher l'étiquette "Promotion" (insensible à la casse)
+        promo_tag = ProductTag.search([('name', 'ilike', 'Promotion')], limit=1)
+
+        # Domaine : produits publiés + en stock ET qui ont soit l'étiquette Promotion,
+        # soit un promo_type défini
+        domain = [('website_published', '=', True)]
+
+        if promo_tag:
+            domain_tag = [('product_tag_ids', 'in', [promo_tag.id])]
+        else:
+            domain_tag = []
+
+        domain_promo_type = [('promo_type', '!=', False)]
+
+        # On combine : produits avec étiquette OU avec promo_type
+        if domain_tag:
+            combined = domain + ['|'] + domain_tag + domain_promo_type
+        else:
+            combined = domain + domain_promo_type
+
+        all_products = ProductTemplate.with_context(
+            allowed_company_ids=all_companies.ids
+        ).search(combined, order='name asc')
+
+        # Filtrer sur le stock (même logique que /produits)
+        products = all_products.filtered(
+            lambda p: p.type == 'service' or p.qty_available > 0
+        )
+
+        return request.render('emakhealthcare_website_theme.promotions_page', {
+            'products': products,
+            'product_count': len(products),
+            'website': current_website,
+        })
+
     @http.route('/categories', auth="public", website=True, sitemap=True)
     def all_categories(self, **kw):
         """Page listant toutes les catégories d'articles."""

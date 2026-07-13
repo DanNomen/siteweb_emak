@@ -55,7 +55,7 @@
                                             </p>
 
                                             <!-- Barre de recherche -->
-                                            <form action="/shop" method="get" class="d-flex mb-5 bg-white rounded-3 shadow-sm p-1 emakhc-animate-fadeup delay-3" style="max-width: 480px;">
+                                            <form action="/produits" method="get" class="d-flex mb-5 bg-white rounded-3 shadow-sm p-1 emakhc-animate-fadeup delay-3" style="max-width: 480px;">
                                                 <input type="text" name="search" class="form-control border-0 shadow-none px-3"
                                                        placeholder="Rechercher un produit, une marque..."
                                                        style="background: transparent; color: #6B7280;"/>
