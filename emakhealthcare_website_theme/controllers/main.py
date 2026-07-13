@@ -105,10 +105,27 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             lambda p: p.type == 'service' or p.qty_available > 0
         )
 
+        # Calcul des prix corrects selon la liste de prix active du site web
+        pricelist = current_website.pricelist_id
+        product_prices = {}
+        for pt in products:
+            variant = pt.product_variant_id
+            if variant and pricelist:
+                try:
+                    price = pricelist._get_product_price(
+                        variant, 1.0, currency=pricelist.currency_id
+                    )
+                except Exception:
+                    price = pt.list_price
+            else:
+                price = pt.list_price
+            product_prices[pt.id] = price
+
         return request.render('emakhealthcare_website_theme.promotions_page', {
             'products': products,
             'product_count': len(products),
             'website': current_website,
+            'product_prices': product_prices,
         })
 
     @http.route('/categories', auth="public", website=True, sitemap=True)
@@ -211,6 +228,23 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         categories = PPCategory.search([('parent_id', '=', False)])
         internal_categories = InternalCategory.search([])
 
+        # Calcul des prix corrects selon la liste de prix active du site web
+        # Cela évite l'incohérence entre le prix affiché et le prix du panier
+        pricelist = current_website.pricelist_id
+        product_prices = {}
+        for pt in products:
+            variant = pt.product_variant_id
+            if variant and pricelist:
+                try:
+                    price = pricelist._get_product_price(
+                        variant, 1.0, currency=pricelist.currency_id
+                    )
+                except Exception:
+                    price = pt.list_price
+            else:
+                price = pt.list_price
+            product_prices[pt.id] = price
+
         values = {
             'products': products,
             'categories': categories,
@@ -224,6 +258,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             'page_count': pager_pages,
             'product_count': product_count,
             'website': current_website,
+            'product_prices': product_prices,
         }
         return request.render("emakhealthcare_website_theme.products_page", values)
 

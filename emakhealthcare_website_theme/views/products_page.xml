@@ -396,14 +396,15 @@
                                                     <h6 class="fw-semibold text-dark mb-2" style="font-size: 0.88rem; line-height: 1.3; min-height: 36px;" t-field="product.name"/>
                                                 </a>
 
-                                                <!-- Prix -->
+                                                <!-- Prix (pricelist-adjusted) -->
+                                                <t t-set="display_price" t-value="product_prices.get(product.id, product.list_price)"/>
                                                 <div class="mb-3 mt-auto">
-                                                    <span class="fw-bold" style="color: #2E7D32; font-size: 1.05rem;"
-                                                          t-field="product.list_price"
-                                                          t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
-                                                    <span t-if="has_promo" class="ms-2 text-muted text-decoration-line-through" style="font-size: 0.82rem;"
-                                                          t-field="product.compare_list_price"
-                                                          t-options="{'widget': 'monetary', 'display_currency': product.currency_id}"/>
+                                                    <span class="fw-bold" style="color: #2E7D32; font-size: 1.05rem;">
+                                                        <t t-esc="'{:,.0f}'.format(display_price).replace(',', ' ')"/> CFA
+                                                    </span>
+                                                    <span t-if="has_promo" class="ms-2 text-muted text-decoration-line-through" style="font-size: 0.82rem;">
+                                                        <t t-esc="'{:,.0f}'.format(product.compare_list_price).replace(',', ' ')"/> CFA
+                                                    </span>
                                                 </div>
 
                                                 <!-- Stock disponible en rouge sans décimales -->
