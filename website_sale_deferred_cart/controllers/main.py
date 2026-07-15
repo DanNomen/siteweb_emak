@@ -74,10 +74,11 @@ class WebsiteSaleDeferred(WebsiteSale):
 
         # Toujours utiliser sudo() pour le ghost order — les utilisateurs publics/invités
         # n'ont pas d'accès direct à sale.order.line, ce qui provoque un AccessError au flush.
-        sudo_env = request.env(su=True).with_context(
-            allowed_company_ids=allowed_company_ids,
-            skip_product_company_check=True,
-        )
+        # Note : Environment n'a pas de with_context(), il faut passer le contexte dans env()
+        new_context = dict(request.env.context,
+                           allowed_company_ids=allowed_company_ids,
+                           skip_product_company_check=True)
+        sudo_env = request.env(su=True, context=new_context)
 
         # Partenaire : si l'utilisateur est connecté on prend son partenaire,
         # sinon on prend le partenaire public du site web.
