@@ -34,6 +34,7 @@ du module de base emakhealthcare_website.
         'views/account_creation_templates.xml',
         'views/checkout_address_simplified.xml',
         'views/product_template_promo.xml',
+        'wizard/product_promo_wizard_views.xml',
         'views/contactus_override.xml',
     ],
     'post_init_hook': 'post_init_hook',
