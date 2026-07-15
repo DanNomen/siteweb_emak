@@ -180,7 +180,7 @@
                                     document.querySelectorAll('.my_cart_quantity').forEach(el => {
                                         el.textContent = qty;
                                     });
-                                    var formattedAmt = new Intl.NumberFormat('fr-FR').format(amount).replace(',', ' ') + ' CFA';
+                                    var formattedAmt = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0}).format(amount) + ' CFA';
                                     document.querySelectorAll('.my_cart_amount').forEach(el => {
                                         el.textContent = formattedAmt;
                                     });

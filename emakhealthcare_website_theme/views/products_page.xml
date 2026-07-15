@@ -138,10 +138,11 @@
                                 // IMPORTANT : un objet vide {} est "truthy" en JS. On vérifie donc
                                 // explicitement la présence de cart_quantity plutôt que juste
                                 // "data.result" pour ne pas afficher un faux succès à l'utilisateur.
-                                if (data &amp;&amp; data.result &amp;&amp; data.result.warning) {
+                                if (data &amp;&amp; data.result &amp;&amp; (data.result.warning || (data.result.notification_info &amp;&amp; data.result.notification_info.warning))) {
                                     // Odoo a refusé (ex : rupture de stock) mais répond proprement.
-                                    console.warn('[emakhc] Odoo a refusé la mise à jour du panier', data.result.warning);
-                                    if (onError) onError(data.result.warning);
+                                    var warnMsg = data.result.warning || data.result.notification_info.warning;
+                                    console.warn('[emakhc] Odoo a refusé la mise à jour du panier', warnMsg);
+                                    if (onError) onError(warnMsg);
                                     return;
                                 }
 
@@ -152,7 +153,7 @@
                                     document.querySelectorAll('.my_cart_quantity').forEach(el => {
                                         el.textContent = qty;
                                     });
-                                    var formattedAmt = new Intl.NumberFormat('fr-FR').format(amount).replace(',', ' ') + ' CFA';
+                                    var formattedAmt = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0}).format(amount) + ' CFA';
                                     document.querySelectorAll('.my_cart_amount').forEach(el => {
                                         el.textContent = formattedAmt;
                                     });
