@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- 💰 FACTURES -->
+    <template id="my_officine_invoices_template" name="Officine Invoices">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="text-center rounded-1 shadow-sm mb-5" 
+                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Mes Factures
+                </h2>
+
+                <t t-if="invoices">
+                    <div class="accordion shadow-sm rounded" id="invoiceAccordion">
+                        <t t-foreach="invoices" t-as="invoice" t-key="invoice.id">
+                            <div class="accordion-item mb-3 border-0 shadow-sm">
+                                <h4 class="accordion-header" t-attf-id="heading#{invoice.id}">
+                                    <button 
+                                        class="accordion-button collapsed" 
+                                        type="button" data-bs-toggle="collapse" 
+                                        t-attf-data-bs-target="#collapse#{invoice.id}" 
+                                        aria-expanded="false" 
+                                        t-attf-aria-controls="collapse#{invoice.id}"
+                                    >
+                                        <div class="d-flex justify-content-between align-items-center w-100">
+                                            <div class="d-flex flex-column">
+                                                <strong><t t-esc="invoice.name or 'N/A'"/></strong>
+                                                <small class="text-muted">
+                                                    <t t-esc="invoice.invoice_date or '—'"/>
+                                                </small>
+                                            </div>
+                                            <div style="margin-right: 10px;">
+                                                <t 
+                                                    t-set="state_labels" 
+                                                    t-value="{
+                                                        'draft': 'Brouillon',
+                                                        'posted': 'Payé',
+                                                        'cancel': 'Annulée'
+                                                    }"
+                                                />
+
+                                                <span t-attf-class="badge rounded-pill 
+                                                    #{'bg-success' if invoice.state == 'posted' else 
+                                                    'bg-warning' if invoice.state == 'draft' else 
+                                                    'bg-danger'}">
+                                                    <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h4>
+                                <div t-attf-id="collapse#{invoice.id}" 
+                                    class="accordion-collapse collapse" 
+                                    t-attf-aria-labelledby="heading#{invoice.id}" 
+                                    data-bs-parent="#invoiceAccordion">
+                                    <div class="accordion-body bg-light">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <strong>Total HT :</strong> 
+                                                <t t-out="invoice.amount_untaxed" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                <br/>
+
+                                                <strong>Total Ristourne :</strong>
+                                                <t t-out="invoice.total_ristourne" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                <br/>
+
+                                                <strong>Total Escompte :</strong>
+                                                <t t-out="invoice.total_escompte" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                <br/>
+
+                                                <strong>T.V.A. :</strong> 
+                                                <t t-out="invoice.amount_tax" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                <br/>
+                                            </div>
+
+                                            <a t-attf-href="/report/pdf/account.report_invoice/#{invoice.id}"
+                                            class="btn btn-outline-primary btn-md" target="_blank">
+                                                <i class="fa fa-download"></i> Télécharger PDF
+                                            </a>
+                                        </div>
+
+                                        <!-- Liste des articles publiés -->
+                                        <t t-set="published_lines" t-value="invoice.invoice_line_ids.filtered(lambda l: l.product_id.is_published)"/>
+                                        <t t-if="published_lines">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover align-middle bg-white rounded">
+                                                    <thead class="table-primary">
+                                                        <tr>
+                                                            <th>Article</th>
+                                                            <th>Quantité</th>
+                                                            <th>Prix Unitaire</th>
+                                                            <th>Escompte</th>
+                                                            <th>Ristourne</th>
+                                                            <th>Sous-total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="published_lines" t-as="line" t-key="line.id">
+                                                            <tr>
+                                                                <td><t t-esc="line.product_id.name"/></td>
+                                                                <td><t t-esc="line.quantity"/></td>
+                                                                <td>
+                                                                    <t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="line.escompte" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="line.ristourne" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="alert alert-warning mt-3">
+                                                Aucun article publié pour cette facture.
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="alert alert-info text-center mt-5">
+                        <i class="fa fa-info-circle"></i> Vous n'avez encore aucune facture.
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+
+
+   <template id="my_officine_credit_notes_template" name="Officine Credits">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="text-center rounded-1 shadow-sm mb-5" 
+                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Mes Avoirs
+                </h2>
+
+                <t t-if="credit_notes">
+                    <div class="accordion shadow-sm rounded" id="creditNoteAccordion">
+                        <t t-foreach="credit_notes" t-as="credit" t-key="credit.id">
+                            <div class="accordion-item mb-3 border-0 shadow-sm">
+                                <h4 class="accordion-header" t-attf-id="headingCredit#{credit.id}">
+                                    <button 
+                                        class="accordion-button collapsed" 
+                                        type="button" data-bs-toggle="collapse" 
+                                        t-attf-data-bs-target="#collapseCredit#{credit.id}" 
+                                        aria-expanded="false" 
+                                        t-attf-aria-controls="collapseCredit#{credit.id}"
+                                    >
+                                        <div class="d-flex justify-content-between align-items-center w-100">
+                                            <div class="d-flex flex-column">
+                                                <strong><t t-esc="credit.name or 'N/A'"/></strong>
+                                                <small class="text-muted">
+                                                    <t t-esc="credit.invoice_date or '—'"/>
+                                                </small>
+                                            </div>
+                                            <div style="margin-right: 10px;">
+                                                <t 
+                                                    t-set="state_labels" 
+                                                    t-value="{
+                                                        'draft': 'Brouillon',
+                                                        'posted': 'Payé',
+                                                        'cancel': 'Annulée'
+                                                    }"
+                                                />
+
+                                                <span t-attf-class="badge rounded-pill 
+                                                    #{'bg-success' if credit.state == 'posted' else 
+                                                    'bg-warning' if credit.state == 'draft' else 
+                                                    'bg-danger'}">
+                                                    <t t-esc="state_labels.get(credit.state, credit.state)"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h4>
+                                <div t-attf-id="collapseCredit#{credit.id}" 
+                                    class="accordion-collapse collapse" 
+                                    t-attf-aria-labelledby="headingCredit#{credit.id}" 
+                                    data-bs-parent="#creditNoteAccordion">
+                                    <div class="accordion-body bg-light">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <strong>Total HT :</strong> <t t-out="credit.amount_untaxed" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> <br/>
+                                                <strong>Total Ristourne :</strong> <t t-out="credit.total_ristourne" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> <br/>
+                                                <strong>Total Escompte :</strong> <t t-out="credit.total_escompte" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> <br/>
+                                                <strong>T.V.A. :</strong> <t t-out="credit.amount_tax" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> <br/>
+                                                <strong>Total TTC :</strong> <t t-out="credit.amount_total" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> <br/>
+                                            </div>
+                                            <a t-attf-href="/report/pdf/account.report_invoice/#{credit.id}"
+                                            class="btn btn-outline-primary btn-md" target="_blank">
+                                                <i class="fa fa-download"></i> Télécharger PDF
+                                            </a>
+                                        </div>
+
+                                        <!-- Liste des articles publiés -->
+                                        <t t-set="published_lines" t-value="credit.invoice_line_ids.filtered(lambda l: l.product_id.is_published)"/>
+                                        <t t-if="published_lines">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover align-middle bg-white rounded">
+                                                    <thead class="table-success">
+                                                        <tr>
+                                                            <th>Article</th>
+                                                            <th>Quantité</th>
+                                                            <th>Prix Unitaire</th>
+                                                            <th>Escompte</th>
+                                                            <th>Ristourne</th>
+                                                            <th>Sous-total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="published_lines" t-as="line" t-key="line.id">
+                                                            <tr>
+                                                                <td><t t-esc="line.product_id.name"/></td>
+                                                                <td><t t-esc="line.quantity"/></td>
+                                                                <td><t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td><t t-out="line.escompte" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td><t t-out="line.ristourne" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td><t t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="alert alert-warning mt-3">
+                                                Aucun article publié pour cet avoir.
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="alert alert-info text-center mt-5">
+                        <i class="fa fa-info-circle"></i> Vous n'avez encore aucun avoir.
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- releve -->
+      <template id="my_officine_statements_template" name="Officine Relevés">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="text-center rounded-1 shadow-sm mb-5"
+                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Mes Relevés Mensuels
+                </h2>
+
+                <t t-if="monthly_statements">
+                    <t t-foreach="monthly_statements.items()" t-as="month_data" t-key="month_data[0]">
+                        <div class="mb-4">
+                            <div class="accordion shadow-sm rounded" t-attf-id="accordion-month-#{month_data[0].replace(' ', '_')}">
+                                <div class="accordion-item border-0 shadow-sm">
+                                    <h4 class="accordion-header d-flex align-items-center" t-attf-id="heading-month-#{month_data[0].replace(' ', '_')}">
+                                        <button 
+                                            class="accordion-button collapsed fw-semibold flex-grow-1" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            t-attf-data-bs-target="#collapse-month-#{month_data[0].replace(' ', '_')}" 
+                                            aria-expanded="false" 
+                                            t-attf-aria-controls="collapse-month-#{month_data[0].replace(' ', '_')}">
+                                            <i class="fa fa-calendar me-2"></i>
+                                            <t t-esc="month_data[0]"/>
+                                        </button>
+                                        <a t-attf-href="/my_officine/statements/#{month_data[0].replace(' ', '_')}" class="btn btn-outline-primary btn-sm mx-2" target="_blank">
+                                            <i class="fa fa-download"></i>
+                                        </a>
+                                    </h4>
+                                    <div 
+                                        t-attf-id="collapse-month-#{month_data[0].replace(' ', '_')}" 
+                                        class="accordion-collapse collapse" 
+                                        t-attf-aria-labelledby="heading-month-#{month_data[0].replace(' ', '_')}" 
+                                        t-attf-data-bs-parent="#accordion-month-#{month_data[0].replace(' ', '_')}">
+                                        <div class="accordion-body bg-white">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover align-middle bg-light rounded">
+                                                    <thead class="table-primary">
+                                                        <tr>
+                                                            <th>Facture</th>
+                                                            <th>Date</th>
+                                                            <th>État</th>
+                                                            <th>Total HT</th>
+                                                            <th>T.V.A.</th>
+                                                            <th>Total TTC</th>
+                                                            <th class="text-end">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="month_data[1]['invoices']" t-as="invoice" t-key="invoice.id">
+                                                            <t t-set="sign" t-value="-1 if invoice.move_type == 'out_refund' else 1"/>
+                                                            <tr>
+                                                                <td class="fw-semibold"><t t-esc="invoice.name or 'N/A'"/></td>
+                                                                <td><t t-esc="invoice.invoice_date or '—'"/></td>
+                                                                <td>
+                                                                    <t t-set="state_labels" t-value="{'draft': 'Brouillon', 'posted': 'Payé', 'cancel': 'Annulée'}"/>
+                                                                    <span t-attf-class="badge rounded-pill #{'bg-success' if invoice.state == 'posted' else 'bg-warning' if invoice.state == 'draft' else 'bg-danger'}">
+                                                                        <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="(invoice.amount_untaxed * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="(invoice.amount_tax * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <t t-out="(invoice.amount_total * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <a t-attf-href="/report/pdf/account.report_invoice/#{invoice.id}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                                                        <i class="fa fa-download"></i>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            <!-- Footer avec les totaux pour ce mois -->
+                                            <div class="row mt-4">
+                                                <div class="col-md-4">
+                                                    <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                        <div class="card-body text-center text-black">
+                                                            <h6 class="card-title mb-2">
+                                                                <i class="fa fa-file-invoice-dollar fa-lg mb-1"></i>
+                                                                <br/>Total Facture
+                                                            </h6>
+                                                            <h5 class="fw-bold">
+                                                                <t t-esc="month_data[1]['total_facture']"/>
+                                                                <t t-esc="currency_symbol"/>
+                                                            </h5>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #38A935 0%, #00cec9 100%);">
+                                                        <div class="card-body text-center text-black">
+                                                            <h6 class="card-title mb-2">
+                                                                <i class="fa fa-check-circle fa-lg mb-1"></i>
+                                                                <br/>Total Réglé
+                                                            </h6>
+                                                            <h5 class="fw-bold">
+                                                                <t t-esc="month_data[1]['total_regle']"/>
+                                                                <t t-esc="currency_symbol"/>
+                                                            </h5>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                                        <div class="card-body text-center text-black">
+                                                            <h6 class="card-title mb-2">
+                                                                <i class="fa fa-exclamation-circle fa-lg mb-1"></i>
+                                                                <br/>Total Restant à Payer
+                                                            </h6>
+                                                            <h5 class="fw-bold">
+                                                                <t t-esc="month_data[1]['total_restant']"/>
+                                                                <t t-esc="currency_symbol"/>
+                                                            </h5>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+                <t t-else="">
+                    <div class="alert alert-info text-center mt-5">
+                        <i class="fa fa-info-circle"></i> Vous n'avez encore aucune facture.
+                    </div>
+                </t>
+
+            </div>
+        </t>
+    </template>
+</odoo>

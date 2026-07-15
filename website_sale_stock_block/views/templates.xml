@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Display stock warning at the top of the cart page -->
+    <template id="cart_stock_warning" inherit_id="website_sale.cart">
+        <!-- Odoo 18 cart template has a call to cart_lines. We place the warning right before it. -->
+        <xpath expr="//t[@t-call='website_sale.cart_lines']" position="before">
+            <t t-if="stock_warning">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <t t-esc="stock_warning"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Specific template for cart lines, also place warning here for reinforcement -->
+    <template id="cart_lines_stock_warning" inherit_id="website_sale.cart_lines">
+        <xpath expr="//div[1]" position="before">
+             <t t-if="stock_warning">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <t t-esc="stock_warning"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="inherit_view_form_account_move" model="ir.ui.view">
+        <field name="name">inherit.view.form.account.move</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="after">
+                <field name="escompte" />
+                <field name="ristourne" />
+            </xpath>
+
+            <xpath expr="//field[@name='tax_totals']" position="before">
+                <div class="oe_inline o_td_label" invisible="not total_ristourne">
+                    <label for="total_ristourne" string="Total ristourne"/>
+                </div>
+                <field name="total_ristourne" nolabel="1" invisible="not total_ristourne"/>
+                <div class="oe_inline o_td_label" invisible="not total_escompte">
+                    <label for="total_escompte" string="Total escompte"/>
+                </div>
+                <field name="total_escompte" nolabel="1" invisible="not total_escompte"/>
+            </xpath>
+        </field>
+    </record>    
+
+</odoo>

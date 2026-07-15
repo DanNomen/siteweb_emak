@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="homepage_template" name="Homepage Template emakmed">
+        <t t-call="website.layout">
+            <t t-set="slug"
+                t-value="lambda s: s.lower().replace(' ', '-').replace('é','e').replace('è','e').replace('ê','e').replace('à','a').replace('ç','c')" />
+
+            <!-- Section Bannière -->
+            <section class="o_cc o_cc1 pt-5 pb-5"
+                style="background: linear-gradient(90deg, #38A935, #93C123); color: white;">
+                <div class="container text-center">
+                    <h1 class="fw-bold mb-3">Bienvenue sur <span style="color:#FDCB6E;"><t t-esc="request.env.company.name or 'EmakMed'"/></span></h1>
+                    <p class="lead mb-4">Votre partenaire de confiance pour les produits médicaux et para-pharmaceutiques</p>
+                    <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                        <a href="/shop" class="btn btn-light rounded-pill px-4 me-2">Découvrir nos produits</a>                        
+                    </t>
+                    <a href="/contactus" class="btn btn-outline-light rounded-pill px-4">Nous contacter</a>
+                </div>
+            </section>
+
+            <!-- Meilleures ventes -->
+             <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                <section class="py-5">
+                    <div class="container">
+                        <div class="text-center mb-4">
+                            <h2 class="fw-bold text-dark mb-2">Meilleures ventes</h2>
+                            <p class="text-muted">Découvrez nos produits les plus populaires</p>
+                        </div>
+    
+                        <div class="row g-3">
+                            <t t-foreach="best_sellers[:4]" t-as="product">
+                                <t t-if="product.is_published">
+                                    <div class="col-6 col-md-2">
+                                        <!-- Formulaire AddToCart AJAX -->
+                                        <form class="oe_product_cart position-relative" action="/shop/cart/update" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
+                                            <input type="hidden" name="product_id" t-att-value="product.id" />
+                                            
+                                            <div class="card border shadow-sm h-100 position-relative"
+                                                style="border-radius: 10px; overflow:hidden; background:white;">
+                                                
+                                                <a t-att-href="'/shop/product/%s-%s' % (product.name, product.id)"
+                                                   class="text-decoration-none text-dark">
+                                                    <div class="position-relative p-2">
+                                                        <t t-if="product.website_ribbon_id">
+                                                            <span class="o_ribbon o_ribbon_right z-1"
+                                                                t-att-style="'color: %s; background-color: %s' % (product.website_ribbon_id.text_color or '#FFFFFF', product.website_ribbon_id.bg_color or '#0984E3')">
+                                                                <t t-esc="product.website_ribbon_id.name or 'Arrivage'" />
+                                                            </span>
+                                                        </t>
+                                                        <img
+                                                            t-att-src="product.image_1920 and '/web/image/%s/%s/image_1920' % ('product.template', product.id) or '/web/image/product.template/15/image_512/Ammox?unique=3ac9409'"
+                                                            alt="Produit"
+                                                            class="img-fluid w-100 h-100"
+                                                            style="object-fit:cover;" />
+                                                    </div>
+    
+                                                    <div class="card-body text-center p-2">
+                                                        <h6 class="fw-semibold text-dark mb-1" style="font-size:0.9rem;">
+                                                            <t t-esc="product.name" />
+                                                        </h6>
+                                                        <p class="text-muted small mb-0" style="font-size:0.85rem;">
+                                                            <t t-esc="product.list_price" /> <t t-esc="currency.symbol or currency.name"/>x
+                                                        </p>
+                                                    </div>
+                                                </a>
+    
+                                                <t t-if="product.promotion_checking_available">
+                                                    <p style="font-size: 0.8rem; color: #FF4C4C; width: 100%; text-align: center;"
+                                                     t-esc="product.promotion_conditions"></p>
+                                                </t>
+                                                <t t-else="">
+                                                </t>
+    
+                                                <!-- Quantité + AddToCart -->
+                                                <div class="p-2 d-flex align-items-center justify-content-between">
+                                                    <div class="d-flex align-items-center border rounded shadow-sm px-1">
+                                                        <button type="button" class="btn btn-sm btn-link text-dark p-1"
+                                                                onclick="updateQty(this, -1)" title="Diminuer">
+                                                            <i class="fa fa-minus"></i>
+                                                        </button>
+                                                        <input type="number" name="add_qty" value="1" min="1"
+                                                               class="form-control border-0 text-center fw-semibold no-spinner px-1"
+                                                               style="width: 45px; background: transparent;" />
+                                                        <button type="button" class="btn btn-sm btn-link text-dark p-1"
+                                                                onclick="updateQty(this, 1)" title="Augmenter">
+                                                            <i class="fa fa-plus"></i>
+                                                        </button>
+                                                    </div>
+    
+                                                    <button type="button"
+                                                            class="btn btn-success btn-sm rounded shadow-sm o_add_to_cart ms-2 d-flex gap-2 align-items-center justify-content-center"
+                                                            style="height: 37px; width: 100%;"
+                                                            title="Ajouter au panier"
+                                                            onclick="handleAddToCart(this)">
+                                                        <i class="fa fa-cart-plus fs-6"></i>
+                                                        <span style="font-size: 12px">Ajouter</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+                    </div>
+    
+                    <!-- Toast notification -->
+                    <div id="ajax-toast" class="toast position-fixed bottom-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true" style="z-index:1055; display:none;">
+                        <div class="toast-header bg-success text-white">
+                            <strong class="me-auto">Panier</strong>
+                            <button type="button" class="btn-close btn-close-white ms-2 mb-1" onclick="hideToast()"></button>
+                        </div>
+                        <div class="toast-body">
+                            Produit ajouté au panier !
+                        </div>
+                    </div>
+    
+                    <script>
+                        function updateQty(btn, delta){
+                            const input = btn.parentElement.querySelector('input[name="add_qty"]');
+                            let val = parseInt(input.value) || 1;
+                            val = Math.max(1, val + delta);
+                            input.value = val;
+                        }
+    
+                        function handleAddToCart(btn){
+                            const form = btn.closest('form');
+                            const data = new FormData(form);
+    
+                            fetch('/shop/cart/update', {
+                                method: 'POST',
+                                body: data,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                credentials: 'same-origin'
+                            })
+                            .then(response => response.json())
+                            .then(json => {
+                                // Mettre à jour le mini-panier
+                                const cartCount = document.querySelector('#top_cart .cart-count');
+                                if(cartCount &amp;&amp; json.cart_quantity !== undefined){
+                                    cartCount.textContent = json.cart_quantity;
+                                }
+    
+                                // Afficher toast
+                                const toast = document.getElementById('ajax-toast');
+                                toast.style.display = 'block';
+                                setTimeout(()=>{ toast.style.display = 'none'; }, 2500);
+    
+                                // Recharger la page pour mise à jour complète
+                                setTimeout(()=>{ window.location.reload(); }, 500);
+                            })
+                            .catch(err => console.error(err));
+                        }
+    
+                        function hideToast(){
+                            document.getElementById('ajax-toast').style.display = 'none';
+                        }
+                    </script>
+    
+                    <style>
+                        .card:hover {
+                            transform: translateY(-3px);
+                            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                            transition: all 0.3s ease;
+                        }
+                        .ribbon {
+                            text-align:center;
+                        }
+                    </style>
+                </section>
+    
+                <!-- Nos Catégories -->
+                <section class="py-5" style="background-color:#F8F9FA;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 class="fw-bold text-dark mb-2">Nos Catégories</h2>
+                            <p class="text-muted">Découvrez nos gammes de produits pharmaceutiques et médicaux</p>
+                        </div>
+    
+                        <div class="row g-4">
+                            <t t-foreach="categories" t-as="categorie">
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                    <a t-att-href="'/shop/category/%s-%s' % (slug(categorie.name), categorie.id)"
+                                       class="text-decoration-none text-dark">
+                                        <div class="card border-0 shadow-sm h-100 category-card"
+                                             style="border-radius: 15px; transition: all 0.3s ease; overflow:hidden; background:white;">
+                                            <div class="position-relative">
+                                                <img t-att-src="categorie.image_1920 and '/web/image/%s/%s/image_1920' % ('product.public.category', categorie.id) or '/website_emakmed/static/img/default_category.png'"
+                                                     alt="Catégorie"
+                                                     class="img-fluid w-100"
+                                                     style="height:180px; object-fit:cover;" />
+                                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay"
+                                                     style="background:rgba(0,0,0,0.4); opacity:0; transition:opacity 0.3s;">
+                                                    <span class="btn btn-sm btn-light rounded-pill px-3 fw-semibold">Voir plus</span>
+                                                </div>
+                                            </div>
+                                            <div class="card-body text-center p-4">
+                                                <h5 class="fw-semibold text-dark mb-2"><t t-esc="categorie.name" /></h5>
+                                                <p class="text-muted small mb-0" style="min-height:40px;">
+                                                    <t t-esc="categorie.website_description or 'Découvrez nos produits de qualité médicale.'" />
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+    
+                    <style>
+                        .category-card:hover {
+                            transform: translateY(-5px);
+                            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+                        }
+                        .category-card:hover .overlay {
+                            opacity: 1;
+                        }
+                        .category-card img {
+                            transition: transform 0.4s ease;
+                        }
+                        .category-card:hover img {
+                            transform: scale(1.05);
+                        }
+                    </style>
+                </section>
+             </t>
+             <t t-else="">
+                <div class="text-center py-5">
+                    <img src="/website_emakmed/static/img/figure.png" alt="Figure" class="img-fluid" />
+                </div>
+             </t>
+
+        </t>
+    </template>
+
+</odoo>

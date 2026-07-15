@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="client_portal_page" name="Page Compte Client">
+        <t t-call="website.layout">
+            <main class="container py-5">
+                <h2 class="text-center rounded-1 shadow-sm mb-5" 
+                                style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Bienvenue dans votre Compte Client
+                </h2>
+
+                <!-- FontAwesome -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+                <!-- Onglets Desktop -->
+                <nav class="tabs d-none d-md-flex justify-content-between mb-4">
+                    <a class="tab active" data-target="information"><i class="fa fa-info-circle"></i>Informations Générales</a>
+                    <a class="tab" data-target="chiffre-affaire"><i class="fa fa-chart-line"></i>Chiffre d'Affaires</a>
+                    <a class="tab" data-target="en-cours"><i class="fa fa-clock"></i>En Cours</a>
+                    <a class="tab" data-target="remise"><i class="fa fa-percent"></i>Remise</a>
+                    <a class="tab" data-target="escompte_ristourne"><i class="fa fa-money-bill-wave"></i>Escompte et Ristourne</a>
+                </nav>
+
+                <!-- Sélecteur mobile -->
+                <div class="dropdown-section d-md-none">
+                    <select id="info-select" class="form-control">
+                        <option value="information">Informations générales</option>
+                        <option value="chiffre-affaire">Chiffre d'Affaires</option>
+                        <option value="en-cours">En Cours</option>
+                        <option value="remise">Remise</option>
+                        <option value="escompte_ristourne">Escompte et Ristourne</option>
+                    </select>
+                </div>
+
+                <!-- Contenu -->
+                <div id="content-area">
+                       <!-- Informations générales -->
+                    <div id="information" class="info-content" style="display:block;">
+                        <h4>Information générale:</h4>
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr><td>Pharmacie :</td><td class="text-primary"><t t-esc="partner.company_id.name"/></td></tr>
+                                <tr><td>Adresse :</td><td class="text-primary"><t t-esc="partner.street"/></td></tr>
+                                <tr><td>Pays :</td><td class="text-primary"><t t-esc="partner.country_id.name"/></td></tr>
+                                <tr><td>Téléphone :</td><td class="text-primary"><t t-esc="partner.phone"/></td></tr>
+                                <tr><td>Email :</td><td class="text-primary"><t t-esc="partner.email"/></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chiffre d'affaires -->
+                    <div id="chiffre-affaire" class="info-content" style="display:none;">
+                        <h4>Chiffre d'Affaire:</h4>
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr><td>CA du Mois:</td><td class="text-primary"><t t-esc="'{:,.2f}'.format(ca_mois).replace(',', ' ')"/> <t t-out="request.env.company.currency_id.symbol or 'CFA'"/></td></tr>
+                                <tr><td>CA en cours de facturation:</td><td class="text-primary"><t t-esc="'{:,.2f}'.format(ca_en_cours_facturation).replace(',', ' ')"/> <t t-out="request.env.company.currency_id.symbol or 'CFA'"/></td></tr>
+                                <tr><td>CA Mois précédent:</td><td class="text-primary"><t t-esc="'{:,.2f}'.format(ca_mois_prec).replace(',', ' ')"/> <t t-out="request.env.company.currency_id.symbol or 'CFA'"/></td></tr>
+                                <tr><td>Évolution :</td><td class="text-primary"><t t-esc="round(evolution,2)"/> %</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Remise -->
+                    <div id="remise" class="info-content" style="display:none;">
+                        <h4>Remise:</h4>
+                        <p>Total Remise accordée : 
+                            <span class="text-primary"><t t-esc="'{:,.2f}'.format(total_remise).replace(',', ' ')"/> <t t-out="request.env.company.currency_id.symbol or 'CFA'"/></span>
+                        </p>
+                    </div>
+
+                    <!-- En cours -->
+                    <div id="en-cours" class="info-content" style="display:none;">
+                        <h4>En cours:</h4>
+                        <p>Montant restant dû : 
+                            <span class="text-primary"><t t-esc="'{:,.2f}'.format(total_en_cours).replace(',', ' ')"/> <t t-out="request.env.company.currency_id.symbol or 'CFA'"/></span>
+                        </p>
+                    </div>
+
+                    <!-- Escompte & ristourne -->
+                    <div id="escompte_ristourne" class="info-content w-100" style="display:none;">
+                        <h4 class="text-center text-primary">Escompte &amp; Ristourne</h4>
+                        <div class="my-3">
+                            <div>Total Escompte : <span class="text-primary"><span class="oe_currency_value"><t t-esc="'{:,.2f}'.format(total_escompte).replace(',', ' ')"/></span> <t t-esc="currency.symbol or currency.name"/></span></div>
+                            <div>Total Ristourne : <span class="text-primary"><span class="oe_currency_value"><t t-esc="'{:,.2f}'.format(total_ristourne).replace(',', ' ')"/></span> <t t-esc="currency.symbol or currency.name"/></span></div>
+                        </div>
+                        <table class="table table-bordered">
+                            <thead class="bg-primary text-light text-center">
+                                <tr>
+                                    <th>N° de pièce</th>
+                                    <th>Date comptable</th>
+                                    <th>Date d'échéance</th>
+                                    <th>Montant escompte</th>
+                                    <th>Montant ristourne</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="invoice_lines">
+                                    <t t-foreach="invoice_lines" t-as="line">
+                                        <tr>
+                                            <td><t t-esc="line.move_id.name"/></td>
+                                            <td><t t-esc="line.move_id.date"/></td>
+                                            <td><t t-esc="line.move_id.invoice_date_due"/></td>
+                                            <td><t t-esc="'{:,.2f}'.format(line.price_subtotal * (line.escompte / 100.0) if line.escompte else 0.0).replace(',', ' ')"/> <t t-esc="currency.symbol or currency.name"/></td>
+                                            <td><t t-esc="'{:,.2f}'.format(line.price_subtotal * (line.ristourne / 100.0) if line.ristourne else 0.0).replace(',', ' ')"/> <t t-esc="currency.symbol or currency.name"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-if="not invoice_lines">
+                                    <tr><td colspan="5" class="text-center text-muted">Aucune donnée pour l'année en cours.</td></tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- JS onglets -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const tabs = document.querySelectorAll('.tab');
+                        const contents = document.querySelectorAll('.info-content');
+                        const select = document.getElementById('info-select');
+
+                        tabs.forEach(tab => {
+                            tab.addEventListener('click', () => {
+                                tabs.forEach(t => t.classList.remove('active'));
+                                tab.classList.add('active');
+                                contents.forEach(c => c.style.display = 'none');
+                                document.getElementById(tab.dataset.target).style.display = 'block';
+                            });
+                        });
+
+                        select.addEventListener('change', () => {
+                            contents.forEach(c => c.style.display = 'none');
+                            document.getElementById(select.value).style.display = 'block';
+                        });
+                    });
+                </script>
+            </main>
+        </t>
+    </template>
+</odoo>

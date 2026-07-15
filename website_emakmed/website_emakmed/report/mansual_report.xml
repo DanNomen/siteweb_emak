@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_mensual_repport" model="ir.actions.report">
+        <field name="name">Repport mensuel</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">website_emakmed.mensual_repport</field>
+        <field name="report_file">website_emakmed.mensual_repport</field>
+    </record>
+
+    <template id="mensual_repport" name="Rapport mensuel">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="container">
+                    <!-- En-tête -->
+                    <div class="text-center mb-5">
+                        <h2 class="mt-4" style="color: #38a935;">
+                            <i class="fa fa-calendar me-2"></i>
+                            Relevé Mensuel - <span t-esc="month_name"/>
+                        </h2>
+                        <p class="text-muted">
+                            <t t-esc="partner.name"/>
+                        </p>
+                    </div>
+
+                    <!-- Table des factures -->
+                    <div class="table-responsive mb-5">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th style="width: 15%;">N° Facture</th>
+                                    <th style="width: 12%;">Date</th>
+                                    <th style="width: 10%;">État</th>
+                                    <th style="width: 18%;" class="text-end">Total HT</th>
+                                    <th style="width: 15%;" class="text-end">T.V.A.</th>
+                                    <th style="width: 18%;" class="text-end">Total TTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="invoices" t-as="invoice" t-key="invoice.id">
+                                    <t t-set="sign" t-value="-1 if invoice.move_type == 'out_refund' else 1"/>
+                                    <tr>
+                                        <td class="fw-semibold"><t t-esc="invoice.name or 'N/A'"/></td>
+                                        <td><t t-esc="invoice.invoice_date or '—'"/></td>
+                                        <td>
+                                            <t t-set="state_labels" t-value="{'draft': 'Brouillon', 'posted': 'Payé', 'cancel': 'Annulée'}"/>
+                                            <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <t t-esc="'%.2f' % (invoice.amount_untaxed * sign)"/>
+                                            <t t-esc="currency_symbol"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <t t-esc="'%.2f' % (invoice.amount_tax * sign)"/>
+                                            <t t-esc="currency_symbol"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <t t-esc="'%.2f' % (invoice.amount_total * sign)"/>
+                                            <t t-esc="currency_symbol"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totaux -->
+                    <div class="mt-5 mb-3 d-flex">
+                        <div class="ms-auto" style="border: 1px solid #ccc; padding: 15px; width: 50%; text-align: right; border-radius: 6px;">
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #333;">Total facture :</strong>
+                                <span style="font-weight: bold;">
+                                    <t t-esc="total_facture"/> <t t-esc="currency_symbol"/>
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #333;">Total réglé :</strong>
+                                <span style="font-weight: bold;">
+                                    <t t-esc="total_regle"/> <t t-esc="currency_symbol"/>
+                                </span>
+                            </div>
+                            <div>
+                                <strong style="color: #333;">Total restant à payer :</strong>
+                                <span style="font-weight: bold;">
+                                    <t t-esc="total_restant"/> <t t-esc="currency_symbol"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+
+                    <!-- Date d'émission -->
+                    <div class="text-end mt-4">
+                        <p class="text-muted">
+                            Document généré le <t t-esc="generated_date"/>
+                        </p>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

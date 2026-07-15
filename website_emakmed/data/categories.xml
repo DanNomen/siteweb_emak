@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="product_category_promotion" model="product.public.category">
+            <field name="name">Promotion</field>
+            <field name="sequence" type="int">20</field>
+            <field name="website_description">Produit en promotion</field>
+        </record>
+
+        <record id="product_category_new" model="product.public.category">
+            <field name="name">Nouveau</field>
+            <field name="sequence" type="int">21</field>
+            <field name="website_description">Produit neuf</field>
+        </record>
+
+        <record id="product_category_arrival" model="product.public.category">
+            <field name="name">Arrivage</field>
+            <field name="sequence" type="int">22</field>
+            <field name="website_description">Produit arrivage</field>
+        </record>
+
+        <record id="product_category_pre_arrival" model="product.public.category">
+            <field name="name">Pré-arrivage</field>
+            <field name="sequence" type="int">23</field>
+            <field name="website_description">Produit pré-arrivage</field>
+        </record>
+    </data>
+</odoo>

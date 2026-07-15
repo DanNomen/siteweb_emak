@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template to ensure line-id is always an integer for JS, even for ghost records -->
+    <template id="cart_lines_deferred" inherit_id="website_sale.cart_lines">
+        <xpath expr="//input[contains(@class, 'js_quantity')]" position="attributes">
+            <attribute name="t-att-data-line-id">line.id if (line.id and not str(line.id).startswith('virtual')) else line.product_id.id</attribute>
+        </xpath>
+        <xpath expr="//input[@type='hidden'][contains(@class, 'js_quantity')]" position="attributes">
+            <attribute name="t-att-data-line-id">line.id if (line.id and not str(line.id).startswith('virtual')) else line.product_id.id</attribute>
+        </xpath>
+    </template>
+
+    <!-- Optional: Add a button to "Clear Cart" if session-based -->
+    <!-- (The user didn't ask for it, but it might be useful) -->
+</odoo>

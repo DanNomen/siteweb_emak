@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- View product.template form -->
+    <record id="product_template_form_view_inherit_website_emakmed" model="ir.ui.view">
+        <field name="name">view.product.template.form</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']//group[@name='group_general']//field[@name='type']" position="after">
+                <field name="sale_order_lines" invisible="1"/>
+                <field name="sale_order_count" invisible="1"/>
+                <field name="number_of_sales" invisible="1"/>
+            </xpath>
+
+            <!-- hide image -->
+            <!-- <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="class">d-none</attribute>
+            </xpath> -->
+
+            <xpath expr="//group[@name='product_template_images']" position="before">
+                <group colspan="2" name="promotion_configuration" string="Configuration promotion" invisible="not sale_ok">
+                    <field name="promotion_checking_available" widget="boolean_toggle" />
+                    <field name="promotion_start_date" />
+                    <field name="promotion_end_date" />
+                    <field name="promotion_conditions" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

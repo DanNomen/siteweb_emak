@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="custom_website_header" inherit_id="website.layout">
+    <xpath expr="//header" position="replace">
+      <header class="shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+          <div class="container">
+            <!-- LOGO -->
+            <a class="navbar-brand" href="/">
+              <img t-if="website.company_id.logo"
+                   t-att-src="image_data_uri(website.company_id.logo)"
+                   alt="Logo"
+                   style="height: 40px; width: auto;" />
+            </a>
+
+            <!-- Bouton mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+              data-bs-target="#mainNav">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+              <!-- ✅ MENU PRINCIPAL -->
+              <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center" id="menu_menu_items">
+
+                <li class="nav-item">
+                  <a t-attf-class="nav-link #{'active' if request.httprequest.path == '/' else ''}"
+                    href="/">Accueil</a>
+                </li>
+
+                <!-- PRODUITS -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Produits</a>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <a class="dropdown-item" href="/shop">Tous les produits</a>
+                      </li>
+
+                      <t t-set="slug"
+                        t-value="lambda s: s.lower().replace(' ', '-').replace('é','e').replace('è','e').replace('ê','e').replace('à','a').replace('ç','c')" />
+                      <t t-set="categs"
+                        t-value="request.env['product.public.category'].sudo().search([('parent_id', '=', False)])" />
+                      <t t-foreach="categs" t-as="categorie">
+                        <li>
+                          <a class="dropdown-item"
+                            t-att-href="'/shop/category/%s-%s' % (slug(categorie.name), categorie.id)">
+                            <t t-esc="categorie.name" />
+                          </a>
+                        </li>
+                      </t>
+                    </ul>
+                  </li>
+                </t>
+
+                <!-- COMMANDES -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Commandes</a>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <a class="dropdown-item" href="/client_orders/all">Vos commandes</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/client_orders/extranet">Commandes Extranet</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/client_orders/inprogress">En préparation</a>
+                      </li>
+                    </ul>
+                  </li>
+                </t>
+
+                <!-- RÉCLAMATIONS -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                      Réclamations</a>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <a class="dropdown-item" href="/claim/create">Créer une réclamation</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/claim/your_claims">Vos réclamations</a>
+                      </li>
+                    </ul>
+                  </li>
+                </t>
+
+                <!-- MON OFFICINE -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Mon
+                      officine</a>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <a class="dropdown-item" href="/my_officine/invoices">Factures</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/my_officine/credits">Avoirs</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/my_officine/statements">Relevés</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/my-officine/compte-client">Compte client</a>
+                      </li>
+                    </ul>
+                  </li>
+                </t>
+              </ul>
+
+              <!-- ✅ PARTIE DROITE -->
+              <ul class="navbar-nav align-items-center gap-2 mt-2 mt-lg-0">
+
+                <!-- Panier -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <!-- ✅ PARTIE DROITE -->
+                  <!-- Panier -->
+                  <a class="nav-link" href="/shop/cart" aria-label="Panier" id="menu_cart_icon">
+                    <t
+                      t-nocache="The number of products is dynamic, this rendering cannot be cached."
+                      t-nocache-_icon="_icon"
+                      t-nocache-_text="_text"
+                      t-nocache-_badge="_badge"
+                      t-nocache-_badge_class="_badge_class"
+                      t-nocache-_icon_wrap_class="_icon_wrap_class"
+                      t-nocache-_text_class="_text_class"
+                      t-nocache-_item_class="_item_class"
+                      t-nocache-_link_class="_link_class">
+                      <t t-set="website_sale_cart_quantity"
+                        t-value="request.session['website_sale_cart_quantity'] if 'website_sale_cart_quantity' in request.session else website.sale_get_order().cart_quantity or 0" />
+                      <t t-set="show_cart" t-value="website.has_ecommerce_access()" />
+                      <li t-attf-class="#{_item_class} divider d-none" /> <!-- Make sure the cart and
+                        related menus are not folded (see autohideMenu) -->
+                      <li
+                        t-attf-class="o_wsale_my_cart #{not show_cart and 'd-none'} #{_item_class}"
+                        style="margin-top: -10px">
+                        <a href="/shop/cart" t-attf-class="#{_link_class}"
+                          aria-label="eCommerce cart">
+                          <div t-attf-class="#{_icon_wrap_class}">
+                            <i class="fa fa-shopping-cart fs-4 me-n2"></i>
+                            <sup
+                              t-attf-class="my_cart_quantity badge bg-primary border-white #{_badge_class} #{'d-none' if (website_sale_cart_quantity == 0) else ''}"
+                              t-esc="website_sale_cart_quantity"
+                              t-att-data-order-id="request.session.get('sale_order_id', '')" />
+                          </div>
+                          <span t-if="_text" t-attf-class="#{_text_class}">My Cart</span>
+                        </a>
+                      </li>
+                    </t>
+                  </a>
+                </t>
+
+                <!-- Recherche -->
+                <t t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item" id="menu_searchbar">
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal"
+                      title="Rechercher">
+                      <i class="fa fa-search"></i>
+                    </a>
+                  </li>
+                </t>
+
+                <!-- ✅ SI CONNECTÉ -->
+                <t
+                  t-if="request.env.user and request.env.user != request.env.ref('base.public_user')">
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                      <i class="fa fa-user-circle me-1"></i>
+                      <t t-esc="request.env.user.name" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="/web/session/logout?redirect=/"><i
+                            class="fa fa-sign-out-alt me-1"></i> Déconnexion</a>
+                      </li>
+                    </ul>
+                  </li>
+                </t>
+
+                <!-- ❌ SI NON CONNECTÉ -->
+                <t t-else="">
+                  <li class="nav-item">
+                    <a href="/web/login" class="btn btn-outline-primary">
+                      <i class="fa fa-user me-1"></i> Se connecter </a>
+                  </li>
+                </t>
+
+                <!-- Contact -->
+                <!-- <li class="nav-item">
+                  <a href="/labo" class="btn btn-primary">Connexion labo</a>
+                </li> -->
+              </ul>
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <div style="height: 15px"></div>
+
+      <!-- ✅ MODALE RECHERCHE -->
+      <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+              <h5 class="modal-title fw-semibold" id="searchModalLabel">Recherche</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+              <form method="get" action="/shop" class="d-flex">
+                <input type="text" name="search" class="form-control me-2"
+                  placeholder="Rechercher un produit..." />
+                <button type="submit" class="btn btn-success">
+                  <i class="fa fa-search"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </xpath>
+  </template>
+</odoo>

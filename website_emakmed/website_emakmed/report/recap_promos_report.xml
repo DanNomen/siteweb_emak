@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_recap_promos" model="ir.actions.report">
+        <field name="name">Récapitulatif des Promotions</field>
+        <field name="model">recap.promos.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">website_emakmed.recap_promos_report</field>
+        <field name="report_file">website_emakmed.recap_promos_report</field>
+    </record>
+
+    <template id="recap_promos_report" name="Rapport Récapitulatif des Promotions">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="container">
+                    <!-- En-tête -->
+                    <div class="text-center mb-5">
+                        <h2 class="mt-4" style="color: #38a935;">
+                            <i class="fa fa-gift me-2"></i>
+                            Récapitulatif des Promotions
+                        </h2>
+                        <p class="text-muted">
+                            Du <t t-esc="start_date"/> au <t t-esc="end_date"/>
+                        </p>
+                    </div>
+
+                    <!-- Table des produits gratuits -->
+                    <div class="table-responsive mb-5">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th style="width: 15%;">N° Facture</th>
+                                    <th style="width: 20%;">Pharmacie</th>
+                                    <th style="width: 25%;">Désignation</th>
+                                    <th style="width: 12%;">Date de commande</th>
+                                    <th style="width: 14%;" class="text-end">Quantité facturée</th>
+                                    <th style="width: 14%;" class="text-end">Unité gratuite</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="docs">
+                                    <t t-foreach="docs" t-as="line" t-key="line_index">
+                                        <tr>
+                                            <td class="fw-semibold"><t t-esc="line.get('n_facture', 'N/A')"/></td>
+                                            <td><t t-esc="line.get('pharmacie', 'N/A')"/></td>
+                                            <td><t t-esc="line.get('designation', 'N/A')"/></td>
+                                            <td><t t-esc="line.get('date_commande') or '—'"/></td>
+                                            <td class="text-end"><t t-esc="'%.2f' % line.get('qty_facturee', 0)"/></td>
+                                            <td class="text-end"><t t-esc="'%.2f' % line.get('unite_gratuite', 0)"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-if="not docs">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">
+                                            Aucun produit gratuit trouvé pour cette période
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totaux -->
+                    <t t-if="docs">
+                        <div class="mt-5 mb-3 d-flex">
+                            <div class="ms-auto" style="border: 1px solid #ccc; padding: 15px; width: 50%; text-align: right; border-radius: 6px;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong style="color: #333;">Total quantité facturée :</strong>
+                                    <span style="font-weight: bold;">
+                                        <t t-esc="'%.2f' % sum([d.get('qty_facturee', 0) for d in docs])"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong style="color: #333;">Total unités gratuites :</strong>
+                                    <span style="font-weight: bold;">
+                                        <t t-esc="'%.2f' % sum([d.get('unite_gratuite', 0) for d in docs])"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Date d'émission -->
+                    <div class="text-end mt-4">
+                        <p class="text-muted">
+                            Document généré le <t t-esc="generated_date"/>
+                        </p>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

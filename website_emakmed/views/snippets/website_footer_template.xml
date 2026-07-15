@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="custom_footer_dynamic" inherit_id="website.layout">
+    <xpath expr="//footer" position="replace">
+      <footer id="bottom" class="o_footer o_colored_level o_cc">
+        <section class="s_text_block pt40 pb16">
+          <div class="container">
+            <div class="row">
+              
+              <!-- 🌐 Liens utiles -->
+              <div class="col-lg-2 pt24 pb24">
+                <h5 class="mb-3">Liens utiles</h5>
+                <ul class="list-unstyled">
+                  <li><a href="/">Accueil</a></li>
+                  <li><a href="/aboutus">À propos de nous</a></li>
+                  <li><a href="/shop">Produits</a></li>
+                  <li><a href="/contactus">Services</a></li>
+                  <li><a href="/legal">Mentions légales</a></li>
+                  <li><a href="/contactus">Contactez-nous</a></li>
+                </ul>
+              </div>
+
+              <!-- 🏢 À propos -->
+              <div class="col-lg-5 pt24 pb24">
+                <h5 class="mb-3">À propos de nous</h5>
+                <p>
+                  Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
+                </p>
+                <p>
+                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d’optimiser leurs performances.
+                </p>
+              </div>
+
+              <!-- 📞 Contact & Réseaux -->
+              <div id="connect" class="col-lg-4 offset-lg-1 pt24 pb24">
+                <h5 class="mb-3">Rejoignez-nous</h5>
+                <ul class="list-unstyled">
+                  <li>
+                    <i class="fa fa-comment fa-fw me-2"></i>
+                    <a href="/contactus">Contactez-nous</a>
+                  </li>
+                  <li>
+                    <i class="fa fa-envelope fa-fw me-2"></i>
+                    <a t-att-href="'mailto:%s' % website.company_id.email">
+                      <t t-esc="website.company_id.email or 'info@yourcompany.com'"/>
+                    </a>
+                  </li>
+                  <li>
+                    <i class="fa fa-phone fa-fw me-2"></i>
+                    <a t-att-href="'tel:%s' % website.company_id.phone">
+                      <t t-esc="website.company_id.phone or '+223 00 000 0000'"/>
+                    </a>
+                  </li>
+                </ul>
+
+                <!-- 🔗 Réseaux sociaux dynamiques -->
+                <div class="s_social_media text-start">
+                  <h5 class="mb-2">Suivez-nous</h5>
+                  <t t-if="website.company_id.social_facebook">
+                    <a t-att-href="website.company_id.social_facebook" target="_blank" aria-label="Facebook">
+                      <i class="fa fa-facebook rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_twitter">
+                    <a t-att-href="website.company_id.social_twitter" target="_blank" aria-label="Twitter">
+                      <i class="fa fa-twitter rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_linkedin">
+                    <a t-att-href="website.company_id.social_linkedin" target="_blank" aria-label="LinkedIn">
+                      <i class="fa fa-linkedin rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_youtube">
+                    <a t-att-href="website.company_id.social_youtube" target="_blank" aria-label="YouTube">
+                      <i class="fa fa-youtube rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 🔒 COPYRIGHT -->
+        <div class="o_footer_copyright o_colored_level o_cc">
+          <div class="container py-3">
+            <div class="row">
+              <div class="col-sm text-center text-sm-start text-muted">
+                <span>
+                  © <t t-esc="website.company_id.name or 'Nom de l’entreprise'"/> - 
+                  <t t-esc="datetime.datetime.now().year"/>
+                </span>
+              </div>
+              <div class="col-sm text-center text-sm-end text-muted">
+                <span>Développé avec ❤️ par <a href="/">Dagodoo</a></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </xpath>
+  </template>
+</odoo>

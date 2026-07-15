@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- All orders -->
+    <template id="orders_template" name="Commandes templates">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="o_cc o_cc1 text-center rounded-1 shadow-sm" style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px">
+                    Toutes vos commandes
+                </h2>
+
+                <t t-if="orders">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Commande</th>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>État</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="orders" t-as="order">
+                                    <tr>
+                                        <td><t t-esc="order.name"/></td>
+                                        <td><t t-esc="order.date_order"/></td>
+                                        <td>
+                                            <t t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                        <td>
+                                            <t t-if="order.state == 'draft'">
+                                                <span class="badge text-bg-secondary">Devis</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sent'">
+                                                <span class="badge text-bg-info">Envoyé</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sale'">
+                                                <span class="badge text-bg-success">Commande client</span>
+                                            </t>
+                                            <t t-elif="order.state == 'cancel'">
+                                                <span class="badge text-bg-danger">Annulé</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge text-bg-warning text-dark">Inconnu</span>
+                                            </t>
+                                        </td>
+
+                                        <td class="text-end">
+                                            <a t-att-href="'/client_orders_detail/%s' % order.id"
+                                            class="btn btn-primary btn-md">
+                                                Voir détail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <p class="text-muted">Aucune commande trouvée.</p>
+                </t>
+
+            </div>
+        </t>
+    </template>
+
+
+    <!-- Odoo website orders -->
+    <template id="orders_extranet_template" name="Commandes extranet templates">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="o_cc o_cc1 text-center rounded-1 shadow-sm" style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px">
+                    Vos commandes extranet
+                </h2>
+
+                <t t-if="orders">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Commande</th>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>État</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="orders" t-as="order">
+                                    <tr>
+                                        <td><t t-esc="order.name"/></td>
+                                        <td><t t-esc="order.date_order"/></td>
+                                        <td>
+                                            <t t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                        <td>
+                                            <t t-if="order.state == 'draft'">
+                                                <span class="badge text-bg-secondary">Devis</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sent'">
+                                                <span class="badge text-bg-info">Envoyé</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sale'">
+                                                <span class="badge text-bg-success">Commande client</span>
+                                            </t>
+                                            <t t-elif="order.state == 'cancel'">
+                                                <span class="badge text-bg-danger">Annulé</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge text-bg-warning text-dark">Inconnu</span>
+                                            </t>
+                                        </td>
+
+                                        <td class="text-end">
+                                            <a t-att-href="'/client_orders_detail/%s' % order.id"
+                                            class="btn btn-primary btn-md">
+                                                Voir détail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <p class="text-muted">Aucune commande trouvée.</p>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- Inprogress orders -->
+    <template id="orders_inprogress_template" name="Commandes inprogress templates">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <h2 class="o_cc o_cc1 text-center rounded-1 shadow-sm" style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px">
+                    Vos commandes en préparation
+                </h2>
+
+                <t t-if="orders">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Commande</th>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>État</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="orders" t-as="order">
+                                    <tr>
+                                        <td><t t-esc="order.name"/></td>
+                                        <td><t t-esc="order.date_order"/></td>
+                                        <td>
+                                            <t t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                        <td>
+                                            <t t-if="order.state == 'draft'">
+                                                <span class="badge text-bg-secondary">Devis</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sent'">
+                                                <span class="badge text-bg-info">Envoyé</span>
+                                            </t>
+                                            <t t-elif="order.state == 'sale'">
+                                                <span class="badge text-bg-success">Commande client</span>
+                                            </t>
+                                            <t t-elif="order.state == 'cancel'">
+                                                <span class="badge text-bg-danger">Annulé</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge text-bg-warning text-dark">Inconnu</span>
+                                            </t>
+                                        </td>
+
+                                        <td class="text-end">
+                                            <a t-att-href="'/client_orders_detail/%s' % order.id"
+                                            class="btn btn-primary btn-md">
+                                                Voir détail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <p class="text-muted">Aucune commande trouvée.</p>
+                </t>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- Orders detail -->
+    <template id="orders_detail_template" name="Détail de la commande">
+        <t t-call="website.layout">
+            <div class="container py-5">
+
+                <!-- Bouton retour -->
+                <div class="text-start mb-5">
+                    <a href="/client_orders/all" class="btn btn-outline-primary">
+                        ← Retour à la liste des commandes
+                    </a>
+                </div>
+                
+                <h2 class="text-center rounded-1 shadow-sm mb-5" 
+                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                    Détail de la commande
+                </h2>
+
+                <t t-if="order">
+                    <!-- Informations générales -->
+                    <div class="card shadow-sm mb-5">
+                        <div class="card-body">
+                            <h4 class="mb-4">Informations générales</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Commande :</strong> <t t-esc="order.name"/></p>
+                                    <p><strong>Date :</strong> <t t-esc="order.date_order"/></p>
+                                    <p><strong>État :</strong>
+                                        <t t-if="order.state == 'draft'">
+                                            <span class="badge text-bg-secondary">Devis</span>
+                                        </t>
+                                        <t t-elif="order.state == 'sent'">
+                                            <span class="badge text-bg-info">Envoyé</span>
+                                        </t>
+                                        <t t-elif="order.state == 'sale'">
+                                            <span class="badge text-bg-success">Commande client</span>
+                                        </t>
+                                        <t t-elif="order.state == 'cancel'">
+                                            <span class="badge text-bg-danger">Annulé</span>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="badge text-bg-warning text-dark">Inconnu</span>
+                                        </t>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Client :</strong> <t t-esc="order.partner_id.name"/></p>
+                                    <p><strong>Email :</strong> <t t-esc="order.partner_id.email or '—'"/></p>
+                                    <p><strong>Téléphone :</strong> <t t-esc="order.partner_id.phone or '—'"/></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lignes de commande -->
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="mb-4">Lignes de commande</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Produit</th>
+                                            <th>Description</th>
+                                            <th>Quantité</th>
+                                            <th>Prix unitaire</th>
+                                            <th>Sous-total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="order.order_line" t-as="line">
+                                            <t t-if="line.product_id.type == 'consu'">
+                                                <tr>
+                                                    <td><t t-esc="line.product_id.display_name"/></td>
+                                                    <td><t t-esc="line.name"/></td>
+                                                    <td><t t-esc="line.product_uom_qty"/></td>
+                                                    <td>
+                                                        <t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                                    </td>
+                                                    <td>
+                                                        <t t-esc="line.price_subtotal"/> 
+                                                        <b><t t-esc="line.currency_id.symbol or line.currency_id.name"/></b>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Résumé total -->
+                            <div class="mt-4 text-end">
+                                <p><strong>Sous-total :</strong> 
+                                    <t t-out="order.amount_untaxed" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                </p>
+                                <p><strong>Taxes :</strong> 
+                                    <t t-out="order.amount_tax" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                </p>
+                                <h4><strong>Total :</strong> 
+                                    <t t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                </t>
+
+                <t t-else="">
+                    <div class="alert alert-warning text-center">
+                        <strong>Erreur :</strong> Commande introuvable ou non autorisée.
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+</odoo>
