@@ -1,13 +1,13 @@
 {
     'name': 'Emakhealthcare Customer Portal',
-    'version': '1.0',
+    'version': '18.0.1.1.0',
     'summary': 'Tableau de bord et menus portail client pour Emakhealthcare',
     'description': """
         - Ajoute un tableau de bord des achats mensuels pour le client connecté (/my/dashboard).
         - Gère les menus dynamiques de l'espace client.
     """,
     'category': 'Website',
-    'author': 'Dan Ahmed',
+    'author': 'Daniel Ahmed NOMEN',
     'depends': ['website', 'portal', 'sale', 'account', 'project'],
     'data': [
         'views/portal_dashboard_templates.xml',

@@ -19,6 +19,7 @@
         var activeAccueil = (path === '/' || path === '') ? 'active' : '';
         var activeProduits = path.startsWith('/produits') || path.startsWith('/shop') ? 'active' : '';
         var activePromos = path.startsWith('/promotions') ? 'active' : '';
+        var activeReclamations = path.startsWith('/claim') ? 'active' : '';
         var activeCategories = path.startsWith('/categories') ? 'active' : '';
         var activeCompte = path.startsWith('/my') || path.startsWith('/web/login') ? 'active' : '';
 
@@ -59,6 +60,19 @@
                     <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
                 </svg>
                 <span>Promos</span>
+            </a>
+
+            <!-- Réclamations -->
+            <a href="/claim/your_claims" class="emakhc-nav-item ${activeReclamations}" aria-label="Réclamations">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span>Réclamations</span>
             </a>
 
             <!-- Panier -->

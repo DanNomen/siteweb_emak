@@ -73,15 +73,6 @@
                   </a>
                   <ul class="dropdown-menu">
                     <li>
-                      <a class="dropdown-item" href="/my_officine/invoices">Factures</a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/my_officine/credits">Avoirs</a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/my_officine/statements">Relevés</a>
-                    </li>
-                    <li>
                       <a class="dropdown-item" href="/my">Mon compte</a>
                     </li>
                   </ul>

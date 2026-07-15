@@ -85,4 +85,13 @@
         </xpath>
 
     </template>
+
+    <!-- Enlever le lien sur les articles dans le panier -->
+    <template id="cart_line_product_link_no_click" inherit_id="website_sale.cart_line_product_link">
+        <xpath expr="//a" position="replace">
+            <span class="text-dark">
+                <t t-out="0"/>
+            </span>
+        </xpath>
+    </template>
 </odoo>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Emakhealthcare - Website Theme & Features',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Website',
     'summary': "Vues, modèles, contrôleurs et configuration du site Emakhealthcare",
     'description': """
@@ -12,7 +12,7 @@ website_emakmed, account, stock) et contient toutes les vues, modèles
 et contrôleurs du site. Il a été créé pour séparer les dépendances lourdes
 du module de base emakhealthcare_website.
 """,
-    'author': 'Emak Groupe',
+    'author': 'Daniel Ahmed NOMEN',
     'depends': [
         'base',
         'emakhealthcare_website',

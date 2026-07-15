@@ -124,7 +124,7 @@ class ClaimController(Controller):
         ]
 
         claims = request.env["claim.reclamation"].sudo().search(domain, order="create_date desc")
-        template = "website_emakmed.claim_reclamation_list_template"
+        template = "my_website_customer_portal.claim_reclamation_list_template"
         return request.render(template, {"claims": claims})
 
     @http.route(

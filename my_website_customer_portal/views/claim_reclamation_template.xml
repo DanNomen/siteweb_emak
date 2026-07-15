@@ -80,9 +80,16 @@
     <template id="claim_reclamation_list_template">
         <t t-call="website.layout">
             <div class="container py-5">
-                <h2 class="o_cc o_cc1 text-center rounded-1 shadow-sm" style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px">
+                <h2 class="o_cc o_cc1 text-center rounded-1 shadow-sm position-relative" style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px">
                     Vos réclamations
                 </h2>
+                
+                <div class="mb-4 pb-5">
+                    <a href="/claim/create" class="btn w-100 fw-bold py-3"
+                       style="background: linear-gradient(90deg, #38A935, #93C123); color: white; border-radius: 10px; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(56,169,53,0.3);">
+                        <i class="fa fa-plus-circle me-2"></i> Créer une réclamation
+                    </a>
+                </div>
 
                 <t t-if="claims">
                     <div class="table-responsive">
