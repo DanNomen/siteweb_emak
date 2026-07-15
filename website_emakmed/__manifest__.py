@@ -14,7 +14,7 @@
         - Le tableau de bord "officine" (/my-officine/compte-client et
           /my_officine/*) n'est pas affecté, ce sont des routes distinctes.
     """,
-    "author": "DAN NOMENJANAHARY",
+    "author": "HELLO DAN",
     "website": "",
     "category": "Website/Website",
     "version": "0.2",
