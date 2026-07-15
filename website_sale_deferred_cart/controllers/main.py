@@ -64,27 +64,42 @@ class WebsiteSaleDeferred(WebsiteSale):
         We bypass the cross-company product constraint by:
           1. Including ALL authorized company IDs in `allowed_company_ids`.
           2. Using `skip_product_company_check` context key.
+          3. Using sudo() everywhere to avoid AccessError on sale.order.line
+             for guest/public users.
         """
         deferred_cart = request.session.get('deferred_cart', {})
 
         # Collect all authorized company IDs so cross-company products pass validation
         allowed_company_ids = self._get_authorized_company_ids()
 
-        env = request.env['sale.order'].sudo().with_context(
+        # Toujours utiliser sudo() pour le ghost order — les utilisateurs publics/invités
+        # n'ont pas d'accès direct à sale.order.line, ce qui provoque un AccessError au flush.
+        sudo_env = request.env(su=True).with_context(
             allowed_company_ids=allowed_company_ids,
-            skip_product_company_check=True,   # custom flag we also check below
+            skip_product_company_check=True,
         )
 
-        order = env.create({
+        # Partenaire : si l'utilisateur est connecté on prend son partenaire,
+        # sinon on prend le partenaire public du site web.
+        user = request.env.user
+        if user and user._is_public():
+            partner_id = request.website.user_id.partner_id.id
+        else:
+            try:
+                partner_id = user.partner_id.id
+            except Exception:
+                partner_id = request.website.user_id.partner_id.id
+
+        order = sudo_env['sale.order'].create({
             'website_id': request.website.id,
             'company_id': request.website.company_id.id,
-            'partner_id': request.env.user.partner_id.id,
+            'partner_id': partner_id,
             'pricelist_id': request.website.pricelist_id.id if request.website.pricelist_id else False,
         })
 
         if deferred_cart:
             product_ids = [int(pid) for pid in deferred_cart.keys()]
-            products = request.env['product.product'].sudo().browse(product_ids).exists()
+            products = sudo_env['product.product'].browse(product_ids).exists()
             product_map = {p.id: p for p in products}
 
             lines = []
@@ -100,10 +115,7 @@ class WebsiteSaleDeferred(WebsiteSale):
                 }))
 
             if lines:
-                order.with_context(
-                    allowed_company_ids=allowed_company_ids,
-                    skip_product_company_check=True,
-                ).write({'order_line': lines})
+                order.write({'order_line': lines})
 
         _logger.info(
             "Ghost order #%s created for %d session products (will be unlinked after render)",
@@ -144,8 +156,15 @@ class WebsiteSaleDeferred(WebsiteSale):
         cart = request.session.get('deferred_cart', {})
 
         if not display:
-            return {'cart_quantity': sum(cart.values()), 'quantity': new_qty}
-
+            order = self._get_ghost_order()
+            try:
+                amt = order.amount_total
+            finally:
+                try:
+                    order.unlink()
+                except Exception:
+                    pass
+            return {'cart_quantity': sum(cart.values()), 'quantity': new_qty, 'amount': amt}
         order = self._get_ghost_order()
         try:
             render_ctx = {
@@ -232,7 +251,7 @@ class WebsiteSaleDeferred(WebsiteSale):
             # Seulement vider les lignes si la commande est encore en draft
             # et n'a pas encore de numéro confirmé (pour éviter de perdre des données)
             if order.state == 'draft':
-                order.order_line.unlink()
+                order.sudo().order_line.unlink()
 
             # Commit session items to DB
             allowed_company_ids = self._get_authorized_company_ids()
