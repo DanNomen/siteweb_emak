@@ -53,30 +53,7 @@
                   </li>
                 </ul>
 
-                <!-- 🔗 Réseaux sociaux dynamiques -->
-                <div class="s_social_media text-start">
-                  <h5 class="mb-2">Suivez-nous</h5>
-                  <t t-if="website.company_id.social_facebook">
-                    <a t-att-href="website.company_id.social_facebook" target="_blank" aria-label="Facebook">
-                      <i class="fa fa-facebook rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_twitter">
-                    <a t-att-href="website.company_id.social_twitter" target="_blank" aria-label="Twitter">
-                      <i class="fa fa-twitter rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_linkedin">
-                    <a t-att-href="website.company_id.social_linkedin" target="_blank" aria-label="LinkedIn">
-                      <i class="fa fa-linkedin rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_youtube">
-                    <a t-att-href="website.company_id.social_youtube" target="_blank" aria-label="YouTube">
-                      <i class="fa fa-youtube rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                </div>
+                <!-- 🔗 Réseaux sociaux dynamiques supprimés -->
               </div>
             </div>
           </div>

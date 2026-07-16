@@ -40,5 +40,10 @@
             </div>
         </xpath>
 
+        <!-- 3. Remplacement de l'image de fond du bandeau titre -->
+        <xpath expr="//span[hasclass('s_parallax_bg')]" position="attributes">
+            <attribute name="style">background-image: url('/emakhealthcare_website_theme/static/src/img/votre_sante.png'); background-position: 50% 0;</attribute>
+        </xpath>
+
     </template>
 </odoo>
