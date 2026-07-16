@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inherit_email_validation" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.email.validation</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='access_rights']" position="inside">
+                <group string="Email Validation">
+                    <field name="is_email_verified"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

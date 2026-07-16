@@ -58,23 +58,16 @@ class WebsiteSaleDeferred(WebsiteSale):
     # ------------------------------------------------------------------
     def _get_ghost_order(self):
         """
-        Create a temporary real Sale Order that is used ONLY for rendering.
-        It will be .unlink()-ed immediately after rendering.
-
-        We bypass the cross-company product constraint by:
-          1. Including ALL authorized company IDs in `allowed_company_ids`.
-          2. Using `skip_product_company_check` context key.
-          3. Using sudo() everywhere to avoid AccessError on sale.order.line
-             for guest/public users.
+        Create a temporary in-memory Sale Order that is used ONLY for rendering.
+        We use .new() instead of .create() so nothing is EVER written to the database.
+        This completely bypasses the AccessError on sale.order.line for guest users
+        during the final transaction flush.
         """
         deferred_cart = request.session.get('deferred_cart', {})
 
         # Collect all authorized company IDs so cross-company products pass validation
         allowed_company_ids = self._get_authorized_company_ids()
 
-        # Toujours utiliser sudo() pour le ghost order — les utilisateurs publics/invités
-        # n'ont pas d'accès direct à sale.order.line, ce qui provoque un AccessError au flush.
-        # Note : Environment n'a pas de with_context(), il faut passer le contexte dans env()
         new_context = dict(request.env.context,
                            allowed_company_ids=allowed_company_ids,
                            skip_product_company_check=True)
@@ -83,15 +76,16 @@ class WebsiteSaleDeferred(WebsiteSale):
         # Partenaire : si l'utilisateur est connecté on prend son partenaire,
         # sinon on prend le partenaire public du site web.
         user = request.env.user
-        if user and user._is_public():
-            partner_id = request.website.user_id.partner_id.id
-        else:
+        if user and not user._is_public():
             try:
                 partner_id = user.partner_id.id
             except Exception:
                 partner_id = request.website.user_id.partner_id.id
+        else:
+            partner_id = request.website.user_id.partner_id.id
 
-        order = sudo_env['sale.order'].create({
+        # Use .new() to create a purely in-memory record (NewId)
+        order = sudo_env['sale.order'].new({
             'website_id': request.website.id,
             'company_id': request.website.company_id.id,
             'partner_id': partner_id,
@@ -112,15 +106,14 @@ class WebsiteSaleDeferred(WebsiteSale):
                     'product_id': product.id,
                     'product_uom_qty': qty,
                     'name': product.display_name,
-                    'price_unit': product.list_price,
                 }))
 
             if lines:
-                order.write({'order_line': lines})
+                order.update({'order_line': lines})
 
         _logger.info(
-            "Ghost order #%s created for %d session products (will be unlinked after render)",
-            order.id, len(deferred_cart)
+            "Ghost order (NewId) created in memory for %d session products",
+            len(deferred_cart)
         )
         return order
 

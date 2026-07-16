@@ -87,15 +87,19 @@ class WebsiteSaleStockBlock(WebsiteSaleDeferred):
         """ Override with stock check for AJAX """
         product_id = int(product_id)
 
-        # Lire la quantité déjà dans le vrai panier (sale.order)
-        order = request.website.sale_get_order()
-        curr_qty = 0
-        if order:
-            if line_id:
-                existing_line = order.order_line.filtered(lambda l: l.id == line_id)
-            else:
-                existing_line = order.order_line.filtered(lambda l: l.product_id.id == product_id and not l.display_type)
-            curr_qty = sum(existing_line.mapped('product_uom_qty')) if existing_line else 0
+        if request.website.name == 'Emakhealthcare':
+            deferred_cart = request.session.get('deferred_cart', {})
+            curr_qty = deferred_cart.get(str(product_id), 0)
+        else:
+            # Lire la quantité déjà dans le vrai panier (sale.order)
+            order = request.website.sale_get_order()
+            curr_qty = 0
+            if order:
+                if line_id:
+                    existing_line = order.order_line.filtered(lambda l: l.id == line_id)
+                else:
+                    existing_line = order.order_line.filtered(lambda l: l.product_id.id == product_id and not l.display_type)
+                curr_qty = sum(existing_line.mapped('product_uom_qty')) if existing_line else 0
 
         if set_qty is not None:
             new_qty = float(set_qty)

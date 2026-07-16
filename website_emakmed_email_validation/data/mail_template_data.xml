@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_email_verification" model="mail.template">
+            <field name="name">Website: Email Verification</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="subject">Veuillez vérifier votre adresse email</field>
+            <field name="email_to">{{ object.email_formatted }}</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+        Bonjour <t t-out="object.name or ''"/>,<br/><br/>
+        Merci d'avoir créé un compte sur notre plateforme. Avant de pouvoir finaliser vos commandes, veuillez vérifier votre adresse email en cliquant sur le lien ci-dessous :<br/><br/>
+        <div style="text-align: center; margin: 16px 0px 16px 0px;">
+            <a t-attf-href="/my/verify_email?token={{ object.email_verification_token }}"
+                style="background-color: #875A7B; padding: 8px 16px 8px 16px; text-decoration: none; color: #fff; border-radius: 5px; font-size: 13px;">
+                Vérifier mon adresse email
+            </a>
+        </div>
+        <br/><br/>
+        Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.<br/><br/>
+        Cordialement,<br/>
+        L'équipe <t t-out="object.company_id.name or ''"/>
+    </p>
+</div>
+            </field>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>
