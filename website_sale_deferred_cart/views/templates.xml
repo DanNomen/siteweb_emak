@@ -3,10 +3,20 @@
     <!-- Template to ensure line-id is always an integer for JS, even for ghost records -->
     <template id="cart_lines_deferred" inherit_id="website_sale.cart_lines">
         <xpath expr="//input[contains(@class, 'js_quantity')]" position="attributes">
-            <attribute name="t-att-data-line-id">line.id if type(line.id).__name__ == 'int' else line.product_id.id</attribute>
+            <attribute name="t-att-data-line-id">line.product_id.id if str(line.id).startswith('&lt;') else line.id</attribute>
         </xpath>
         <xpath expr="//input[@type='hidden'][contains(@class, 'js_quantity')]" position="attributes">
-            <attribute name="t-att-data-line-id">line.id if type(line.id).__name__ == 'int' else line.product_id.id</attribute>
+            <attribute name="t-att-data-line-id">line.product_id.id if str(line.id).startswith('&lt;') else line.id</attribute>
+        </xpath>
+        <!-- Update the header cart amount when AJAX replaces the cart lines -->
+        <xpath expr="." position="inside">
+            <script>
+                try {
+                    var newAmount = <t t-esc="website_sale_order.amount_total" />;
+                    var formatted = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0}).format(newAmount).replace(',', ' ') + ' CFA';
+                    $('.my_cart_amount').text(formatted);
+                } catch(e) {}
+            </script>
         </xpath>
     </template>
 
