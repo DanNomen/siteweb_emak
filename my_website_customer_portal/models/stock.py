@@ -67,21 +67,38 @@ class StockRule(models.Model):
         if sale_line_id:
             sale_line = self.env['sale.order.line'].browse(sale_line_id)
             if sale_line.order_id.website_id.name == 'Emakhealthcare':
-                # Chercher l'entrepôt qui possède le stock pour ce produit
-                warehouses = self.env['stock.warehouse'].sudo().search([])
+                # -------------------------------------------------------
+                # Stratégie de sélection d'entrepôt :
+                # 1. Priorité à la société propriétaire du produit (company_id du produit)
+                #    → Un produit cadeau de société B sera livré depuis l'entrepôt de société B
+                # 2. Sinon, n'importe quel entrepôt avec du stock disponible
+                # -------------------------------------------------------
+                all_warehouses = self.env['stock.warehouse'].sudo().search([])
+                
+                # Identifier la société propriétaire du produit
+                product_sudo = product_id.sudo()
+                product_company = product_sudo.company_id
+                
+                # Trier : entrepôts de la société du produit d'abord
+                if product_company:
+                    sorted_warehouses = (
+                        all_warehouses.filtered(lambda wh: wh.company_id == product_company)
+                        + all_warehouses.filtered(lambda wh: wh.company_id != product_company)
+                    )
+                else:
+                    sorted_warehouses = all_warehouses
+                
                 best_wh = None
-                for wh in warehouses:
-                    product_with_ctx = product_id.with_context(warehouse=wh.id)
-                    if product_with_ctx.virtual_available >= product_qty:
+                for wh in sorted_warehouses:
+                    available = product_sudo.with_context(warehouse=wh.id).virtual_available
+                    if available >= product_qty:
                         best_wh = wh
                         break
                 
                 if best_wh:
-                    # Remplacer le type d'opération et l'emplacement d'origine par celui de l'entrepôt trouvé
                     move_values['location_id'] = best_wh.lot_stock_id.id
                     move_values['picking_type_id'] = best_wh.out_type_id.id
                     move_values['warehouse_id'] = best_wh.id
-                    # On assigne également la société de l'entrepôt pour éviter les erreurs de compagnie
                     move_values['company_id'] = best_wh.company_id.id
                     
         return move_values
