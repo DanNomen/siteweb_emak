@@ -259,6 +259,9 @@ class WebsiteSaleDeferred(WebsiteSale):
             total_html = request.env['ir.ui.view']._render_template(
                 "website_sale.total", render_ctx
             )
+            short_cart_summary_html = request.env['ir.ui.view']._render_template(
+                "website_sale.short_cart_summary", render_ctx
+            )
             notification = self._get_cart_notification_information(
                 order, [int(product_id)]
             )
@@ -275,6 +278,7 @@ class WebsiteSaleDeferred(WebsiteSale):
             'line_id': int(product_id),
             'website_sale.cart_lines': cart_lines_html,
             'website_sale.total': total_html,
+            'website_sale.short_cart_summary': short_cart_summary_html,
             'notification_info': notification,
         }
         if 'minor_amount' in render_ctx:
