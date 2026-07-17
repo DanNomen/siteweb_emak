@@ -23,10 +23,10 @@
               <!-- 🏢 À propos -->
               <div class="col-lg-5 pt24 pb24">
                 <h5 class="mb-3">À propos de nous</h5>
-                <p>
+                <p style="display: block !important;">
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
                 </p>
-                <p>
+                <p style="display: block !important;">
                   Nos produits sont conçus pour les petites et moyennes entreprises désireuses d’optimiser leurs performances.
                 </p>
               </div>

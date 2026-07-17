@@ -39,21 +39,36 @@ class EmakhealthcareWebsite(EmakmedWebsite):
                 [('parent_id', '=', False)], limit=6
             )
 
-            # Offres spéciales : produits avec prix barré
-            offers = ProductTemplate.search([
+            # Offres spéciales : produits des règles BXGY actives publiées sur le site
+            from odoo import fields as odoo_fields
+            today = odoo_fields.Date.today()
+            bxgy_rules = request.env['bxgy.promotion.rule'].sudo().search([
                 ('website_published', '=', True),
-                ('compare_list_price', '>', 0),
-            ], limit=4)
+                ('active', '=', True),
+                '|', ('start_date', '=', False), ('start_date', '<=', today),
+                '|', ('end_date', '=', False), ('end_date', '>=', today),
+            ], order='sequence asc, id desc')
 
-            # Si pas d'offres avec promo, prendre les 4 premiers produits publiés
+            # Collecter les produits de toutes les règles (max 4)
+            promo_products = ProductTemplate
+            for rule in bxgy_rules:
+                promo_products |= rule.product_ids.mapped('product_tmpl_id').sudo()
+                if len(promo_products) >= 4:
+                    break
+            offers = promo_products[:4]
+
+            # Fallback : produits avec prix barré si aucune règle BXGY active
+            if not offers:
+                offers = ProductTemplate.search([
+                    ('website_published', '=', True),
+                    ('compare_list_price', '>', 0),
+                ], limit=4)
+
+            # Fallback final : 4 premiers produits publiés
             if not offers:
                 offers = ProductTemplate.search([
                     ('website_published', '=', True),
                 ], limit=4)
-
-            # Si toujours pas de produits publiés, prendre les 4 premiers produits
-            if not offers:
-                offers = ProductTemplate.search([], limit=4)
 
             values = {
                 'categories': categories,
@@ -65,68 +80,6 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         # Comportement original pour tous les autres sites (ex. APPROMED MALI)
         return super().index(**kw)
 
-    @http.route('/promotions', auth="public", website=True, sitemap=True)
-    def promotions(self, **kw):
-        """Page listant tous les produits en promotion pour Emakhealthcare."""
-        current_website = request.website
-        if not (current_website and current_website.name == EMAKHEALTHCARE_WEBSITE_NAME):
-            return request.not_found()
-
-        ProductTemplate = request.env['product.template'].sudo()
-        ProductTag = request.env['product.tag'].sudo()
-        all_companies = request.env['res.company'].sudo().search([])
-
-        # Chercher l'étiquette "Promotion" (insensible à la casse)
-        promo_tag = ProductTag.search([('name', 'ilike', 'Promotion')], limit=1)
-
-        # Domaine : produits publiés + en stock ET qui ont soit l'étiquette Promotion,
-        # soit un promo_type défini
-        domain = [('website_published', '=', True)]
-
-        if promo_tag:
-            domain_tag = [('product_tag_ids', 'in', [promo_tag.id])]
-        else:
-            domain_tag = []
-
-        domain_promo_type = [('promo_type', '!=', False)]
-
-        # On combine : produits avec étiquette OU avec promo_type
-        if domain_tag:
-            combined = domain + ['|'] + domain_tag + domain_promo_type
-        else:
-            combined = domain + domain_promo_type
-
-        all_products = ProductTemplate.with_context(
-            allowed_company_ids=all_companies.ids
-        ).search(combined, order='name asc')
-
-        # Filtrer sur le stock (même logique que /produits)
-        products = all_products.filtered(
-            lambda p: p.type == 'service' or p.qty_available > 0
-        )
-
-        # Calcul des prix corrects selon la liste de prix active du site web
-        pricelist = current_website.pricelist_id
-        product_prices = {}
-        for pt in products:
-            variant = pt.product_variant_id
-            if variant and pricelist:
-                try:
-                    price = pricelist._get_product_price(
-                        variant, 1.0, currency=pricelist.currency_id
-                    )
-                except Exception:
-                    price = pt.list_price
-            else:
-                price = pt.list_price
-            product_prices[pt.id] = price
-
-        return request.render('emakhealthcare_website_theme.promotions_page', {
-            'products': products,
-            'product_count': len(products),
-            'website': current_website,
-            'product_prices': product_prices,
-        })
 
     @http.route('/categories', auth="public", website=True, sitemap=True)
     def all_categories(self, **kw):

@@ -14,7 +14,7 @@
         </xpath>
         
         <xpath expr="//div[@id='connect']/ul" position="after">
-            <ul class="list-unstyled" style="font-size: 1.1rem; line-height: 1.8;" t-if="request.website.name == 'Emakhealthcare'">
+            <ul class="list-unstyled" style="font-size: 1.1rem; line-height: 1.8; display: block !important;" t-if="request.website.name == 'Emakhealthcare'">
                 <li class="d-flex align-items-center mb-2">
                     <i class="fa fa-comment fa-fw me-3 text-white"></i>
                     <a href="/contactus" class="text-decoration-none fw-bold" style="color: #2E7D32;">Contactez-nous</a>

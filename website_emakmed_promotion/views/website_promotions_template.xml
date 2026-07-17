@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="promotions_page" name="Promotions">
+        <t t-call="website.layout">
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+            <div id="wrap" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif; min-height: 80vh;">
+
+                <!-- Styles identiques à la page produits + styles spécifiques promo -->
+                <style>
+                    .emakhc-product-card {
+                        background: #fff;
+                        border-radius: 16px;
+                        border: 1px solid #E5E7EB;
+                        transition: box-shadow 0.2s ease, transform 0.2s ease;
+                        overflow: hidden;
+                    }
+                    .emakhc-product-card:hover {
+                        box-shadow: 0 8px 28px rgba(0,0,0,0.10);
+                        transform: translateY(-3px);
+                    }
+                    .emakhc-product-card .product-img {
+                        height: 160px;
+                        object-fit: contain;
+                        padding: 12px;
+                        width: 100%;
+                    }
+                    /* Bouton Ajouter */
+                    .btn-add-to-cart {
+                        background-color: #2E7D32;
+                        color: #fff;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 8px 14px;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        width: 100%;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 6px;
+                        transition: background-color 0.2s;
+                    }
+                    .btn-add-to-cart:hover { background-color: #1B5E20; }
+                    /* Sélecteur de quantité */
+                    .qty-selector {
+                        display: none;
+                        align-items: center;
+                        justify-content: space-between;
+                        border: 2px solid #2E7D32;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        width: 100%;
+                        height: 38px;
+                    }
+                    .qty-selector.active { display: flex; }
+                    .qty-btn {
+                        background: #2E7D32;
+                        color: white;
+                        border: none;
+                        width: 40px;
+                        height: 100%;
+                        font-size: 1.1rem;
+                        font-weight: bold;
+                        cursor: pointer;
+                        flex-shrink: 0;
+                        transition: background-color 0.15s;
+                    }
+                    .qty-btn:hover { background-color: #1B5E20; }
+                    .qty-display {
+                        flex: 1;
+                        text-align: center;
+                        font-weight: 700;
+                        font-size: 0.95rem;
+                        color: #111827;
+                    }
+                    /* Badge promo cadeau */
+                    .badge-promo {
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        background-color: #EF4444;
+                        color: white;
+                        font-size: 0.72rem;
+                        font-weight: 700;
+                        padding: 3px 8px;
+                        border-radius: 20px;
+                        z-index: 10;
+                    }
+                    /* Bloc cadeau dans la carte */
+                    .promo-gift-box {
+                        background: #f0fdf4;
+                        border: 1px dashed #16a34a;
+                        border-radius: 8px;
+                        padding: 8px 10px;
+                        margin-bottom: 10px;
+                        font-size: 0.78rem;
+                        color: #15803d;
+                    }
+                    .promo-gift-box ul {
+                        margin: 4px 0 0 0;
+                        padding-left: 16px;
+                        color: #1f2937;
+                        font-size: 0.76rem;
+                    }
+                    /* Séparateur de règle */
+                    .promo-rule-header {
+                        background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+                        color: white;
+                        border-radius: 12px;
+                        padding: 14px 20px;
+                        margin-bottom: 20px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                    }
+                </style>
+
+                <!-- JavaScript identique à la page produits -->
+                <script type="text/javascript">
+                    document.addEventListener('DOMContentLoaded', function() {
+                        function updateCart(productId, addQty, setQty, onSuccess, onError) {
+                            var params = { product_id: parseInt(productId), display: false };
+                            if (addQty !== undefined) params.add_qty = addQty;
+                            if (setQty !== undefined) params.set_qty = setQty;
+
+                            fetch('/shop/cart/update_json', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: params
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                console.debug('[promo] /shop/cart/update_json ->', data);
+                                if (data &amp;&amp; data.error) {
+                                    if (onError) onError(data.error);
+                                    return;
+                                }
+                                if (data &amp;&amp; data.result) {
+                                    var qty = typeof data.result.cart_quantity !== 'undefined' ? data.result.cart_quantity : 0;
+                                    var amount = typeof data.result.amount !== 'undefined' ? data.result.amount : 0;
+                                    document.querySelectorAll('.my_cart_quantity').forEach(el => { el.textContent = qty; });
+                                    var formattedAmt = new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0}).format(amount) + ' CFA';
+                                    document.querySelectorAll('.my_cart_amount').forEach(el => { el.textContent = formattedAmt; });
+                                    var mobileCartBadge = document.querySelector('#emakhc-mobile-nav .emakhc-cart-badge');
+                                    if (mobileCartBadge) {
+                                        mobileCartBadge.textContent = qty;
+                                        mobileCartBadge.style.display = qty > 0 ? 'flex' : 'none';
+                                    }
+                                    if (onSuccess) onSuccess(data.result);
+                                } else {
+                                    if (onError) onError(data);
+                                }
+                            })
+                            .catch(function(err) { if (onError) onError(err); });
+                        }
+
+                        document.querySelectorAll('.btn-add-to-cart').forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                var card = btn.closest('.cart-action-wrap');
+                                var productId = btn.dataset.productId;
+                                var qtySelector = card.querySelector('.qty-selector');
+                                var qtyDisplay = card.querySelector('.qty-display');
+                                btn.disabled = true;
+                                updateCart(productId, 1, undefined, function() {
+                                    btn.style.display = 'none';
+                                    btn.disabled = false;
+                                    qtySelector.classList.add('active');
+                                    qtySelector.style.display = 'flex';
+                                    qtyDisplay.value = '1';
+                                    qtySelector.dataset.qty = '1';
+                                    qtySelector.dataset.productId = productId;
+                                }, function(reason) {
+                                    btn.disabled = false;
+                                    console.warn(typeof reason === 'string' ? reason : "Impossible d'ajouter ce produit au panier.");
+                                });
+                            });
+                        });
+
+                        document.querySelectorAll('.qty-plus').forEach(function(plusBtn) {
+                            plusBtn.addEventListener('click', function() {
+                                var selector = plusBtn.closest('.qty-selector');
+                                var currentQty = parseInt(selector.dataset.qty);
+                                var productId = selector.dataset.productId;
+                                var card = plusBtn.closest('.cart-action-wrap');
+                                var addBtn = card.querySelector('.btn-add-to-cart');
+                                var stock = parseInt(addBtn.dataset.stock || '999999');
+                                if (currentQty >= stock) return;
+                                plusBtn.disabled = true;
+                                updateCart(productId, 1, undefined, function() {
+                                    var newQty = currentQty + 1;
+                                    selector.dataset.qty = newQty;
+                                    selector.querySelector('.qty-display').value = newQty;
+                                    plusBtn.disabled = false;
+                                }, function() { plusBtn.disabled = false; });
+                            });
+                        });
+
+                        document.querySelectorAll('.qty-minus').forEach(function(minusBtn) {
+                            minusBtn.addEventListener('click', function() {
+                                var selector = minusBtn.closest('.qty-selector');
+                                var currentQty = parseInt(selector.dataset.qty);
+                                var productId = selector.dataset.productId;
+                                var card = minusBtn.closest('.cart-action-wrap');
+                                var addBtn = card.querySelector('.btn-add-to-cart');
+                                minusBtn.disabled = true;
+                                if (currentQty &lt;= 1) {
+                                    updateCart(productId, undefined, 0, function() {
+                                        selector.classList.remove('active');
+                                        selector.style.display = 'none';
+                                        addBtn.style.display = 'flex';
+                                        selector.dataset.qty = '0';
+                                        minusBtn.disabled = false;
+                                    }, function() { minusBtn.disabled = false; });
+                                } else {
+                                    updateCart(productId, -1, undefined, function() {
+                                        var newQty = currentQty - 1;
+                                        selector.dataset.qty = newQty;
+                                        selector.querySelector('.qty-display').value = newQty;
+                                        minusBtn.disabled = false;
+                                    }, function() { minusBtn.disabled = false; });
+                                }
+                            });
+                        });
+                    });
+                </script>
+
+                <div class="container py-4">
+
+                    <!-- En-tête -->
+                    <div class="mb-4">
+                        <h2 class="fw-bold mb-1" style="color: #111827;">Nos Promotions</h2>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">Découvrez nos offres spéciales et économisez sur vos équipements médicaux.</p>
+                    </div>
+
+                    <!-- Vide -->
+                    <t t-if="not has_promotions">
+                        <div class="text-center py-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                            <h5 class="fw-semibold text-muted">Aucune promotion active</h5>
+                            <p class="text-muted mb-3">Revenez plus tard pour découvrir nos offres !</p>
+                        </div>
+                    </t>
+
+                    <!-- Règles BXGY : une seule grille continue, tous produits mélangés -->
+                    <t t-if="bxgy_rules">
+                        <div class="row g-3">
+                            <t t-foreach="bxgy_rules" t-as="rule">
+                                <t t-foreach="rule.product_ids.mapped('product_tmpl_id')" t-as="p">
+                                    <t t-set="stock_qty" t-value="product_stocks.get(p.id, 0)"/>
+                                    <t t-set="variant_id" t-value="p.product_variant_id.id"/>
+                                    <div class="col-6 col-md-4 col-xl-3">
+                                        <div class="emakhc-product-card h-100 d-flex flex-column" style="position: relative;">
+
+                                            <!-- Badge -->
+                                            <span class="badge-promo">Promo</span>
+
+                                            <!-- Image -->
+                                            <a href="#" onclick="return false;" style="cursor: default;" class="d-block">
+                                                <img t-attf-src="/web/image/product.template/#{p.id}/image_512"
+                                                     class="product-img"
+                                                     alt="produit"
+                                                     loading="lazy"
+                                                     onerror="this.src='/web/static/img/placeholder.png'"/>
+                                            </a>
+
+                                            <!-- Infos -->
+                                            <div class="px-3 pb-3 d-flex flex-column flex-grow-1">
+                                                <!-- Catégorie -->
+                                                <div class="text-muted mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                    <t t-if="p.public_categ_ids"><t t-esc="p.public_categ_ids[0].name"/></t>
+                                                </div>
+
+                                                <!-- Nom -->
+                                                <a href="#" onclick="return false;" style="cursor: default;" class="text-decoration-none">
+                                                    <h6 class="fw-semibold text-dark mb-2" style="font-size: 0.88rem; line-height: 1.3; min-height: 36px;" t-esc="p.name"/>
+                                                </a>
+
+                                                <!-- Bloc cadeau -->
+                                                <div class="promo-gift-box">
+                                                    <strong><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> Pour <t t-esc="int(rule.min_qty)"/> acheté(s), vous recevez :</strong>
+                                                    <ul>
+                                                        <t t-foreach="rule.reward_line_ids" t-as="reward">
+                                                            <li><t t-esc="int(reward.quantity)"/>x <t t-esc="reward.product_id.name"/></li>
+                                                        </t>
+                                                    </ul>
+                                                </div>
+
+                                                <!-- Prix (pricelist-adjusted comme page produits) -->
+                                                <t t-set="display_price" t-value="product_prices.get(p.id, p.list_price)"/>
+                                                <div class="mb-3 mt-auto">
+                                                    <span class="fw-bold" style="color: #2E7D32; font-size: 1.05rem;">
+                                                        <t t-esc="'{:,.0f}'.format(display_price).replace(',', ' ')"/> CFA
+                                                    </span>
+                                                </div>
+
+                                                <!-- Stock -->
+                                                <div class="mb-2 fw-bold" style="color: #CC0000; font-size: 0.82rem;">
+                                                    En stock : <t t-esc="stock_qty"/>
+                                                </div>
+
+                                                <!-- Action panier -->
+                                                <div class="cart-action-wrap">
+                                                    <button t-attf-class="btn-add-to-cart #{'disabled' if (stock_qty or 0) &lt;= 0 else ''}"
+                                                            t-att-disabled="'disabled' if (stock_qty or 0) &lt;= 0 else None"
+                                                            t-att-data-product-id="variant_id"
+                                                            t-att-data-stock="stock_qty"
+                                                            t-attf-style="{{'background-color: #e0e0e0; color: #9e9e9e; border-color: #e0e0e0; cursor: not-allowed;' if (stock_qty or 0) &lt;= 0 else ''}}">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                                                        Ajouter au panier
+                                                    </button>
+                                                    <div class="qty-selector" data-qty="0">
+                                                        <button class="qty-btn qty-minus" type="button">−</button>
+                                                        <input type="number" class="qty-display" value="1" min="1" style="width: 40px; text-align: center; border: none; outline: none; font-weight: bold; background: transparent; -moz-appearance: textfield;"/>
+                                                        <button class="qty-btn qty-plus" type="button">+</button>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

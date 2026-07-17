@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Priorité 30 : plus haute que celle du module sale_bxgy_promotion (20)
+        qui remplace déjà ce conteneur, afin que ce module s'applique bien
+        APRÈS et retrouve les mêmes éléments .js_delete_product, que
+        sale_bxgy_promotion soit installé ou non.
+    -->
+    <template id="cart_line_remove_button_rename"
+              inherit_id="website_sale.cart_lines"
+              priority="30">
+
+        <!-- Lien texte "Remove" (desktop) -->
+        <xpath expr="//a[hasclass('js_delete_product')]" position="replace">
+            <a href="#" class="js_delete_product d-none d-md-inline-block small"
+               aria-label="Enlever du panier" title="Enlever du panier">
+                Enlever du panier
+            </a>
+        </xpath>
+
+        <!-- Bouton icône poubelle (mobile) : pas de texte visible, on met à jour le libellé accessible -->
+        <xpath expr="//button[hasclass('js_delete_product')]" position="attributes">
+            <attribute name="title">Enlever du panier</attribute>
+            <attribute name="aria-label">Enlever du panier</attribute>
+        </xpath>
+
+    </template>
+</odoo>

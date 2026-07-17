@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxgy_promotion_rule_website_public,bxgy.promotion.rule.website.public,sale_bxgy_promotion.model_bxgy_promotion_rule,base.group_public,1,0,0,0
+access_bxgy_promotion_rule_website_portal,bxgy.promotion.rule.website.portal,sale_bxgy_promotion.model_bxgy_promotion_rule,base.group_portal,1,0,0,0

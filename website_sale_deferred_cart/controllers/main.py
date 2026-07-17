@@ -54,6 +54,67 @@ class WebsiteSaleDeferred(WebsiteSale):
         return new_qty
 
     # ------------------------------------------------------------------
+    # BXGY reward preview: same logic as sale_bxgy_promotion._recompute_bxgy_rewards
+    # but without ever writing to the database, since the ghost order is a
+    # pure in-memory (.new()) record and SaleOrderLine.create() would fail
+    # (or write against a fake order_id) if used here.
+    # ------------------------------------------------------------------
+    def _get_bxgy_preview_reward_lines(self, order, qty_by_product):
+        """Compute the (0, 0, {...}) command tuples for the BXGY reward lines
+        that sale_bxgy_promotion would normally create in DB, so they can be
+        appended to the ghost order's in-memory order_line instead."""
+        reward_line_cmds = []
+
+        if not hasattr(order, "_get_bxgy_applicable_rules"):
+            # sale_bxgy_promotion not installed
+            return reward_line_cmds
+
+        rules = order._get_bxgy_applicable_rules()
+        if not rules:
+            return reward_line_cmds
+
+        grouped_rules = {}
+        for rule in rules:
+            key = order._same_products_key(rule)
+            if not key:
+                continue
+            grouped_rules.setdefault(key, order.env["bxgy.promotion.rule"])
+            grouped_rules[key] |= rule
+
+        for key, sibling_rules in grouped_rules.items():
+            purchased_qty = sum(qty_by_product.get(pid, 0.0) for pid in key)
+            if purchased_qty <= 0:
+                continue
+
+            best_rule = order._get_best_bxgy_rule_for_qty(sibling_rules, purchased_qty)
+            if not best_rule:
+                continue
+            best_rule = best_rule[0]
+
+            multiplier = order._compute_reward_multiplier_for_rule(best_rule, purchased_qty)
+            if multiplier <= 0:
+                continue
+
+            for reward_line in best_rule.reward_line_ids:
+                if not reward_line.product_id or reward_line.quantity <= 0:
+                    continue
+
+                reward_qty = multiplier * reward_line.quantity
+                if reward_qty <= 0:
+                    continue
+
+                reward_line_cmds.append((0, 0, {
+                    'product_id': reward_line.product_id.id,
+                    'product_uom_qty': reward_qty,
+                    'price_unit': 0.0,
+                    'name': "%s (Promotion)" % reward_line.product_id.display_name,
+                    'is_bxgy_reward': True,
+                    'bxgy_rule_id': best_rule.id,
+                }))
+
+        return reward_line_cmds
+
+    # ------------------------------------------------------------------
     # Ghost order: temporary real order created & unlinked per request
     # ------------------------------------------------------------------
     def _get_ghost_order(self):
@@ -98,6 +159,7 @@ class WebsiteSaleDeferred(WebsiteSale):
             product_map = {p.id: p for p in products}
 
             lines = []
+            qty_by_product = {}
             for pid_str, qty in deferred_cart.items():
                 product = product_map.get(int(pid_str))
                 if not product:
@@ -107,9 +169,16 @@ class WebsiteSaleDeferred(WebsiteSale):
                     'product_uom_qty': qty,
                     'name': product.display_name,
                 }))
+                qty_by_product[product.id] = qty_by_product.get(product.id, 0.0) + qty
 
             if lines:
                 order.update({'order_line': lines})
+                # Ajout des éventuelles lignes cadeaux BXGY, calculées à la volée
+                # (le panier fantôme n'étant jamais persisté, on ne peut pas
+                # réutiliser _recompute_bxgy_rewards() qui écrit en base).
+                reward_line_cmds = self._get_bxgy_preview_reward_lines(order, qty_by_product)
+                if reward_line_cmds:
+                    order.update({'order_line': lines + reward_line_cmds})
 
         _logger.info(
             "Ghost order (NewId) created in memory for %d session products",
@@ -149,16 +218,18 @@ class WebsiteSaleDeferred(WebsiteSale):
         )
         cart = request.session.get('deferred_cart', {})
 
-        if not display:
-            order = self._get_ghost_order()
-            try:
-                amt = order.amount_total
-            finally:
+            if not display:
+                order = self._get_ghost_order()
                 try:
-                    order.unlink()
-                except Exception:
-                    pass
-            return {'cart_quantity': sum(cart.values()), 'quantity': new_qty, 'amount': amt}
+                    amt = order.amount_total
+                    # Prendre la vraie quantité du panier (incluant les cadeaux BXGY)
+                    cart_qty = int(order.cart_quantity) if hasattr(order, 'cart_quantity') else sum(line.product_uom_qty for line in order.order_line if line.product_id.type != 'service')
+                finally:
+                    try:
+                        order.unlink()
+                    except Exception:
+                        pass
+                return {'cart_quantity': cart_qty, 'quantity': new_qty, 'amount': amt}
         order = self._get_ghost_order()
         try:
             render_ctx = {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="bxgy_promotion_rule_form_website_inherit" model="ir.ui.view">
+        <field name="name">bxgy.promotion.rule.form.website.inherit</field>
+        <field name="model">bxgy.promotion.rule</field>
+        <field name="inherit_id" ref="sale_bxgy_promotion.view_bxgy_rule_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Insérer le champ website_description -->
+            <xpath expr="//field[@name='product_ids']" position="before">
+                <field name="website_description" placeholder="Ex: Profitez de notre offre spéciale..."/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

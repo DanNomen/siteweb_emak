@@ -17,7 +17,7 @@
         'views/claim_reclamation_template.xml',
         'views/my_officine_template.xml',
         'views/client_portal_template.xml',
-        'views/promotions_page.xml',
+
         'data/website_menus.xml',
     ],
     'installable': True,
