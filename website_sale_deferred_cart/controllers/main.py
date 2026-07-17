@@ -224,7 +224,8 @@ class WebsiteSaleDeferred(WebsiteSale):
                 try:
                     amt = order.amount_total
                     # Prendre la vraie quantité du panier (incluant les cadeaux BXGY)
-                    cart_qty = int(order.cart_quantity) if hasattr(order, 'cart_quantity') else sum(line.product_uom_qty for line in order.order_line if line.product_id.type != 'service')
+                    # Explicitement calculé car order.cart_quantity échoue sur un objet NewId
+                    cart_qty = int(sum(line.product_uom_qty for line in order.order_line if line.product_id.type != 'service'))
                     _logger.warning("cart_update_json (display=False): deferred_cart=%s, order_lines=%s, cart_qty=%s, amt=%s", cart, order.order_line, cart_qty, amt)
                 finally:
                     try:
