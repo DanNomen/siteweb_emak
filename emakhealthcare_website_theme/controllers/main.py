@@ -166,7 +166,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
 
         # Filtrer : ne montrer que les articles avec stock libre > 0 (ou services) toutes sociétés confondues
         products_in_stock = all_products.filtered(
-            lambda p: p.type == 'service' or p.free_qty > 0
+            lambda p: p.type == 'service' or (p.product_variant_id and p.product_variant_id.free_qty > 0) or (not p.product_variant_id and p.qty_available > 0)
         )
 
         product_count = len(products_in_stock)
@@ -198,7 +198,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
                 price = pt.list_price
             product_prices[pt.id] = price
             # Stock calculé avec le contexte multi-société
-            product_stocks[pt.id] = int(pt.free_qty or 0)
+            product_stocks[pt.id] = int((pt.product_variant_id and pt.product_variant_id.free_qty) or pt.qty_available or 0)
 
         values = {
             'products': products,
