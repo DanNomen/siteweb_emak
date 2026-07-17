@@ -8,7 +8,7 @@
             <div class="row">
               
               <!-- 🌐 Liens utiles -->
-              <div class="col-lg-2 pt24 pb24">
+              <div class="col-12 col-lg-2 pt24 pb24">
                 <h5 class="mb-3">Liens utiles</h5>
                 <ul class="list-unstyled">
                   <li><a href="/">Accueil</a></li>
@@ -21,18 +21,18 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-lg-5 pt24 pb24">
+              <div class="col-12 col-lg-5 pt24 pb24">
                 <h5 class="mb-3">À propos de nous</h5>
                 <p style="display: block !important;">
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
                 </p>
                 <p style="display: block !important;">
-                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d’optimiser leurs performances.
+                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d'optimiser leurs performances.
                 </p>
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-lg-4 offset-lg-1 pt24 pb24">
+              <div id="connect" class="col-12 col-lg-4 offset-lg-1 pt24 pb24">
                 <h5 class="mb-3">Rejoignez-nous</h5>
                 <ul class="list-unstyled">
                   <li>
@@ -63,13 +63,13 @@
         <div class="o_footer_copyright o_colored_level o_cc">
           <div class="container py-3">
             <div class="row">
-              <div class="col-sm text-center text-sm-start text-muted">
+              <div class="col-12 col-sm text-center text-sm-start text-muted">
                 <span>
-                  © <t t-esc="website.company_id.name or 'Nom de l’entreprise'"/> - 
+                  © <t t-esc="website.company_id.name or 'Nom de l&#x27;entreprise'"/> - 
                   <t t-esc="datetime.datetime.now().year"/>
                 </span>
               </div>
-              <div class="col-sm text-center text-sm-end text-muted">
+              <div class="col-12 col-sm text-center text-sm-end text-muted">
                 <span>Développé avec ❤️ par <a href="/">Dagodoo</a></span>
               </div>
             </div>
