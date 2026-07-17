@@ -3,349 +3,295 @@
 
     <template id="auth_page" name="Emakhealthcare – Connexion / Inscription">
         <t t-call="website.layout">
-            <t t-set="head_auth">
-                <style>
-                    /* ========================================================
-                       AUTH PAGE — Emakhealthcare
-                       ======================================================== */
-                    :root {
-                        --emak-green: #2E7D32;
-                        --emak-green-light: #43A047;
-                        --emak-dark: #1a1a2e;
-                        --emak-card: #ffffff;
-                        --emak-border: #e0e0e0;
-                        --emak-muted: #757575;
-                        --emak-error: #C62828;
-                    }
-
-                    .emak-auth-wrapper {
-                        min-height: 80vh;
-                        background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 40px 16px;
-                    }
-
-                    .emak-auth-grid {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 0;
-                        max-width: 880px;
-                        width: 100%;
-                        border-radius: 20px;
-                        overflow: hidden;
-                        box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-                    }
-
-                    /* LEFT — Login */
-                    .emak-auth-login {
-                        background: var(--emak-dark);
-                        padding: 48px 40px;
-                        color: #fff;
-                    }
-
-                    /* RIGHT — Register */
-                    .emak-auth-register {
-                        background: var(--emak-card);
-                        padding: 48px 40px;
-                        border-left: 1px solid var(--emak-border);
-                    }
-
-                    /* Panel titles */
-                    .emak-auth-title {
-                        font-size: 1.5rem;
-                        font-weight: 700;
-                        margin-bottom: 8px;
-                        letter-spacing: -0.3px;
-                    }
-                    .emak-auth-subtitle {
-                        font-size: 0.875rem;
-                        opacity: 0.7;
-                        margin-bottom: 32px;
-                    }
-
-                    /* Labels */
-                    .emak-label {
-                        font-size: 0.8rem;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.05em;
-                        margin-bottom: 6px;
-                        display: block;
-                    }
-                    .emak-auth-login .emak-label { color: rgba(255,255,255,0.75); }
-                    .emak-auth-register .emak-label { color: #424242; }
-
-                    /* Inputs */
-                    .emak-input {
-                        width: 100%;
-                        padding: 12px 14px;
-                        border-radius: 10px;
-                        font-size: 0.9rem;
-                        margin-bottom: 18px;
-                        outline: none;
-                        transition: border-color 0.2s, box-shadow 0.2s;
-                    }
-                    .emak-auth-login .emak-input {
-                        background: rgba(255,255,255,0.08);
-                        border: 1.5px solid rgba(255,255,255,0.2);
-                        color: #fff;
-                    }
-                    .emak-auth-login .emak-input::placeholder { color: rgba(255,255,255,0.4); }
-                    .emak-auth-login .emak-input:focus {
-                        border-color: var(--emak-green-light);
-                        box-shadow: 0 0 0 3px rgba(67,160,71,0.25);
-                    }
-                    .emak-auth-register .emak-input {
-                        background: #fafafa;
-                        border: 1.5px solid var(--emak-border);
-                        color: #212121;
-                    }
-                    .emak-auth-register .emak-input:focus {
-                        border-color: var(--emak-green);
-                        box-shadow: 0 0 0 3px rgba(46,125,50,0.15);
-                        background: #fff;
-                    }
-
-                    /* Buttons */
-                    .emak-btn {
-                        width: 100%;
-                        padding: 13px;
-                        border: none;
-                        border-radius: 10px;
-                        font-size: 0.95rem;
-                        font-weight: 700;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                        letter-spacing: 0.02em;
-                        margin-top: 4px;
-                    }
-                    .emak-btn-login {
-                        background: linear-gradient(135deg, var(--emak-green), var(--emak-green-light));
-                        color: #fff;
-                    }
-                    .emak-btn-login:hover {
-                        transform: translateY(-1px);
-                        box-shadow: 0 6px 20px rgba(46,125,50,0.45);
-                    }
-                    .emak-btn-register {
-                        background: linear-gradient(135deg, var(--emak-dark), #16213e);
-                        color: #fff;
-                    }
-                    .emak-btn-register:hover {
-                        transform: translateY(-1px);
-                        box-shadow: 0 6px 20px rgba(26,26,46,0.4);
-                    }
-
-                    /* Divider */
-                    .emak-divider {
-                        display: flex;
-                        align-items: center;
-                        gap: 12px;
-                        margin: 20px 0;
-                        font-size: 0.8rem;
-                        color: rgba(255,255,255,0.4);
-                    }
-                    .emak-divider::before,
-                    .emak-divider::after {
-                        content: '';
-                        flex: 1;
-                        height: 1px;
-                        background: rgba(255,255,255,0.15);
-                    }
-
-                    /* Error alert */
-                    .emak-alert {
-                        padding: 10px 14px;
-                        border-radius: 8px;
-                        font-size: 0.85rem;
-                        margin-bottom: 16px;
-                        border-left: 4px solid var(--emak-error);
-                        background: rgba(198,40,40,0.12);
-                        color: #ffcdd2;
-                    }
-                    .emak-auth-register .emak-alert {
-                        color: var(--emak-error);
-                        background: #fff0f0;
-                    }
-
-                    /* Forgot password link */
-                    .emak-link {
-                        display: block;
-                        text-align: center;
-                        font-size: 0.8rem;
-                        margin-top: 14px;
-                        color: rgba(255,255,255,0.5);
-                        text-decoration: none;
-                        transition: color 0.2s;
-                    }
-                    .emak-link:hover { color: var(--emak-green-light); }
-
-                    /* Badge "Or" */
-                    .emak-or-badge {
-                        position: absolute;
-                        left: 50%;
-                        top: 50%;
-                        transform: translate(-50%, -50%);
-                        background: #fff;
-                        border: 2px solid var(--emak-border);
-                        border-radius: 50%;
-                        width: 36px;
-                        height: 36px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 0.7rem;
-                        font-weight: 700;
-                        color: var(--emak-muted);
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                        z-index: 10;
-                    }
-
-                    /* Responsive */
-                    @media (max-width: 640px) {
-                        .emak-auth-grid {
-                            grid-template-columns: 1fr;
-                        }
-                        .emak-or-badge { display: none; }
-                        .emak-auth-register { border-left: none; border-top: 4px solid var(--emak-green); }
-                    }
-                </style>
-            </t>
             <t t-set="additional_title">Connexion / Créer un compte</t>
 
+            <!-- Style inline dans le body (supporté par tous les navigateurs) -->
+            <style>
+                /* ========================================================
+                   AUTH PAGE — Emakhealthcare
+                   ======================================================== */
+                body { background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%) !important; }
+
+                .emak-auth-wrapper {
+                    min-height: 80vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 40px 16px;
+                    font-family: 'Inter', 'Segoe UI', sans-serif;
+                }
+                .emak-auth-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    max-width: 900px;
+                    width: 100%;
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 25px 70px rgba(0,0,0,0.13);
+                    position: relative;
+                }
+                /* LEFT – Login */
+                .emak-auth-login {
+                    background: #1a1a2e;
+                    padding: 52px 44px;
+                    color: #fff;
+                }
+                /* RIGHT – Register */
+                .emak-auth-register {
+                    background: #ffffff;
+                    padding: 52px 44px;
+                }
+                .emak-panel-tag {
+                    font-size: 0.72rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.12em;
+                    margin-bottom: 8px;
+                }
+                .emak-auth-login .emak-panel-tag { color: rgba(255,255,255,0.45); }
+                .emak-auth-register .emak-panel-tag { color: #9e9e9e; }
+
+                .emak-auth-title {
+                    font-size: 1.55rem;
+                    font-weight: 700;
+                    margin: 0 0 6px 0;
+                    letter-spacing: -0.3px;
+                }
+                .emak-auth-login .emak-auth-title { color: #ffffff; }
+                .emak-auth-register .emak-auth-title { color: #1a1a2e; }
+
+                .emak-auth-sub {
+                    font-size: 0.85rem;
+                    margin-bottom: 32px;
+                }
+                .emak-auth-login .emak-auth-sub { color: rgba(255,255,255,0.55); }
+                .emak-auth-register .emak-auth-sub { color: #757575; }
+
+                .emak-label {
+                    display: block;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 7px;
+                }
+                .emak-auth-login .emak-label { color: rgba(255,255,255,0.65); }
+                .emak-auth-register .emak-label { color: #424242; }
+
+                .emak-input {
+                    display: block;
+                    width: 100%;
+                    padding: 12px 15px;
+                    border-radius: 10px;
+                    font-size: 0.9rem;
+                    margin-bottom: 18px;
+                    outline: none;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                    box-sizing: border-box;
+                }
+                .emak-auth-login .emak-input {
+                    background: rgba(255,255,255,0.08);
+                    border: 1.5px solid rgba(255,255,255,0.18);
+                    color: #fff;
+                }
+                .emak-auth-login .emak-input::placeholder { color: rgba(255,255,255,0.35); }
+                .emak-auth-login .emak-input:focus {
+                    border-color: #43A047;
+                    box-shadow: 0 0 0 3px rgba(67,160,71,0.3);
+                    background: rgba(255,255,255,0.12);
+                }
+                .emak-auth-register .emak-input {
+                    background: #fafafa;
+                    border: 1.5px solid #e0e0e0;
+                    color: #212121;
+                }
+                .emak-auth-register .emak-input:focus {
+                    border-color: #2E7D32;
+                    box-shadow: 0 0 0 3px rgba(46,125,50,0.15);
+                    background: #fff;
+                }
+
+                .emak-btn {
+                    display: block;
+                    width: 100%;
+                    padding: 14px;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    margin-top: 4px;
+                    text-align: center;
+                }
+                .emak-btn-login {
+                    background: linear-gradient(135deg, #2E7D32, #43A047);
+                    color: #fff;
+                }
+                .emak-btn-login:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 22px rgba(46,125,50,0.45);
+                }
+                .emak-btn-register {
+                    background: linear-gradient(135deg, #1a1a2e, #16213e);
+                    color: #fff;
+                }
+                .emak-btn-register:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 22px rgba(26,26,46,0.4);
+                }
+
+                .emak-forgot {
+                    display: block;
+                    text-align: center;
+                    font-size: 0.8rem;
+                    margin-top: 14px;
+                    color: rgba(255,255,255,0.45);
+                    text-decoration: none;
+                    transition: color 0.2s;
+                }
+                .emak-forgot:hover { color: #43A047; }
+
+                .emak-or-badge {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    background: #fff;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 50%;
+                    width: 38px;
+                    height: 38px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.68rem;
+                    font-weight: 800;
+                    color: #9e9e9e;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    z-index: 10;
+                    letter-spacing: 0.05em;
+                }
+
+                .emak-alert-error {
+                    padding: 10px 14px;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    margin-bottom: 16px;
+                    border-left: 4px solid #C62828;
+                }
+                .emak-auth-login .emak-alert-error {
+                    background: rgba(198,40,40,0.15);
+                    color: #ffcdd2;
+                }
+                .emak-auth-register .emak-alert-error {
+                    background: #fff0f0;
+                    color: #C62828;
+                }
+
+                .emak-secure-note {
+                    text-align: center;
+                    font-size: 0.72rem;
+                    color: #bdbdbd;
+                    margin-top: 18px;
+                }
+
+                @media (max-width: 640px) {
+                    .emak-auth-grid { grid-template-columns: 1fr; }
+                    .emak-or-badge { display: none; }
+                    .emak-auth-login, .emak-auth-register { padding: 36px 24px; }
+                    .emak-auth-register { border-top: 4px solid #2E7D32; }
+                }
+            </style>
+
             <div class="emak-auth-wrapper">
-                <div class="emak-auth-grid" style="position: relative;">
+                <div class="emak-auth-grid">
 
-                    <!-- ===================== LEFT: LOGIN ===================== -->
+                    <!-- ===== GAUCHE : SE CONNECTER ===== -->
                     <div class="emak-auth-login">
+                        <div class="emak-panel-tag">Emakhealthcare</div>
+                        <h1 class="emak-auth-title">Se connecter</h1>
+                        <p class="emak-auth-sub">Accédez à votre espace client</p>
 
-                        <!-- Logo / Header -->
-                        <div style="margin-bottom: 28px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Emakhealthcare</div>
-                            <div class="emak-auth-title">Se connecter</div>
-                            <div class="emak-auth-subtitle">Accédez à votre espace client</div>
-                        </div>
-
-                        <!-- Error message from Odoo -->
                         <t t-if="error_message">
-                            <div class="emak-alert"><t t-esc="error_message"/></div>
+                            <div class="emak-alert-error"><t t-esc="error_message"/></div>
                         </t>
 
-                        <form action="/web/login" method="post" id="emak-login-form">
+                        <form action="/web/login" method="post" id="emak-login-form" autocomplete="on">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="redirect" t-att-value="redirect"/>
 
                             <label class="emak-label" for="login_email">Adresse e-mail</label>
-                            <input id="login_email"
-                                   name="login"
-                                   type="email"
-                                   class="emak-input"
-                                   placeholder="votre@email.com"
-                                   autocomplete="username email"
-                                   required="required"/>
+                            <input id="login_email" name="login" type="email"
+                                   class="emak-input" placeholder="votre@email.com"
+                                   autocomplete="username email" required="required"/>
 
                             <label class="emak-label" for="login_password">Mot de passe</label>
-                            <input id="login_password"
-                                   name="password"
-                                   type="password"
-                                   class="emak-input"
-                                   placeholder="••••••••"
-                                   autocomplete="current-password"
-                                   required="required"/>
+                            <input id="login_password" name="password" type="password"
+                                   class="emak-input" placeholder="••••••••"
+                                   autocomplete="current-password" required="required"/>
 
                             <button type="submit" class="emak-btn emak-btn-login" id="emak-login-submit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align: middle;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                                Se connecter
+                                Se connecter →
                             </button>
                         </form>
-
-                        <a href="/web/reset_password" class="emak-link">Mot de passe oublié ?</a>
+                        <a href="/web/reset_password" class="emak-forgot">Mot de passe oublié ?</a>
                     </div>
 
-                    <!-- OR Badge (desktop) -->
+                    <!-- Pastille OU (desktop) -->
                     <div class="emak-or-badge">OU</div>
 
-                    <!-- ===================== RIGHT: REGISTER ===================== -->
+                    <!-- ===== DROITE : CRÉER UN COMPTE ===== -->
                     <div class="emak-auth-register">
+                        <div class="emak-panel-tag">Nouveau client</div>
+                        <h2 class="emak-auth-title">Créer un compte</h2>
+                        <p class="emak-auth-sub">Rapide, gratuit et sécurisé</p>
 
-                        <div style="margin-bottom: 28px;">
-                            <div style="font-size: 0.75rem; color: #9e9e9e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Nouveau client</div>
-                            <div class="emak-auth-title" style="color: #1a1a2e;">Créer un compte</div>
-                            <div class="emak-auth-subtitle">Rapide, gratuit et sécurisé</div>
-                        </div>
-
-                        <!-- Error from signup -->
                         <t t-if="error">
-                            <div class="emak-alert"><t t-esc="error"/></div>
+                            <div class="emak-alert-error"><t t-esc="error"/></div>
                         </t>
 
-                        <form action="/web/signup" method="post" id="emak-register-form">
+                        <form action="/web/signup" method="post" id="emak-register-form" autocomplete="on">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="hidden" name="redirect" t-att-value="redirect"/>
 
                             <label class="emak-label" for="reg_name">Nom complet</label>
-                            <input id="reg_name"
-                                   name="name"
-                                   type="text"
-                                   class="emak-input"
-                                   placeholder="Prénom et Nom"
-                                   autocomplete="name"
-                                   required="required"/>
+                            <input id="reg_name" name="name" type="text"
+                                   class="emak-input" placeholder="Prénom et Nom"
+                                   autocomplete="name" required="required"/>
 
                             <label class="emak-label" for="reg_email">Adresse e-mail</label>
-                            <input id="reg_email"
-                                   name="login"
-                                   type="email"
-                                   class="emak-input"
-                                   placeholder="votre@email.com"
-                                   autocomplete="username email"
-                                   required="required"/>
+                            <input id="reg_email" name="login" type="email"
+                                   class="emak-input" placeholder="votre@email.com"
+                                   autocomplete="username email" required="required"/>
 
                             <label class="emak-label" for="reg_password">Mot de passe</label>
-                            <input id="reg_password"
-                                   name="password"
-                                   type="password"
-                                   class="emak-input"
-                                   placeholder="Minimum 8 caractères"
-                                   autocomplete="new-password"
-                                   minlength="6"
-                                   required="required"/>
+                            <input id="reg_password" name="password" type="password"
+                                   class="emak-input" placeholder="Minimum 6 caractères"
+                                   autocomplete="new-password" minlength="6" required="required"/>
 
                             <label class="emak-label" for="reg_confirm">Confirmer le mot de passe</label>
-                            <input id="reg_confirm"
-                                   name="confirm_password"
-                                   type="password"
-                                   class="emak-input"
-                                   placeholder="Répétez le mot de passe"
-                                   autocomplete="new-password"
-                                   minlength="6"
-                                   required="required"/>
+                            <input id="reg_confirm" name="confirm_password" type="password"
+                                   class="emak-input" placeholder="Répétez le mot de passe"
+                                   autocomplete="new-password" minlength="6" required="required"/>
 
                             <button type="submit" class="emak-btn emak-btn-register" id="emak-register-submit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:middle;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                                Créer mon compte
+                                Créer mon compte →
                             </button>
                         </form>
 
-                        <div style="text-align:center; font-size: 0.75rem; color: #9e9e9e; margin-top: 16px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Vos données sont protégées et ne seront jamais partagées
-                        </div>
+                        <p class="emak-secure-note">🔒 Vos données sont protégées et ne seront jamais partagées</p>
                     </div>
 
                 </div>
             </div>
 
-            <!-- Password match validation -->
             <script>
                 document.getElementById('emak-register-form').addEventListener('submit', function(e) {
                     var pwd = document.getElementById('reg_password').value;
-                    var confirm = document.getElementById('reg_confirm').value;
-                    if (pwd !== confirm) {
+                    var cfm = document.getElementById('reg_confirm').value;
+                    if (pwd !== cfm) {
                         e.preventDefault();
-                        alert('Les mots de passe ne correspondent pas. Veuillez vérifier et réessayer.');
+                        alert('Les mots de passe ne correspondent pas.');
                         document.getElementById('reg_confirm').focus();
                     }
                 });
