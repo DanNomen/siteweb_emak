@@ -172,15 +172,14 @@ class WebsiteSaleDeferred(WebsiteSale):
                 qty_by_product[product.id] = qty_by_product.get(product.id, 0.0) + qty
 
             if lines:
+                # Ajout initial pour que l'ORM puisse évaluer la règle
                 order.update({'order_line': lines})
-                # Ajout des éventuelles lignes cadeaux BXGY, calculées à la volée
-                # (le panier fantôme n'étant jamais persisté, on ne peut pas
-                # réutiliser _recompute_bxgy_rewards() qui écrit en base).
+                
                 reward_line_cmds = self._get_bxgy_preview_reward_lines(order, qty_by_product)
                 if reward_line_cmds:
-                    # On ajoute UNIQUEMENT les reward_line_cmds (les lignes (0, 0, ...))
-                    # pour ne pas dupliquer les "lines" existantes.
-                    order.update({'order_line': reward_line_cmds})
+                    # Pour éviter la duplication sur un enregistrement en mémoire (NewId),
+                    # on vide toutes les lignes existantes avec (5, 0, 0) et on recrée tout.
+                    order.update({'order_line': [(5, 0, 0)] + lines + reward_line_cmds})
 
         _logger.info(
             "Ghost order (NewId) created in memory for %d session products",
@@ -220,7 +219,7 @@ class WebsiteSaleDeferred(WebsiteSale):
         )
         cart = request.session.get('deferred_cart', {})
 
-            if not display:
+        if not display:
                 order = self._get_ghost_order()
                 try:
                     amt = order.amount_total
