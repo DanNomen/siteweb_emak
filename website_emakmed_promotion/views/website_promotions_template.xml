@@ -160,16 +160,26 @@
                                     }
                                     if (onSuccess) onSuccess(data.result);
                                 } else {
+                                    console.error('[promo] Invalid response from server', data);
                                     if (onError) onError(data);
                                 }
                             })
-                            .catch(function(err) { if (onError) onError(err); });
+                            .catch(function(err) { 
+                                console.error('[promo] Fetch error', err);
+                                if (onError) onError(err); 
+                            });
                         }
 
                         document.querySelectorAll('.btn-add-to-cart').forEach(function(btn) {
-                            btn.addEventListener('click', function() {
+                            btn.addEventListener('click', function(e) {
+                                e.preventDefault();
                                 var card = btn.closest('.cart-action-wrap');
                                 var productId = btn.dataset.productId;
+                                if (!productId || productId === 'False' || productId === 'None') {
+                                    console.error("Invalid Product ID on button", btn);
+                                    alert("Erreur: Produit non valide.");
+                                    return;
+                                }
                                 var qtySelector = card.querySelector('.qty-selector');
                                 var qtyDisplay = card.querySelector('.qty-display');
                                 btn.disabled = true;
@@ -189,7 +199,8 @@
                         });
 
                         document.querySelectorAll('.qty-plus').forEach(function(plusBtn) {
-                            plusBtn.addEventListener('click', function() {
+                            plusBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
                                 var selector = plusBtn.closest('.qty-selector');
                                 var currentQty = parseInt(selector.dataset.qty);
                                 var productId = selector.dataset.productId;
@@ -208,7 +219,8 @@
                         });
 
                         document.querySelectorAll('.qty-minus').forEach(function(minusBtn) {
-                            minusBtn.addEventListener('click', function() {
+                            minusBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
                                 var selector = minusBtn.closest('.qty-selector');
                                 var currentQty = parseInt(selector.dataset.qty);
                                 var productId = selector.dataset.productId;
@@ -259,7 +271,7 @@
                             <t t-foreach="bxgy_rules" t-as="rule">
                                 <t t-foreach="rule.product_ids.mapped('product_tmpl_id')" t-as="p">
                                     <t t-set="stock_qty" t-value="product_stocks.get(p.id, 0)"/>
-                                    <t t-set="variant_id" t-value="p.product_variant_id.id"/>
+                                    <t t-set="variant_id" t-value="p.product_variant_id.id or (p.product_variant_ids and p.product_variant_ids[0].id) or p.id"/>
                                     <div class="col-6 col-md-4 col-xl-3">
                                         <div class="emakhc-product-card h-100 d-flex flex-column" style="position: relative;">
 

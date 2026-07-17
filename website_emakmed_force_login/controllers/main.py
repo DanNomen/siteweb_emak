@@ -16,7 +16,7 @@ class EmakmedForceLogin(WebsiteSale):
         if (request.website.name == 'Emakhealthcare'
                 and request.env.user._is_public()):
             return request.redirect(
-                '/emakmed/auth?redirect=/shop/checkout'
+                '/emakmed/auth?redirect=/shop/cart'
             )
         return super().shop_checkout(**post)
 
@@ -25,7 +25,7 @@ class EmakmedForceLogin(WebsiteSale):
     # ------------------------------------------------------------------
     @http.route(['/emakmed/auth'], type='http', auth='public',
                 website=True, sitemap=False)
-    def emakmed_auth(self, redirect='/shop/checkout', **kwargs):
+    def emakmed_auth(self, redirect='/shop/cart', **kwargs):
         # If already logged in, go directly to the redirect target
         if not request.env.user._is_public():
             return request.redirect(redirect)
