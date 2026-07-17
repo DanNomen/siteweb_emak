@@ -3,142 +3,78 @@
   <template id="custom_footer_dynamic" inherit_id="website.layout">
     <xpath expr="//footer" position="replace">
       <footer id="bottom" class="o_footer o_colored_level o_cc">
+        <section class="s_text_block pt40 pb16">
+          <div class="container">
+            <div class="row">
+              
+              <!-- 🌐 Liens utiles -->
+              <div class="col-12 col-lg-2 pt24 pb24">
+                <h5 class="mb-3">Liens utiles</h5>
+                <ul class="list-unstyled">
+                  <li><a href="/">Accueil</a></li>
+                  <li><a href="/aboutus">À propos de nous</a></li>
+                  <li><a href="/shop">Produits</a></li>
+                  <li><a href="/contactus">Services</a></li>
+                  <li><a href="/legal">Mentions légales</a></li>
+                  <li><a href="/contactus">Contactez-nous</a></li>
+                </ul>
+              </div>
 
-        <!-- STYLE MOBILE INLINE -->
-        <style>
-          #emakhc-footer-body {
-            display: flex !important;
-            flex-wrap: wrap;
-            padding: 32px 16px 16px;
-          }
-          .emakhc-footer-col {
-            width: 100%;
-            padding: 12px 0;
-            box-sizing: border-box;
-            display: block !important;
-          }
-          @media (min-width: 992px) {
-            .emakhc-footer-col.col-about { width: 45%; }
-            .emakhc-footer-col.col-links { width: 20%; }
-            .emakhc-footer-col.col-contact { width: 35%; }
-          }
-          #emakhc-footer-body h5 {
-            margin-bottom: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-          }
-          #emakhc-footer-body ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-          }
-          #emakhc-footer-body ul li {
-            margin-bottom: 6px;
-          }
-          .emakhc-copy-left, .emakhc-copy-right {
-            width: 100%;
-            text-align: center;
-            padding: 4px 0;
-            opacity: 0.7;
-            display: block !important;
-          }
-          @media (min-width: 576px) {
-            .emakhc-copy-left { width: auto; text-align: left; }
-            .emakhc-copy-right { width: auto; text-align: right; }
-          }
-        </style>
+              <!-- 🏢 À propos -->
+              <div class="col-12 col-lg-5 pt24 pb24">
+                <h5 class="mb-3">À propos de nous</h5>
+                <p style="display: block !important;">
+                  Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
+                </p>
+                <p style="display: block !important;">
+                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d'optimiser leurs performances.
+                </p>
+              </div>
 
-        <div class="container">
-          <div id="emakhc-footer-body">
+              <!-- 📞 Contact & Réseaux -->
+              <div id="connect" class="col-12 col-lg-4 offset-lg-1 pt24 pb24">
+                <h5 class="mb-3">Rejoignez-nous</h5>
+                <ul class="list-unstyled">
+                  <li>
+                    <i class="fa fa-comment fa-fw me-2"></i>
+                    <a href="/contactus">Contactez-nous</a>
+                  </li>
+                  <li>
+                    <i class="fa fa-envelope fa-fw me-2"></i>
+                    <a t-att-href="'mailto:%s' % website.company_id.email">
+                      <t t-esc="website.company_id.email or 'info@yourcompany.com'"/>
+                    </a>
+                  </li>
+                  <li>
+                    <i class="fa fa-phone fa-fw me-2"></i>
+                    <a t-att-href="'tel:%s' % website.company_id.phone">
+                      <t t-esc="website.company_id.phone or '+223 00 000 0000'"/>
+                    </a>
+                  </li>
+                </ul>
 
-            <!-- Liens utiles — caché pour Emakhealthcare -->
-            <div class="emakhc-footer-col col-links" t-if="request.website.name != 'Emakhealthcare'">
-              <h5>Liens utiles</h5>
-              <ul>
-                <li><a href="/">Accueil</a></li>
-                <li><a href="/aboutus">À propos de nous</a></li>
-                <li><a href="/shop">Produits</a></li>
-                <li><a href="/contactus">Services</a></li>
-                <li><a href="/legal">Mentions légales</a></li>
-                <li><a href="/contactus">Contactez-nous</a></li>
-              </ul>
+                <!-- 🔗 Réseaux sociaux dynamiques supprimés -->
+              </div>
             </div>
+          </div>
+        </section>
 
-            <!-- À propos -->
-            <div class="emakhc-footer-col col-about">
-              <h5>À propos de nous</h5>
-              <p>Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.</p>
-              <p>Nos produits sont conçus pour les petites et moyennes entreprises désireuses d'optimiser leurs performances.</p>
+        <!-- 🔒 COPYRIGHT -->
+        <div class="o_footer_copyright o_colored_level o_cc">
+          <div class="container py-3">
+            <div class="row">
+              <div class="col-12 col-sm text-center text-sm-start text-muted">
+                <span>
+                  © <t t-esc="website.company_id.name or 'Emakhealthcare'"/> - 
+                  <t t-esc="datetime.datetime.now().year"/>
+                </span>
+              </div>
+              <div class="col-12 col-sm text-center text-sm-end text-muted">
+                <span>Développé avec ❤️ par <a href="/">Dagodoo</a></span>
+              </div>
             </div>
-
-            <!-- Contact — version standard -->
-            <div id="connect" class="emakhc-footer-col col-contact" t-if="request.website.name != 'Emakhealthcare'">
-              <h5>Rejoignez-nous</h5>
-              <ul>
-                <li>
-                  <i class="fa fa-comment fa-fw me-2"/>
-                  <a href="/contactus">Contactez-nous</a>
-                </li>
-                <li>
-                  <i class="fa fa-envelope fa-fw me-2"/>
-                  <a t-att-href="'mailto:%s' % website.company_id.email">
-                    <t t-esc="website.company_id.email or 'info@yourcompany.com'"/>
-                  </a>
-                </li>
-                <li>
-                  <i class="fa fa-phone fa-fw me-2"/>
-                  <a t-att-href="'tel:%s' % website.company_id.phone">
-                    <t t-esc="website.company_id.phone or '+223 00 000 0000'"/>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Contact — version Emakhealthcare (couleurs vertes) -->
-            <div class="emakhc-footer-col col-contact" t-if="request.website.name == 'Emakhealthcare'">
-              <h5>Rejoignez-nous</h5>
-              <ul>
-                <li class="d-flex align-items-center mb-2">
-                  <i class="fa fa-comment fa-fw me-3 text-white"/>
-                  <a href="/contactus" class="text-decoration-none fw-bold" style="color: #2E7D32;">Contactez-nous</a>
-                </li>
-                <li class="d-flex align-items-center mb-2">
-                  <i class="fa fa-envelope fa-fw me-3 text-white"/>
-                  <a t-att-href="'mailto:%s' % (website.company_id.email or 'info@emak-mali.com')" class="text-decoration-none fw-bold" style="color: #2E7D32;">
-                    <t t-esc="website.company_id.email or 'info@emak-mali.com'"/>
-                  </a>
-                </li>
-                <li class="d-flex align-items-center">
-                  <i class="fa fa-phone fa-fw me-3 text-white"/>
-                  <a t-att-href="'tel:%s' % (website.company_id.phone or '+223 20 23 18 18')" class="text-decoration-none fw-bold" style="color: #2E7D32;">
-                    <t t-esc="website.company_id.phone or '+223 20 23 18 18'"/>
-                  </a>
-                </li>
-              </ul>
-            </div>
-
           </div>
         </div>
-
-        <!-- COPYRIGHT — standard -->
-        <div class="o_footer_copyright o_colored_level o_cc" t-if="request.website.name != 'Emakhealthcare'">
-          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; padding:12px 16px; font-size:0.85rem;">
-            <span class="emakhc-copy-left">
-              © <t t-esc="website.company_id.name or 'Emakhealthcare'"/> - <t t-esc="datetime.datetime.now().year"/>
-            </span>
-            <span class="emakhc-copy-right">
-              Développé avec ❤️ par <a href="/">Dagodoo</a>
-            </span>
-          </div>
-        </div>
-
-        <!-- COPYRIGHT — Emakhealthcare -->
-        <div t-if="request.website.name == 'Emakhealthcare'"
-             style="background-color: #000; color: rgba(255,255,255,0.7); display: flex !important; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 0.85rem;">
-          <span class="emakhc-copy-left">© Emakhealthcare - 2026</span>
-          <span class="emakhc-copy-right">Développé par <a href="https://wa.me/22371019797" style="color: #fff; font-weight: bold; text-decoration: none;" target="_blank">Social360</a></span>
-        </div>
-
       </footer>
     </xpath>
   </template>

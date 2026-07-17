@@ -1,9 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Le footer Emakhealthcare est désormais géré directement dans website_emakmed.custom_footer_dynamic
-         avec des t-if/t-else selon request.website.name.
-         Ce fichier est conservé vide pour compatibilité mais ne surcharge plus rien. -->
-    <template id="emakhc_footer_dynamic" inherit_id="website.layout" active="False">
-        <!-- Obsolète : la logique est maintenant dans website_emakmed -->
+    <!-- On hérite de la vue custom de website_emakmed -->
+    <template id="emakhc_footer_dynamic" inherit_id="website_emakmed.custom_footer_dynamic">
+        
+        <!-- 1. Cacher la colonne "Liens utiles" uniquement pour Emakhealthcare -->
+        <xpath expr="//div[hasclass('col-lg-2')]" position="attributes">
+            <attribute name="t-if">request.website.name != 'Emakhealthcare'</attribute>
+        </xpath>
+
+        <!-- 2. Pour "Rejoignez-nous", on cache l'original pour Emakhealthcare, et on injecte le nouveau -->
+        <xpath expr="//div[@id='connect']/ul" position="attributes">
+            <attribute name="t-if">request.website.name != 'Emakhealthcare'</attribute>
+        </xpath>
+        
+        <xpath expr="//div[@id='connect']/ul" position="after">
+            <ul class="list-unstyled" style="font-size: 1.1rem; line-height: 1.8; display: block !important;" t-if="request.website.name == 'Emakhealthcare'">
+                <li class="d-flex align-items-center mb-2">
+                    <i class="fa fa-comment fa-fw me-3 text-white"></i>
+                    <a href="/contactus" class="text-decoration-none fw-bold" style="color: #2E7D32;">Contactez-nous</a>
+                </li>
+                <li class="d-flex align-items-center mb-2">
+                    <i class="fa fa-envelope fa-fw me-3 text-white"></i>
+                    <a t-att-href="'mailto:%s' % (website.company_id.email or 'info@emak-mali.com')" class="text-decoration-none fw-bold" style="color: #2E7D32;">
+                        <t t-esc="website.company_id.email or 'info@emak-mali.com'"/>
+                    </a>
+                </li>
+                <li class="d-flex align-items-center">
+                    <i class="fa fa-phone fa-fw me-3 text-white"></i>
+                    <a t-att-href="'tel:%s' % (website.company_id.phone or '+223 20 23 18 18')" class="text-decoration-none fw-bold" style="color: #2E7D32;">
+                        <t t-esc="website.company_id.phone or '+223 20 23 18 18'"/>
+                    </a>
+                </li>
+            </ul>
+        </xpath>
+
+        <!-- 3. Personnaliser le Copyright -->
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="t-if">request.website.name != 'Emakhealthcare'</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="after">
+            <div class="o_footer_copyright o_colored_level o_cc" style="background-color: #000; color: #fff; display: block !important; visibility: visible !important;" t-if="request.website.name == 'Emakhealthcare'">
+                <div class="container py-3">
+                    <div class="row g-1">
+                        <div class="col-12 col-sm text-center text-sm-start" style="color: rgba(255,255,255,0.6);">
+                            <span>© Emakhealthcare - 2026</span>
+                        </div>
+                        <div class="col-12 col-sm text-center text-sm-end" style="color: rgba(255,255,255,0.6);">
+                            <span>Développé par <a href="https://wa.me/22371019797" class="text-white text-decoration-none fw-bold" target="_blank">Social360</a></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
     </template>
 </odoo>
