@@ -409,7 +409,7 @@
                                                 </div>
 
                                                 <!-- Stock disponible en rouge sans décimales -->
-                                                <t t-set="stock_qty" t-value="int(product.sudo().qty_available or 0)"/>
+                                                <t t-set="stock_qty" t-value="int((product.sudo().product_variant_id and product.sudo().product_variant_id.free_qty) or product.sudo().qty_available or 0)"/>
 
                                                 <!-- Action panier -->
                                                 <div class="cart-action-wrap">

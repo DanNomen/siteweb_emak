@@ -228,7 +228,7 @@
                     ('promotion_start_date', '!=', False)
                ])"/>
             
-            <t t-set="offers" t-value="all_offers.filtered(lambda p: p.type == 'service' or p.qty_available &gt; 0)[:4]"/>
+            <t t-set="offers" t-value="all_offers.filtered(lambda p: p.type == 'service' or (p.product_variant_id and p.product_variant_id.free_qty &gt; 0) or (not p.product_variant_id and p.qty_available &gt; 0))[:4]"/>
 
             <t t-if="offers">
                 <section class="py-4">
