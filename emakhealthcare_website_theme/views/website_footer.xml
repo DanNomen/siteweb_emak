@@ -3,7 +3,7 @@
     <!-- Le footer Emakhealthcare est désormais géré directement dans website_emakmed.custom_footer_dynamic
          avec des t-if/t-else selon request.website.name.
          Ce fichier est conservé vide pour compatibilité mais ne surcharge plus rien. -->
-    <template id="emakhc_footer_dynamic" inherit_id="website.layout" active="False">
+    <template id="emakhc_footer_dynamic" inherit_id="website_emakmed.custom_footer_dynamic" active="False">
         <!-- Obsolète : la logique est maintenant dans website_emakmed -->
     </template>
 </odoo>
