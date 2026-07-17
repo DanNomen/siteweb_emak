@@ -48,6 +48,16 @@ class WebsiteSaleDeferred(WebsiteSale):
 
         request.session['deferred_cart'] = cart
         request.session['website_sale_cart_quantity'] = sum(cart.values())
+        
+        # Calculate amount using a temporary ghost order
+        try:
+            # We don't want to break the update flow if ghost order fails, so wrap in try-except
+            ghost_order = self._get_ghost_order()
+            request.session['website_sale_cart_amount'] = ghost_order.amount_total
+            ghost_order.unlink()
+        except Exception:
+            pass
+
         if hasattr(request.session, 'modified'):
             request.session.modified = True
 
