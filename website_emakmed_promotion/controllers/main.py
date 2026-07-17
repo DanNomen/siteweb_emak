@@ -52,7 +52,7 @@ class PromotionController(http.Controller):
             product_prices[pt.id] = price
             # Stock calculé avec le contexte multi-société (all_products porte
             # allowed_company_ids), pour rester cohérent avec la page /produits.
-            product_stocks[pt.id] = int(pt.qty_available or 0)
+            product_stocks[pt.id] = int(pt.free_qty or 0)
 
         values = {
             'bxgy_rules': bxgy_rules,

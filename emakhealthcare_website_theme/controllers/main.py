@@ -164,9 +164,9 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         all_companies = request.env['res.company'].sudo().search([])
         all_products = ProductTemplate.with_context(allowed_company_ids=all_companies.ids).search(domain, order=order)
 
-        # Filtrer : ne montrer que les articles avec stock > 0 (ou services) toutes sociétés confondues
+        # Filtrer : ne montrer que les articles avec stock libre > 0 (ou services) toutes sociétés confondues
         products_in_stock = all_products.filtered(
-            lambda p: p.type == 'service' or p.qty_available > 0
+            lambda p: p.type == 'service' or p.free_qty > 0
         )
 
         product_count = len(products_in_stock)
@@ -197,6 +197,8 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             else:
                 price = pt.list_price
             product_prices[pt.id] = price
+            # Stock calculé avec le contexte multi-société
+            product_stocks[pt.id] = int(pt.free_qty or 0)
 
         values = {
             'products': products,
