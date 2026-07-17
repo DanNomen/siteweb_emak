@@ -178,7 +178,9 @@ class WebsiteSaleDeferred(WebsiteSale):
                 # réutiliser _recompute_bxgy_rewards() qui écrit en base).
                 reward_line_cmds = self._get_bxgy_preview_reward_lines(order, qty_by_product)
                 if reward_line_cmds:
-                    order.update({'order_line': lines + reward_line_cmds})
+                    # On ajoute UNIQUEMENT les reward_line_cmds (les lignes (0, 0, ...))
+                    # pour ne pas dupliquer les "lines" existantes.
+                    order.update({'order_line': reward_line_cmds})
 
         _logger.info(
             "Ghost order (NewId) created in memory for %d session products",
