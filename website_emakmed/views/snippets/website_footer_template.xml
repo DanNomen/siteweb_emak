@@ -65,7 +65,7 @@
             <div class="row">
               <div class="col-12 col-sm text-center text-sm-start text-muted">
                 <span>
-                  © <t t-esc="website.company_id.name or 'Nom de l&#x27;entreprise'"/> - 
+                  © <t t-esc="website.company_id.name or 'Emakhealthcare'"/> - 
                   <t t-esc="datetime.datetime.now().year"/>
                 </span>
               </div>
