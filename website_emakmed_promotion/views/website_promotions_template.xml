@@ -269,9 +269,10 @@
                     <t t-if="bxgy_rules">
                         <div class="row g-3">
                             <t t-foreach="bxgy_rules" t-as="rule">
-                                <t t-foreach="rule.product_ids.mapped('product_tmpl_id')" t-as="p">
+                                <t t-foreach="rule.product_ids" t-as="variant">
+                                    <t t-set="p" t-value="variant.product_tmpl_id"/>
                                     <t t-set="stock_qty" t-value="product_stocks.get(p.id, 0)"/>
-                                    <t t-set="variant_id" t-value="p.product_variant_id.id or (p.product_variant_ids and p.product_variant_ids[0].id) or p.id"/>
+                                    <t t-set="variant_id" t-value="variant.id"/>
                                     <div class="col-6 col-md-4 col-xl-3">
                                         <div class="emakhc-product-card h-100 d-flex flex-column" style="position: relative;">
 

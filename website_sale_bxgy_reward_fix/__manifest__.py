@@ -10,7 +10,9 @@
     """,
     'author': 'HELLO DAN',
     'depends': ['sale_bxgy_promotion', 'website_sale'],
-    'data': [],
+    'data': [
+        'views/cart_lines.xml',
+    ],
     'installable': True,
     'application': False,
     'license': 'LGPL-3',
