@@ -6,7 +6,7 @@
     -->
     <template id="cart_lines_bxgy_reward" inherit_id="website_sale.cart_lines" priority="50">
         <xpath expr="//div[@name='o_wsale_cart_line_button_container']" position="attributes">
-            <attribute name="t-attf-class">{{ 'd-none' if getattr(line, 'is_bxgy_reward', False) else '' }}</attribute>
+            <attribute name="t-attf-class">{{ 'd-none' if line.is_bxgy_reward else '' }}</attribute>
         </xpath>
     </template>
 </odoo>
