@@ -197,8 +197,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             else:
                 price = pt.list_price
             product_prices[pt.id] = price
-            # Stock calculé avec le contexte multi-société
-            product_stocks[pt.id] = int((pt.product_variant_id and pt.product_variant_id.free_qty) or pt.qty_available or 0)
+
 
         values = {
             'products': products,
