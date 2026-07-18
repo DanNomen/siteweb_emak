@@ -259,9 +259,6 @@ class WebsiteSaleDeferred(WebsiteSale):
             total_html = request.env['ir.ui.view']._render_template(
                 "website_sale.total", render_ctx
             )
-            short_cart_summary_html = request.env['ir.ui.view']._render_template(
-                "website_sale.short_cart_summary", render_ctx
-            )
             notification = self._get_cart_notification_information(
                 order, [int(product_id)]
             )
@@ -278,13 +275,15 @@ class WebsiteSaleDeferred(WebsiteSale):
             'line_id': int(product_id),
             'website_sale.cart_lines': cart_lines_html,
             'website_sale.total': total_html,
-            'website_sale.short_cart_summary': short_cart_summary_html,
             'notification_info': notification,
+            'amount': order.amount_total,
         }
-        if 'minor_amount' in render_ctx:
-            res['minor_amount'] = render_ctx['minor_amount']
-        if 'amount' in render_ctx:
-            res['amount'] = render_ctx['amount']
+        
+        try:
+            # Payment utils might not be easily importable here, so we mimic standard behavior
+            res['minor_amount'] = int(order.amount_total * 100) # simplified minor amount
+        except Exception:
+            pass
 
         return res
 
