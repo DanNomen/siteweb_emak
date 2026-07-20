@@ -53,6 +53,7 @@ class EmakmedForceLoginHome(AuthSignupHome):
     def web_login(self, *args, **kw):
         # Save the deferred cart before authentication (which might rotate or clear session state)
         deferred_cart = request.session.get('deferred_cart', {})
+        request.session.pop('sale_order_id', None)
         
         response = super(EmakmedForceLoginHome, self).web_login(*args, **kw)
         
@@ -68,6 +69,8 @@ class EmakmedForceLoginHome(AuthSignupHome):
     @http.route()
     def web_auth_signup(self, *args, **kw):
         deferred_cart = request.session.get('deferred_cart', {})
+        request.session.pop('sale_order_id', None)
+        
         response = super(EmakmedForceLoginHome, self).web_auth_signup(*args, **kw)
         if deferred_cart:
             request.session['deferred_cart'] = deferred_cart
