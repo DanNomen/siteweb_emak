@@ -411,6 +411,7 @@ class WebsiteSaleDeferred(WebsiteSale):
             request.session.pop('deferred_cart', None)
             # On laisse Odoo gérer website_sale_cart_quantity normalement
             request.session.pop('website_sale_cart_quantity', None)
+            request.session.pop('website_sale_cart_amount', None)
 
         return super().shop_checkout(**post)
 
@@ -425,4 +426,5 @@ class WebsiteSaleDeferred(WebsiteSale):
         """
         request.session.pop('deferred_cart', None)
         request.session.pop('website_sale_cart_quantity', None)
+        request.session.pop('website_sale_cart_amount', None)
         return super().shop_payment_confirmation(**post)
