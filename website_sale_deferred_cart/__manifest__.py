@@ -10,11 +10,16 @@
         it stores them in the user session. 
         The lines are only created in the database when the user clicks on the "Checkout" button.
     """,
-    'author': 'Antigravity',
+    'author': 'DAN_NOMEN',
     'depends': ['website_sale'],
     'data': [
         'views/templates.xml',
     ],
+    'assets': {
+        'web.assets_frontend': [
+            'website_sale_deferred_cart/static/src/js/sync_header_cart.js',
+        ],
+    },
     'installable': True,
     'license': 'LGPL-3',
 }
