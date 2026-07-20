@@ -20,6 +20,11 @@
 
         'data/website_menus.xml',
     ],
+    'assets': {
+        'web.assets_frontend': [
+            'my_website_customer_portal/static/src/scss/my_officine.scss',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

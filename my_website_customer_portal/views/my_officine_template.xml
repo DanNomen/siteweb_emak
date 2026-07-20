@@ -5,8 +5,7 @@
     <template id="my_officine_invoices_template" name="Officine Invoices">
         <t t-call="website.layout">
             <div class="container py-5">
-                <h2 class="text-center rounded-1 shadow-sm mb-5" 
-                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                <h2 class="portal-header-banner">
                     Mes Factures
                 </h2>
 
@@ -82,7 +81,7 @@
                                         <!-- Liste des articles publiés -->
                                         <t t-set="published_lines" t-value="invoice.invoice_line_ids.filtered(lambda l: l.product_id.is_published)"/>
                                         <t t-if="published_lines">
-                                            <div class="table-responsive">
+                                            <div class="table-responsive table-responsive-cards">
                                                 <table class="table table-sm table-hover align-middle bg-white rounded">
                                                     <thead class="table-primary">
                                                         <tr>
@@ -97,18 +96,18 @@
                                                     <tbody>
                                                         <t t-foreach="published_lines" t-as="line" t-key="line.id">
                                                             <tr>
-                                                                <td><t t-esc="line.product_id.name"/></td>
-                                                                <td><t t-esc="line.quantity"/></td>
-                                                                <td>
+                                                                <td data-label="Article"><t t-esc="line.product_id.name"/></td>
+                                                                <td data-label="Quantité"><t t-esc="line.quantity"/></td>
+                                                                <td data-label="Prix Unitaire">
                                                                     <t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Escompte">
                                                                     <t t-out="line.escompte" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Ristourne">
                                                                     <t t-out="line.ristourne" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Sous-total">
                                                                     <t t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                                 </td>
                                                             </tr>
@@ -142,8 +141,7 @@
    <template id="my_officine_credit_notes_template" name="Officine Credits">
         <t t-call="website.layout">
             <div class="container py-5">
-                <h2 class="text-center rounded-1 shadow-sm mb-5" 
-                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                <h2 class="portal-header-banner">
                     Mes Avoirs
                 </h2>
 
@@ -208,7 +206,7 @@
                                         <!-- Liste des articles publiés -->
                                         <t t-set="published_lines" t-value="credit.invoice_line_ids.filtered(lambda l: l.product_id.is_published)"/>
                                         <t t-if="published_lines">
-                                            <div class="table-responsive">
+                                            <div class="table-responsive table-responsive-cards">
                                                 <table class="table table-sm table-hover align-middle bg-white rounded">
                                                     <thead class="table-success">
                                                         <tr>
@@ -223,12 +221,12 @@
                                                     <tbody>
                                                         <t t-foreach="published_lines" t-as="line" t-key="line.id">
                                                             <tr>
-                                                                <td><t t-esc="line.product_id.name"/></td>
-                                                                <td><t t-esc="line.quantity"/></td>
-                                                                <td><t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
-                                                                <td><t t-out="line.escompte" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
-                                                                <td><t t-out="line.ristourne" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
-                                                                <td><t t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td data-label="Article"><t t-esc="line.product_id.name"/></td>
+                                                                <td data-label="Quantité"><t t-esc="line.quantity"/></td>
+                                                                <td data-label="Prix Unitaire"><t t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td data-label="Escompte"><t t-out="line.escompte" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td data-label="Ristourne"><t t-out="line.ristourne" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
+                                                                <td data-label="Sous-total"><t t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': credit.currency_id}"/> </td>
                                                             </tr>
                                                         </t>
                                                     </tbody>
@@ -259,8 +257,7 @@
       <template id="my_officine_statements_template" name="Officine Relevés">
         <t t-call="website.layout">
             <div class="container py-5">
-                <h2 class="text-center rounded-1 shadow-sm mb-5"
-                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                <h2 class="portal-header-banner">
                     Mes Relevés Mensuels
                 </h2>
 
@@ -290,44 +287,41 @@
                                         t-attf-aria-labelledby="heading-month-#{month_data[0].replace(' ', '_')}" 
                                         t-attf-data-bs-parent="#accordion-month-#{month_data[0].replace(' ', '_')}">
                                         <div class="accordion-body bg-white">
-                                            <div class="table-responsive">
+                                            <div class="table-responsive table-responsive-cards">
                                                 <table class="table table-sm table-hover align-middle bg-light rounded">
-                                                    <thead class="table-primary">
+                                                    <thead style="background: linear-gradient(90deg, #38A935, #93C123); color: white;">
                                                         <tr>
-                                                            <th>Facture</th>
-                                                            <th>Date</th>
-                                                            <th>État</th>
-                                                            <th>Total HT</th>
-                                                            <th>T.V.A.</th>
-                                                            <th>Total TTC</th>
-                                                            <th class="text-end">Actions</th>
+                                                            <th class="py-3 ps-4">FACTURE N°</th>
+                                                            <th class="py-3 text-center">DATE FACTURE</th>
+                                                            <th class="py-3 text-center">DATE ÉCHÉANCE</th>
+                                                            <th class="py-3 text-end">MONTANT FACTURÉ</th>
+                                                            <th class="py-3 text-end">MONTANT RÉGLÉ</th>
+                                                            <th class="py-3 text-end pe-4">MONTANT DÛ</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <t t-foreach="month_data[1]['invoices']" t-as="invoice" t-key="invoice.id">
                                                             <t t-set="sign" t-value="-1 if invoice.move_type == 'out_refund' else 1"/>
+                                                            <t t-set="montant_regle" t-value="(invoice.amount_total - invoice.amount_residual) * sign"/>
                                                             <tr>
-                                                                <td class="fw-semibold"><t t-esc="invoice.name or 'N/A'"/></td>
-                                                                <td><t t-esc="invoice.invoice_date or '—'"/></td>
-                                                                <td>
-                                                                    <t t-set="state_labels" t-value="{'draft': 'Brouillon', 'posted': 'Payé', 'cancel': 'Annulée'}"/>
-                                                                    <span t-attf-class="badge rounded-pill #{'bg-success' if invoice.state == 'posted' else 'bg-warning' if invoice.state == 'draft' else 'bg-danger'}">
-                                                                        <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    <t t-out="(invoice.amount_untaxed * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
-                                                                </td>
-                                                                <td>
-                                                                    <t t-out="(invoice.amount_tax * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
-                                                                </td>
-                                                                <td>
+                                                                <td class="ps-4 fw-semibold" data-label="FACTURE N°"><t t-esc="invoice.name or 'N/A'"/></td>
+                                                                <td class="text-center" data-label="DATE FACTURE"><t t-esc="invoice.invoice_date or '—'"/></td>
+                                                                <td class="text-center" data-label="DATE ÉCHÉANCE"><t t-esc="invoice.invoice_date_due or '—'"/></td>
+                                                                <td class="text-end fw-semibold" data-label="MONTANT FACTURÉ">
                                                                     <t t-out="(invoice.amount_total * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                                                 </td>
-                                                                <td class="text-end">
-                                                                    <a t-attf-href="/report/pdf/account.report_invoice/#{invoice.id}" class="btn btn-outline-primary btn-sm" target="_blank">
-                                                                        <i class="fa fa-download"></i>
-                                                                    </a>
+                                                                <td class="text-end text-success" data-label="MONTANT RÉGLÉ">
+                                                                    <t t-out="montant_regle" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                </td>
+                                                                <td class="text-end pe-4" data-label="MONTANT DÛ">
+                                                                    <t t-if="(invoice.amount_residual * sign) &gt; 0">
+                                                                        <span class="text-danger fw-bold">
+                                                                            <t t-out="(invoice.amount_residual * sign)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
+                                                                        </span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="badge bg-success">Soldé</span>
+                                                                    </t>
                                                                 </td>
                                                             </tr>
                                                         </t>

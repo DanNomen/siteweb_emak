@@ -3,31 +3,12 @@
     <template id="client_portal_page" name="Page Compte Client">
         <t t-call="website.layout">
             <main class="container py-5">
-                <h2 class="text-center rounded-1 shadow-sm mb-5"
-                    style="background: linear-gradient(90deg, #38A935, #93C123); color: white; padding: 60px;">
+                <h2 class="portal-header-banner">
                     Bienvenue dans votre Compte Client
                 </h2>
 
                 <!-- FontAwesome -->
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-
-                <style>
-                    .tab-nav { display: flex; gap: 8px; border-bottom: 2px solid #e0e0e0; margin-bottom: 24px; }
-                    .tab-btn, .tab-link {
-                        padding: 10px 22px; border: none; background: none;
-                        font-weight: 600; color: #555; cursor: pointer; border-bottom: 3px solid transparent;
-                        transition: color 0.2s, border-color 0.2s;
-                        text-decoration: none; display: inline-block;
-                    }
-                    .tab-btn.active { color: #38A935; border-bottom-color: #38A935; }
-                    .tab-btn:hover, .tab-link:hover { color: #38A935; }
-                    .tab-pane { display: none; }
-                    .tab-pane.active { display: block; }
-                    .monthly-badge {
-                        display: inline-block; background: linear-gradient(90deg, #38A935, #93C123);
-                        color: white; padding: 3px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
-                    }
-                </style>
 
                 <!-- Onglets -->
                 <div class="tab-nav d-none d-md-flex" id="portalTabs">
@@ -102,7 +83,7 @@
                         </h4>
 
                         <t t-if="monthly_purchases">
-                            <div class="table-responsive shadow-sm rounded">
+                            <div class="table-responsive table-responsive-cards shadow-sm rounded">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead style="background: linear-gradient(90deg, #38A935, #93C123); color: white;">
                                         <tr>
@@ -117,25 +98,25 @@
                                     <tbody>
                                         <t t-foreach="monthly_purchases" t-as="row">
                                             <tr>
-                                                <td class="ps-4 fw-semibold">
+                                                <td class="ps-4 fw-semibold" data-label="Mois">
                                                     <span class="monthly-badge"><t t-esc="row['month']"/></span>
                                                 </td>
-                                                <td class="text-end text-muted">
+                                                <td class="text-end text-muted" data-label="Nb. Factures">
                                                     <t t-esc="row['count']"/>
                                                 </td>
-                                                <td class="text-end fw-semibold">
+                                                <td class="text-end fw-semibold" data-label="Total HT">
                                                     <t t-esc="'{:,.0f}'.format(row['total_ht']).replace(',', ' ')"/>
                                                     <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
                                                 </td>
-                                                <td class="text-end fw-semibold" style="color: #2E7D32;">
+                                                <td class="text-end fw-semibold" style="color: #2E7D32;" data-label="Total TTC">
                                                     <t t-esc="'{:,.0f}'.format(row['total_ttc']).replace(',', ' ')"/>
                                                     <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
                                                 </td>
-                                                <td class="text-end text-success pe-4">
+                                                <td class="text-end text-success pe-4" data-label="Réglé">
                                                     <t t-esc="'{:,.0f}'.format(row['total_regle']).replace(',', ' ')"/>
                                                     <small class="text-muted ms-1"><t t-esc="row['currency']"/></small>
                                                 </td>
-                                                <td class="text-end pe-4">
+                                                <td class="text-end pe-4" data-label="Restant dû">
                                                     <t t-if="row['total_restant'] &gt; 0">
                                                         <span class="text-danger fw-bold">
                                                             <t t-esc="'{:,.0f}'.format(row['total_restant']).replace(',', ' ')"/>
