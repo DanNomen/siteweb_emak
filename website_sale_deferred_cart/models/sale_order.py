@@ -39,3 +39,17 @@ class SaleOrder(models.Model):
         if self.env.context.get('skip_product_company_check'):
             return
         return super()._check_order_line_company_id()
+
+    def _is_cart_ready(self):
+        """
+        Check if the cart is ready for checkout.
+        For NewId (ghost orders), verify from in-memory order_line without DB queries.
+        """
+        from odoo.models import NewId
+        self.ensure_one()
+        if isinstance(self.id, NewId):
+            return bool(self.order_line) and all(
+                line.product_id and line.product_id.sale_ok 
+                for line in self.order_line
+            )
+        return super()._is_cart_ready()

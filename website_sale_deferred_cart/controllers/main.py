@@ -50,13 +50,31 @@ class WebsiteSaleDeferred(WebsiteSale):
         request.session['website_sale_cart_quantity'] = sum(cart.values())
         
         # Calculate amount using a temporary ghost order
+        ghost_order = None
         try:
             # We don't want to break the update flow if ghost order fails, so wrap in try-except
             ghost_order = self._get_ghost_order()
             request.session['website_sale_cart_amount'] = ghost_order.amount_total
-            ghost_order.unlink()
-        except Exception:
-            pass
+            _logger.info("Deferred cart update: amount calculated via ghost order = %s, qty = %s", request.session['website_sale_cart_amount'], request.session['website_sale_cart_quantity'])
+        except Exception as e:
+            _logger.exception("Deferred cart update: failed to compute ghost order amount: %s", e)
+            fallback_amount = 0.0
+            try:
+                Product = request.env['product.product'].sudo()
+                for pid_str, cart_qty in cart.items():
+                    product = Product.browse(int(pid_str)).exists()
+                    if product:
+                        fallback_amount += product.lst_price * cart_qty
+            except Exception as inner_e:
+                _logger.exception("Deferred cart update: fallback amount calculation also failed: %s", inner_e)
+            request.session['website_sale_cart_amount'] = fallback_amount
+            _logger.info("Deferred cart update: amount calculated via fallback = %s, qty = %s", request.session['website_sale_cart_amount'], request.session['website_sale_cart_quantity'])
+        finally:
+            if ghost_order:
+                try:
+                    ghost_order.unlink()
+                except Exception:
+                    pass
 
         if hasattr(request.session, 'modified'):
             request.session.modified = True
