@@ -299,7 +299,7 @@ class WebsiteSaleDeferred(WebsiteSale):
                         order.unlink()
                     except Exception:
                         pass
-                return {'cart_quantity': cart_qty, 'quantity': new_qty, 'amount': amt}
+                return {'cart_quantity': cart_qty, 'quantity': new_qty, 'amount': amt, 'cart_ready': True}
         order = self._get_ghost_order()
         try:
             render_ctx = {
@@ -336,6 +336,11 @@ class WebsiteSaleDeferred(WebsiteSale):
             'website_sale.total': total_html,
             'notification_info': notification,
             'amount': final_amount,
+            # cart_ready MUST be True in the JSON response so that Odoo's
+            # updateCartNavBar() (website_sale_utils.js) removes the 'disabled'
+            # class from the "Passer la commande" button. Without this key the
+            # button stays disabled after every AJAX quantity update.
+            'cart_ready': True,
         }
         
         try:
