@@ -44,3 +44,34 @@ class EmakmedForceLogin(WebsiteSale):
         return request.render(
             'website_emakmed_force_login.auth_page', values
         )
+
+from odoo.addons.auth_signup.controllers.main import AuthSignupHome
+
+class EmakmedForceLoginHome(AuthSignupHome):
+
+    @http.route()
+    def web_login(self, *args, **kw):
+        # Save the deferred cart before authentication (which might rotate or clear session state)
+        deferred_cart = request.session.get('deferred_cart', {})
+        
+        response = super(EmakmedForceLoginHome, self).web_login(*args, **kw)
+        
+        # Restore the deferred cart if it was present
+        if deferred_cart:
+            request.session['deferred_cart'] = deferred_cart
+            request.session['website_sale_cart_quantity'] = sum(deferred_cart.values())
+            if hasattr(request.session, 'modified'):
+                request.session.modified = True
+                
+        return response
+
+    @http.route()
+    def web_auth_signup(self, *args, **kw):
+        deferred_cart = request.session.get('deferred_cart', {})
+        response = super(EmakmedForceLoginHome, self).web_auth_signup(*args, **kw)
+        if deferred_cart:
+            request.session['deferred_cart'] = deferred_cart
+            request.session['website_sale_cart_quantity'] = sum(deferred_cart.values())
+            if hasattr(request.session, 'modified'):
+                request.session.modified = True
+        return response

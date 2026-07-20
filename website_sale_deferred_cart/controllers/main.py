@@ -357,7 +357,9 @@ class WebsiteSaleDeferred(WebsiteSale):
         """Cart page – render from session."""
         if request.website.name != 'Emakhealthcare':
             return super(WebsiteSaleDeferred, self).cart(**post)
+        
         deferred_cart = request.session.get('deferred_cart', {})
+        _logger.warning("CART ROUTE CALLED: user=%s, deferred_cart=%s, session_keys=%s", request.env.user.login, deferred_cart, list(request.session.keys()))
 
         order = self._get_ghost_order()
         try:
