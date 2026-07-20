@@ -48,38 +48,77 @@ class WebsiteSaleDeferred(WebsiteSale):
 
         request.session['deferred_cart'] = cart
         request.session['website_sale_cart_quantity'] = sum(cart.values())
-        
-        # Calculate amount using a temporary ghost order
+
+        # Calculate amount using a temporary ghost order.
+        #
+        # IMPORTANT: previously, any exception here was silently swallowed
+        # ("except Exception: pass") which left session['website_sale_cart_amount']
+        # at whatever value it had from the *previous* quantity update. That is
+        # why the header badge could show a stale, higher total (e.g. 40 500 CFA
+        # for 3 units) while the cart page — which always recomputes the amount
+        # fresh via _get_ghost_order() with no swallowed exception — correctly
+        # showed the up-to-date total (e.g. 27 000 CFA for 2 units).
+        #
+        # We now always overwrite session['website_sale_cart_amount'] on every
+        # call: on success with the freshly computed ghost order amount, and on
+        # failure with a best-effort fallback computed directly from the
+        # products still in the session cart, so the header is never left
+        # showing a number that no longer matches the actual cart content.
         ghost_order = None
         try:
-            # We don't want to break the update flow if ghost order fails, so wrap in try-except
             ghost_order = self._get_ghost_order()
             request.session['website_sale_cart_amount'] = ghost_order.amount_total
-            _logger.info("Deferred cart update: amount calculated via ghost order = %s, qty = %s", request.session['website_sale_cart_amount'], request.session['website_sale_cart_quantity'])
-        except Exception as e:
-            _logger.exception("Deferred cart update: failed to compute ghost order amount: %s", e)
-            fallback_amount = 0.0
-            try:
-                Product = request.env['product.product'].sudo()
-                for pid_str, cart_qty in cart.items():
-                    product = Product.browse(int(pid_str)).exists()
-                    if product:
-                        fallback_amount += product.lst_price * cart_qty
-            except Exception as inner_e:
-                _logger.exception("Deferred cart update: fallback amount calculation also failed: %s", inner_e)
-            request.session['website_sale_cart_amount'] = fallback_amount
-            _logger.info("Deferred cart update: amount calculated via fallback = %s, qty = %s", request.session['website_sale_cart_amount'], request.session['website_sale_cart_quantity'])
+        except Exception:
+            _logger.exception(
+                "Emakhealthcare: échec du calcul du montant via la ghost order "
+                "pour deferred_cart=%s ; utilisation du montant de secours "
+                "(prix catalogue x quantité) pour éviter un montant obsolète "
+                "dans le badge du panier.", cart
+            )
+            request.session['website_sale_cart_amount'] = self._fallback_cart_amount(cart)
         finally:
-            if ghost_order:
+            if ghost_order is not None:
                 try:
                     ghost_order.unlink()
                 except Exception:
-                    pass
+                    _logger.exception(
+                        "Emakhealthcare: échec du unlink() de la ghost order."
+                    )
 
         if hasattr(request.session, 'modified'):
             request.session.modified = True
 
         return new_qty
+
+    # ------------------------------------------------------------------
+    # Fallback amount: used only if the ghost order computation fails, so the
+    # header badge never displays a stale amount from a previous quantity.
+    # This intentionally does NOT include BXGY/promotion rewards (those need
+    # the ghost order to compute), it's a best-effort approximation based on
+    # the pricelist unit price so the customer never sees a wildly wrong or
+    # outdated total.
+    # ------------------------------------------------------------------
+    def _fallback_cart_amount(self, deferred_cart):
+        try:
+            product_ids = [int(pid) for pid in deferred_cart.keys()]
+            if not product_ids:
+                return 0.0
+            products = request.env['product.product'].sudo().browse(product_ids).exists()
+            pricelist = request.website.pricelist_id
+            total = 0.0
+            for product in products:
+                qty = deferred_cart.get(str(product.id), 0)
+                price = product.with_context(
+                    pricelist=pricelist.id if pricelist else False
+                )._get_contextual_price() if hasattr(product, '_get_contextual_price') else product.lst_price
+                total += price * float(qty)
+            return total
+        except Exception:
+            _logger.exception(
+                "Emakhealthcare: échec du calcul du montant de secours ; "
+                "retour à 0 pour éviter d'afficher un montant obsolète."
+            )
+            return 0.0
 
     # ------------------------------------------------------------------
     # BXGY reward preview: same logic as sale_bxgy_promotion._recompute_bxgy_rewards

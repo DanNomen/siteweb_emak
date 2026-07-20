@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import models, api
 from odoo.http import request
+
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -42,14 +46,47 @@ class SaleOrder(models.Model):
 
     def _is_cart_ready(self):
         """
-        Check if the cart is ready for checkout.
-        For NewId (ghost orders), verify from in-memory order_line without DB queries.
+        Override to support NewId "ghost" orders (created via .new() in
+        WebsiteSaleDeferred._get_ghost_order()) used to render the cart/checkout
+        pages before anything is committed to the database.
+
+        The base Odoo implementation of _is_cart_ready() relies on checks that
+        assume a persisted record (real DB id) — e.g. querying related stock or
+        line records by id. On a NewId ghost order this either raises or falls
+        through to False, which is why the "Passer la commande" button was
+        turning grey/disabled as soon as the cart quantity changed, even though
+        the cart was perfectly valid.
+
+        For ghost orders we instead do a lightweight, in-memory readiness check:
+        the order is "ready" as long as it has at least one order line with a
+        strictly positive quantity. Real (persisted) orders keep the standard
+        Odoo behaviour.
         """
-        from odoo.models import NewId
-        self.ensure_one()
-        if isinstance(self.id, NewId):
-            return bool(self.order_line) and all(
-                line.product_id and line.product_id.sale_ok 
-                for line in self.order_line
-            )
-        return super()._is_cart_ready()
+        from odoo.models import NewId  # avoid circular import at module level
+
+        for order in self:
+            if isinstance(order.id, NewId):
+                try:
+                    ready = bool(order.order_line) and all(
+                        line.product_uom_qty > 0
+                        for line in order.order_line
+                        if not line.display_type
+                    )
+                except Exception:
+                    _logger.exception(
+                        "Emakhealthcare: erreur lors du calcul de _is_cart_ready "
+                        "sur une ghost order (NewId) ; commande considérée comme "
+                        "non prête par sécurité."
+                    )
+                    ready = False
+                if len(self) == 1:
+                    return ready
+                if not ready:
+                    return False
+            else:
+                result = super(SaleOrder, order)._is_cart_ready()
+                if len(self) == 1:
+                    return result
+                if not result:
+                    return False
+        return True
