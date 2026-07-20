@@ -25,6 +25,7 @@ class Website(models.Model):
         if (not force_create
                 and request
                 and getattr(request, 'website', None)
-                and request.website.name == 'Emakhealthcare'):
+                and request.website.name == 'Emakhealthcare'
+                and request.session.get('deferred_cart')):
             return self.env['sale.order']
         return super().sale_get_order(force_create=force_create)
