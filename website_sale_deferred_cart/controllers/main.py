@@ -358,8 +358,6 @@ class WebsiteSaleDeferred(WebsiteSale):
         if request.website.name != 'Emakhealthcare':
             return super(WebsiteSaleDeferred, self).cart(**post)
         deferred_cart = request.session.get('deferred_cart', {})
-        if not deferred_cart:
-            return super().cart(**post)
 
         order = self._get_ghost_order()
         try:
