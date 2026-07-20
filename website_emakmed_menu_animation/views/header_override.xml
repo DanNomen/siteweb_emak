@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="emakhc_website_header_menu_anim" inherit_id="emakhealthcare_website_theme.emakhc_website_header">
+        <xpath expr="//div[@id='emakhcNav']/ul" position="replace">
+            <ul class="navbar-nav gap-4 align-items-center fw-medium position-relative emakhc-animated-menu" style="font-size: 0.95rem;">
+                <div class="menu-sliding-underline"></div>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Accueil</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/produits">Produits</a>
+                </li>
+                <li class="nav-item d-flex align-items-center gap-2">
+                    <a class="nav-link" href="/promotions">Promotions</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        Réclamations
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="/claim/create">Créer une réclamation</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/claim/your_claims">Vos réclamations</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown" t-if="not user_id._is_public()">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        Espace client
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="/my">Mon compte</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </xpath>
+    </template>
+</odoo>

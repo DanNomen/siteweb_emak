@@ -1,0 +1,33 @@
+.emakhc-animated-menu {
+    position: relative;
+}
+
+.emakhc-animated-menu .menu-sliding-underline {
+    position: absolute;
+    bottom: -2px; /* Position slightly below the text */
+    left: 0;
+    height: 3px;
+    background-color: #2E7D32; /* Odoo Success Green / Emak Green */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    width: 0;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0; /* Hidden initially, shown via JS */
+}
+
+.emakhc-animated-menu .nav-link {
+    color: #111827 !important; /* Default black/dark grey */
+    transition: color 0.3s ease;
+    padding-bottom: 6px !important;
+}
+
+.emakhc-animated-menu .nav-link:hover {
+    color: #2E7D32 !important;
+}
+
+/* Added via JS based on current URL */
+.emakhc-animated-menu .nav-link.active-emak {
+    color: #2E7D32 !important; /* Green for active */
+    font-weight: 600;
+}
