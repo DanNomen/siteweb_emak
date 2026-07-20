@@ -319,6 +319,8 @@ class WebsiteSaleDeferred(WebsiteSale):
             notification = self._get_cart_notification_information(
                 order, [int(product_id)]
             )
+            # Sauvegarder le montant avant la suppression (unlink) de la ghost order
+            final_amount = order.amount_total
         finally:
             # Always unlink the ghost order – we never want it to persist
             try:
@@ -333,12 +335,12 @@ class WebsiteSaleDeferred(WebsiteSale):
             'website_sale.cart_lines': cart_lines_html,
             'website_sale.total': total_html,
             'notification_info': notification,
-            'amount': order.amount_total,
+            'amount': final_amount,
         }
         
         try:
             # Payment utils might not be easily importable here, so we mimic standard behavior
-            res['minor_amount'] = int(order.amount_total * 100) # simplified minor amount
+            res['minor_amount'] = int(final_amount * 100) # simplified minor amount
         except Exception:
             pass
 

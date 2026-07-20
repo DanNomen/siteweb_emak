@@ -103,77 +103,12 @@
 
               <!--
                 Emakhealthcare: garde le badge du panier (quantité + montant)
-                synchronisé après un changement de quantité en AJAX
-                (/shop/cart/update_json), sans dépendre du bundle
-                web.assets_frontend (qui s'est révélé peu fiable pour charger
-                ce script). Ce <script> est inline dans le header, rendu à
-                chaque chargement de page, donc toujours exécuté par le
-                navigateur.
+                synchronisé après un changement de quantité en AJAX.
+                La logique JavaScript se trouve désormais proprement dans 
+                le fichier statique sync_header_cart.js chargé via le manifest
+                pour éviter les avertissements de flash de contenu non stylisé 
+                (FOUC / Forced Reflow).
               -->
-              <script type="text/javascript"><![CDATA[
-                (function () {
-                    "use strict";
-                    if (window.__emakhcCartFetchPatched) { return; }
-                    window.__emakhcCartFetchPatched = true;
-
-                    var CART_ENDPOINTS = ["/shop/cart/update_json", "/shop/cart/update"];
-
-                    function isCartUpdateUrl(url) {
-                        if (!url) { return false; }
-                        var asString = typeof url === "string" ? url : (url.url || "");
-                        return CART_ENDPOINTS.some(function (ep) {
-                            return asString.indexOf(ep) !== -1;
-                        });
-                    }
-
-                    function formatAmount(amount) {
-                        var value = Number(amount) || 0;
-                        try {
-                            return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 })
-                                .format(value) + " CFA";
-                        } catch (e) {
-                            return String(Math.round(value)) + " CFA";
-                        }
-                    }
-
-                    function updateHeaderBadge(data) {
-                        if (!data || typeof data !== "object") { return; }
-                        var payload = "result" in data ? data.result : data;
-                        if (!payload || typeof payload !== "object") { return; }
-
-                        if (typeof payload.amount !== "undefined") {
-                            document.querySelectorAll(".my_cart_amount").forEach(function (el) {
-                                el.textContent = formatAmount(payload.amount);
-                            });
-                        }
-                        if (typeof payload.cart_quantity !== "undefined") {
-                            document.querySelectorAll(".my_cart_quantity").forEach(function (el) {
-                                el.textContent = payload.cart_quantity;
-                            });
-                        }
-                    }
-
-                    var originalFetch = window.fetch;
-                    window.fetch = function () {
-                        var args = arguments;
-                        var url = args[0];
-                        var result = originalFetch.apply(this, args);
-                        if (!isCartUpdateUrl(url)) { return result; }
-                        return result.then(function (response) {
-                            response.clone().json().then(updateHeaderBadge).catch(function () {});
-                            return response;
-                        });
-                    };
-
-                    if (window.jQuery) {
-                        window.jQuery(document).ajaxSuccess(function (event, xhr, settings, data) {
-                            if (isCartUpdateUrl(settings && settings.url)) {
-                                updateHeaderBadge(data);
-                            }
-                        });
-                    }
-                })();
-              ]]></script>
 
               <!-- Compte Utilisateur -->
               <t t-nocache="The user block must not be cached">
