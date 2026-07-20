@@ -85,17 +85,33 @@
                         font-size: 0.95rem;
                         color: #111827;
                     }
-                    /* Badge promo */
+                    /* Badge PROMO */
                     .badge-promo {
                         position: absolute;
                         top: 10px;
                         left: 10px;
-                        background-color: #EF4444;
+                        background-color: #DC2626;
                         color: white;
-                        font-size: 0.72rem;
+                        font-size: 0.7rem;
+                        font-weight: 800;
+                        letter-spacing: 0.08em;
+                        text-transform: uppercase;
+                        padding: 4px 9px;
+                        border-radius: 4px;
+                        box-shadow: 0 2px 6px rgba(220,38,38,0.35);
+                        z-index: 2;
+                    }
+                    .badge-discount {
+                        position: absolute;
+                        top: 36px;
+                        left: 10px;
+                        background-color: #111827;
+                        color: #FCD34D;
+                        font-size: 0.68rem;
                         font-weight: 700;
-                        padding: 3px 8px;
-                        border-radius: 20px;
+                        padding: 2px 7px;
+                        border-radius: 4px;
+                        z-index: 2;
                     }
                     /* Sidebar category active */
                     .cat-link { display: block; text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 0.88rem; color: #374151; margin-bottom: 4px; transition: background 0.15s; }
@@ -359,10 +375,11 @@
 
                                             <!-- Badges Promotion (Prix barré OU Étiquette) -->
                                             <t t-if="has_promo">
-                                                <span class="badge-promo">-<t t-esc="discount"/>%</span>
+                                                <span class="badge-promo">PROMO</span>
+                                                <span class="badge-discount">-<t t-esc="discount"/>%</span>
                                             </t>
                                             <t t-elif="promo_tags">
-                                                <span class="badge-promo">Promo</span>
+                                                <span class="badge-promo">PROMO</span>
                                             </t>
 
                                             <!-- Image → clique désactivé -->
