@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
+import threading
 
 from odoo import http
 from odoo.http import request
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 _logger = logging.getLogger(__name__)
+
+# Thread-local storage to pass the saved cart between web_auth_signup and web_login
+# (web_auth_signup internally calls self.web_login, so we need to bridge the saved cart)
+_thread_local = threading.local()
 
 
 class EmakmedForceLogin(WebsiteSale):
@@ -55,6 +60,17 @@ from odoo.addons.auth_signup.controllers.main import AuthSignupHome
 
 class EmakmedForceLoginHome(AuthSignupHome):
 
+    def _save_deferred_cart(self):
+        """
+        Save the current deferred_cart from the session.
+        If web_auth_signup already saved a cart via thread-local, use that
+        (to avoid overwriting with an empty cart after session rotation).
+        """
+        existing = getattr(_thread_local, 'emak_saved_cart', None)
+        if existing is not None:
+            return existing
+        return dict(request.session.get('deferred_cart', {}))
+
     def _restore_deferred_cart(self, saved_cart):
         """Restore the deferred cart into the (potentially rotated) session."""
         if saved_cart:
@@ -64,53 +80,59 @@ class EmakmedForceLoginHome(AuthSignupHome):
                 request.session.modified = True
             except Exception:
                 pass
+            _logger.info(
+                "Emakhealthcare: deferred_cart restored after auth (%d items)", 
+                sum(saved_cart.values())
+            )
 
     @http.route()
     def web_login(self, *args, **kw):
-        # 1. Save cart before any session mutation
-        saved_cart = dict(request.session.get('deferred_cart', {}))
+        # 1. Save cart — prefer cart from web_auth_signup's thread-local if available
+        saved_cart = self._save_deferred_cart()
 
-        # 2. Prevent Odoo's standard cart from interfering (no real sale.order)
+        # 2. Prevent Odoo's standard cart from interfering (blocks _update_address crash)
         request.session.pop('sale_order_id', None)
 
-        # 3. Perform the actual login
+        # 3. Determine redirect target before super() clears request.params
+        redirect_target = kw.get('redirect') or request.params.get('redirect') or '/shop/cart'
+
+        # 4. Perform the actual authentication
         response = super(EmakmedForceLoginHome, self).web_login(*args, **kw)
 
-        # 4. After login, restore the cart in the new session
+        # 5. Restore deferred cart into the new (rotated) session
         self._restore_deferred_cart(saved_cart)
 
-        # 5. On Emakhealthcare, if login was successful (session.uid set),
-        #    redirect to /shop/cart so the user sees their items
-        if (request.session.uid
-                and getattr(request, 'website', None)
-                and request.website.name == 'Emakhealthcare'
-                and request.httprequest.method == 'POST'):
-            redirect = kw.get('redirect') or request.params.get('redirect') or '/shop/cart'
-            if redirect not in ('/shop/cart',):
-                redirect = '/shop/cart'
-            return request.redirect(redirect)
+        # 6. On successful POST login, force redirect to /shop/cart
+        #    (avoids portal login_successful → homepage redirect)
+        if request.session.uid and request.httprequest.method == 'POST':
+            if redirect_target in ('/shop/cart', '/shop/checkout'):
+                return request.redirect('/shop/cart')
 
         return response
 
     @http.route()
     def web_auth_signup(self, *args, **kw):
-        # 1. Save cart before any session mutation
+        # 1. Save cart NOW, before do_signup rotates the session
         saved_cart = dict(request.session.get('deferred_cart', {}))
 
-        # 2. Prevent Odoo's standard cart from interfering
+        # 2. Store in thread-local so our web_login override uses it
+        _thread_local.emak_saved_cart = saved_cart
+
+        # 3. Prevent standard cart interference
         request.session.pop('sale_order_id', None)
 
-        # 3. Perform signup
-        response = super(EmakmedForceLoginHome, self).web_auth_signup(*args, **kw)
+        try:
+            # 4. Perform signup (internally calls self.web_login → our override)
+            response = super(EmakmedForceLoginHome, self).web_auth_signup(*args, **kw)
+        finally:
+            # 5. Always clean up thread-local
+            _thread_local.emak_saved_cart = None
 
-        # 4. Restore cart
+        # 6. Restore cart after full signup flow
         self._restore_deferred_cart(saved_cart)
 
-        # 5. On Emakhealthcare, redirect to cart after successful signup
-        if (request.session.uid
-                and getattr(request, 'website', None)
-                and request.website.name == 'Emakhealthcare'
-                and request.httprequest.method == 'POST'):
+        # 7. After successful signup, redirect to /shop/cart
+        if request.session.uid and request.httprequest.method == 'POST':
             return request.redirect('/shop/cart')
 
         return response
