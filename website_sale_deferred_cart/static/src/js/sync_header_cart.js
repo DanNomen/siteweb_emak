@@ -1,120 +1,183 @@
 /** @odoo-module **/
 
 /**
- * Emakhealthcare — session-based (deferred) cart.
+ * Emakhealthcare — synchronisation du badge panier (header) avec le corps de page.
  *
- * The header badge (".my_cart_quantity" / ".my_cart_amount") is rendered
- * server-side from request.session, and is only refreshed when the browser
- * does a full page load. When the customer changes the quantity in the cart
- * page (+/- buttons on /shop/cart) or clicks "Add to cart" elsewhere, the
- * update happens via an AJAX call to /shop/cart/update or
- * /shop/cart/update_json and the page is NOT reloaded — only the cart lines
- * / total blocks are swapped in the DOM. The header badge was therefore left
- * showing a stale amount/quantity from whenever the page was last fully
- * loaded.
+ * PROBLÈME : le badge du header (.my_cart_quantity / .my_cart_amount) est rendu
+ * côté serveur depuis request.session. Il n'est rafraîchi que lors d'un rechargement
+ * complet. Quand le client change la quantité (+/-), Odoo n'envoie qu'un remplacement
+ * partiel du DOM (website_sale.cart_lines + website_sale.total) via JSON-RPC, sans
+ * recharger le header.
  *
- * A previous fix injected a <script> tag directly inside the swapped
- * website_sale.cart_lines template to patch the DOM after each AJAX call,
- * but that was fragile (script tags inserted via innerHTML/OWL rendering are
- * not guaranteed to execute) and was later removed while fixing an unrelated
- * RPC error, silently reintroducing this bug.
+ * SOLUTION : triple stratégie d'interception pour couvrir TOUS les canaux réseau
+ * utilisés par Odoo (fetch, XMLHttpRequest, ou les deux selon la version / le widget).
  *
- * This file replaces that approach with a single, robust interception of the
- * network layer itself: we wrap window.fetch once, watch for calls to the
- * cart update endpoints, and update the header badge directly from the JSON
- * response our controllers already return (amount / cart_quantity), no
- * matter which code path triggered the update (core Odoo widgets, the
- * "Enlever du panier" button, or the custom "Add to cart" buttons on the
- * product pages).
+ * 1) Patch window.fetch  → capture les appels via l'API Fetch moderne.
+ * 2) Patch XMLHttpRequest → capture les appels via XHR (JSON-RPC d'Odoo core).
+ * 3) MutationObserver     → fallback : si le DOM du bloc "total" est remplacé
+ *    et qu'il contient des attributs data-cart-amount / data-cart-qty injectés
+ *    par le template serveur, on les lit et on met à jour le badge.
  */
 (function () {
     "use strict";
 
+    /* -----------------------------------------------------------------------
+     * Constantes
+     * -------------------------------------------------------------------- */
     var CART_ENDPOINTS = ["/shop/cart/update_json", "/shop/cart/update"];
 
+    /* -----------------------------------------------------------------------
+     * Helpers
+     * -------------------------------------------------------------------- */
     function isCartUpdateUrl(url) {
-        if (!url) {
-            return false;
-        }
-        var asString = typeof url === "string" ? url : (url.url || "");
-        return CART_ENDPOINTS.some(function (endpoint) {
-            return asString.indexOf(endpoint) !== -1;
+        if (!url) { return false; }
+        var s = typeof url === "string" ? url : (url.url || "");
+        return CART_ENDPOINTS.some(function (ep) {
+            return s.indexOf(ep) !== -1;
         });
     }
 
     function formatAmount(amount) {
-        var value = Number(amount) || 0;
+        var value = Number(amount);
+        if (isNaN(value)) { return null; }
         try {
-            return (
-                new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value) +
-                " CFA"
-            );
+            return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value) + " CFA";
         } catch (e) {
             return String(Math.round(value)) + " CFA";
         }
     }
 
+    /**
+     * Met à jour les éléments du header à partir d'un objet payload.
+     * Accepte le payload directement OU enveloppé dans { result: ... } (JSON-RPC 2.0).
+     */
     function updateHeaderBadge(data) {
-        if (!data || typeof data !== "object") {
-            return;
-        }
-        // JSON-RPC 2.0 wraps the actual payload in { jsonrpc, id, result: {...} }.
-        var payload = "result" in data ? data.result : data;
-        if (!payload || typeof payload !== "object") {
-            return;
+        if (!data || typeof data !== "object") { return; }
+        var payload = ("result" in data) ? data.result : data;
+        if (!payload || typeof payload !== "object") { return; }
+
+        var amount  = payload.amount;
+        var cartQty = payload.cart_quantity;
+
+        if (typeof amount !== "undefined" && amount !== null) {
+            var formatted = formatAmount(amount);
+            if (formatted !== null) {
+                document.querySelectorAll(".my_cart_amount").forEach(function (el) {
+                    el.textContent = formatted;
+                });
+                console.debug("[EmakHC] Badge montant mis à jour \u2192", formatted);
+            }
         }
 
-        if (typeof payload.amount !== "undefined") {
-            var amountEls = document.querySelectorAll(".my_cart_amount");
-            amountEls.forEach(function (el) {
-                el.textContent = formatAmount(payload.amount);
+        if (typeof cartQty !== "undefined" && cartQty !== null) {
+            document.querySelectorAll(".my_cart_quantity").forEach(function (el) {
+                el.textContent = cartQty;
             });
-        }
-
-        if (typeof payload.cart_quantity !== "undefined") {
-            var qtyEls = document.querySelectorAll(".my_cart_quantity");
-            qtyEls.forEach(function (el) {
-                el.textContent = payload.cart_quantity;
-            });
+            console.debug("[EmakHC] Badge quantit\u00e9 mis à jour \u2192", cartQty);
         }
     }
 
-    // Guard against double-patching if this script is somehow loaded twice.
-    if (window.__emakhcCartFetchPatched) {
-        return;
-    }
-    window.__emakhcCartFetchPatched = true;
+    /* -----------------------------------------------------------------------
+     * Guard : n'initialiser qu'une seule fois même si le script est rechargé
+     * -------------------------------------------------------------------- */
+    if (window.__emakhcCartSyncActive) { return; }
+    window.__emakhcCartSyncActive = true;
 
-    var originalFetch = window.fetch;
+    /* -----------------------------------------------------------------------
+     * 1) Patch window.fetch
+     * -------------------------------------------------------------------- */
+    var _origFetch = window.fetch;
     window.fetch = function () {
         var args = arguments;
-        var url = args[0];
-        var result = originalFetch.apply(this, args);
-
-        if (!isCartUpdateUrl(url)) {
-            return result;
-        }
-
-        return result.then(function (response) {
-            // Clone so we don't consume the body the caller still needs.
-            response
-                .clone()
-                .json()
-                .then(updateHeaderBadge)
-                .catch(function () {
-                    // Non-JSON or unreadable body: nothing to sync, ignore.
-                });
+        var url  = args[0];
+        var p    = _origFetch.apply(this, args);
+        if (!isCartUpdateUrl(url)) { return p; }
+        return p.then(function (response) {
+            response.clone().json().then(updateHeaderBadge).catch(function () {});
             return response;
         });
     };
 
-    // Some parts of Odoo's public widgets may still use jQuery.ajax / XHR
-    // instead of fetch. Cover that path too, defensively.
-    if (window.jQuery) {
-        window.jQuery(document).ajaxSuccess(function (event, xhr, settings, data) {
+    /* -----------------------------------------------------------------------
+     * 2) Patch XMLHttpRequest  (JSON-RPC d'Odoo core passe souvent par XHR)
+     * -------------------------------------------------------------------- */
+    var _origXhrOpen = XMLHttpRequest.prototype.open;
+    var _origXhrSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method, url) {
+        this.__emakhc_url = url || "";
+        return _origXhrOpen.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function () {
+        if (isCartUpdateUrl(this.__emakhc_url)) {
+            var xhr = this;
+            xhr.addEventListener("load", function () {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    updateHeaderBadge(data);
+                } catch (e) { /* réponse non-JSON, ignorer */ }
+            });
+        }
+        return _origXhrSend.apply(this, arguments);
+    };
+
+    /* -----------------------------------------------------------------------
+     * 3) MutationObserver — fallback DOM
+     *    Si le bloc total swappé dans le DOM porte des attributs
+     *    data-cart-amount / data-cart-qty (injectés côté serveur), on les lit.
+     * -------------------------------------------------------------------- */
+    var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (node.nodeType !== 1) { return; }
+                var candidates = [node].concat(Array.from(node.querySelectorAll("[data-cart-amount]")));
+                candidates.forEach(function (el) {
+                    if (!el.getAttribute) { return; }
+                    var amt = el.getAttribute("data-cart-amount");
+                    var qty = el.getAttribute("data-cart-qty");
+                    if (amt !== null) {
+                        updateHeaderBadge({
+                            amount: parseFloat(amt),
+                            cart_quantity: qty !== null ? parseInt(qty, 10) : undefined
+                        });
+                    }
+                });
+            });
+        });
+    });
+
+    function startObserver() {
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startObserver);
+    } else {
+        startObserver();
+    }
+
+    /* -----------------------------------------------------------------------
+     * 4) Couverture jQuery (certains widgets Odoo utilisent encore $.ajax)
+     * -------------------------------------------------------------------- */
+    function hookJQuery($) {
+        $(document).ajaxSuccess(function (event, xhr, settings, data) {
             if (isCartUpdateUrl(settings && settings.url)) {
                 updateHeaderBadge(data);
             }
         });
     }
+
+    if (window.jQuery) {
+        hookJQuery(window.jQuery);
+    } else {
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.jQuery) { hookJQuery(window.jQuery); }
+        });
+    }
+
+    console.debug("[EmakHC] sync_header_cart.js charg\u00e9 (fetch + XHR + MutationObserver + jQuery).");
 })();
+
