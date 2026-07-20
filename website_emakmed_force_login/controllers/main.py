@@ -74,12 +74,10 @@ class EmakmedForceLoginHome(AuthSignupHome):
         Si l'utilisateur a un panier (deferred_cart), on le force toujours
         vers le panier, peu importe d'autres overrides.
         """
-        # Si on est sur Emakhealthcare et qu'il y a un panier fantôme en session
-        if request and hasattr(request, 'website') and request.website.name == 'Emakhealthcare':
-            saved_cart = getattr(_thread_local, 'emak_saved_cart', None) or request.session.get('deferred_cart')
-            if saved_cart:
-                # Force redirect vers le panier si panier non vide
-                return '/shop/cart'
+        saved_cart = getattr(_thread_local, 'emak_saved_cart', None) or request.session.get('deferred_cart')
+        if saved_cart:
+            # Force redirect vers le panier si panier non vide
+            return '/shop/cart'
         return super()._login_redirect(uid, redirect=redirect)
 
     @http.route()
