@@ -90,6 +90,10 @@ class EmakmedForceLoginHome(AuthSignupHome):
         response = super(EmakmedForceLoginHome, self).web_login(*args, **kw)
 
         self._restore_deferred_cart(saved_cart)
+        
+        # Redirection forte post-login si on a un panier
+        if request.session.uid and request.httprequest.method == 'POST' and saved_cart:
+            return request.redirect('/shop/cart')
 
         return response
 
@@ -106,5 +110,9 @@ class EmakmedForceLoginHome(AuthSignupHome):
             _thread_local.emak_saved_cart = None
 
         self._restore_deferred_cart(saved_cart)
+        
+        # Redirection forte post-signup si on a un panier
+        if request.session.uid and request.httprequest.method == 'POST' and saved_cart:
+            return request.redirect('/shop/cart')
 
         return response
