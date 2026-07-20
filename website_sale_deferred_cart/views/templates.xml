@@ -10,6 +10,17 @@
         </xpath>
     </template>
 
-    <!-- Optional: Add a button to "Clear Cart" if session-based -->
-    <!-- (The user didn't ask for it, but it might be useful) -->
+    <template id="navigation_buttons_deferred" inherit_id="website_sale.navigation_buttons">
+        <xpath expr="//a[@t-att-href='step_specific_values[\'back_button_href\']']" position="attributes">
+            <attribute name="t-att-href">
+                '/produits' if step_specific_values['back_button_href'] == '/shop' else step_specific_values['back_button_href']
+            </attribute>
+        </xpath>
+    </template>
+
+    <template id="product_price_promo_badge" inherit_id="website_sale.product_price">
+        <xpath expr="//h3[hasclass('css_editable_mode_hidden')]" position="inside">
+            <span t-if="combination_info['has_discounted_price']" class="badge bg-danger ms-2 align-middle" style="font-size: 0.5em; vertical-align: middle;">PROMO</span>
+        </xpath>
+    </template>
 </odoo>
