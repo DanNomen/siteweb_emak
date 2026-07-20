@@ -11,9 +11,9 @@
     </template>
 
     <template id="navigation_buttons_deferred" inherit_id="website_sale.navigation_buttons">
-        <xpath expr="//a[@t-att-href='step_specific_values[\'back_button_href\']']" position="attributes">
+        <xpath expr="//a[hasclass('text-center')]" position="attributes">
             <attribute name="t-att-href">
-                '/produits' if step_specific_values['back_button_href'] == '/shop' else step_specific_values['back_button_href']
+                '/produits' if step_specific_values.get('back_button_href') == '/shop' else step_specific_values.get('back_button_href')
             </attribute>
         </xpath>
     </template>
