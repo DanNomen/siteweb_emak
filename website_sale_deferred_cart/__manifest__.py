@@ -10,7 +10,7 @@
         it stores them in the user session. 
         The lines are only created in the database when the user clicks on the "Checkout" button.
     """,
-    'author': 'DAN_NOMEN',
+    'author': 'Dan Ahmed',
     'depends': ['website_sale'],
     'data': [
         'views/templates.xml',
