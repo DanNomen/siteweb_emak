@@ -11,7 +11,7 @@
         Uniquement actif sur le site Emakhealthcare — les autres sites ne sont pas affectés.
     """,
     'author': 'HELLO DAN',
-    'depends': ['website_sale', 'auth_signup'],
+    'depends': ['website_sale', 'auth_signup', 'my_website_customer_portal', 'website_sale_deferred_cart'],
     'data': [
         'views/auth_page_template.xml',
     ],
