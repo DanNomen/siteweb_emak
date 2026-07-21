@@ -7,12 +7,10 @@
           @media (max-width: 767.98px) {
               #bottom.o_footer {
                   display: block !important;
-                  /* On ajoute 70px de padding pour ne pas être caché par le menu de navigation flottant */
-                  padding-bottom: 70px !important;
               }
           }
         </style>
-        <section class="s_text_block pt40 pb16">
+        <section class="s_text_block pt8 pb8">
           <div class="container">
             <div class="row">
               
@@ -30,7 +28,7 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-lg-5 pt24 pb24">
+              <div class="col-lg-5 pt8 pb8">
                 <h5 class="mb-3">À propos de nous</h5>
                 <p>
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
@@ -41,7 +39,7 @@
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-lg-4 offset-lg-1 pt24 pb24">
+              <div id="connect" class="col-lg-4 offset-lg-1 pt8 pb8">
                 <h5 class="mb-3">Rejoignez-nous</h5>
                 <ul class="list-unstyled">
                   <li>
@@ -62,30 +60,6 @@
                   </li>
                 </ul>
 
-                <!-- 🔗 Réseaux sociaux dynamiques -->
-                <div class="s_social_media text-start">
-                  <h5 class="mb-2">Suivez-nous</h5>
-                  <t t-if="website.company_id.social_facebook">
-                    <a t-att-href="website.company_id.social_facebook" target="_blank" aria-label="Facebook">
-                      <i class="fa fa-facebook rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_twitter">
-                    <a t-att-href="website.company_id.social_twitter" target="_blank" aria-label="Twitter">
-                      <i class="fa fa-twitter rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_linkedin">
-                    <a t-att-href="website.company_id.social_linkedin" target="_blank" aria-label="LinkedIn">
-                      <i class="fa fa-linkedin rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                  <t t-if="website.company_id.social_youtube">
-                    <a t-att-href="website.company_id.social_youtube" target="_blank" aria-label="YouTube">
-                      <i class="fa fa-youtube rounded-circle shadow-sm me-2"></i>
-                    </a>
-                  </t>
-                </div>
               </div>
             </div>
           </div>
