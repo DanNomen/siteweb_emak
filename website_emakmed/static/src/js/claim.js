@@ -32,81 +32,76 @@ publicWidget.registry.ClaimReclamation = publicWidget.Widget.extend({
     },
 
     displayInvoiceLines(lines) {
-        var $tbody = this.$('.purchase_tbody');
-        this.$('#claim_table').removeClass('d-none');
-        $tbody.empty();
+        var $container = this.$('.purchase_tbody');
+        this.$('#claim_table').show();
+        $container.empty();
 
         lines.forEach(function (line) {
-            var $row = $('<tr>');
+            // Carte Bootstrap pour chaque produit (responsive sur mobile ET desktop)
+            var $card = $('<div>', {
+                class: 'card mb-3 shadow-sm border-0',
+                style: 'border-left: 4px solid #38A935 !important;'
+            });
 
-            // Colonne Sélection
-            $row.append($('<td>').append(
-                $('<input>', {
-                    type: 'checkbox',
-                    class: 'form-check-input',
-                    name: `selection_${line.id}`,
-                })
-            ));
+            var $cardBody = $('<div>', { class: 'card-body p-3' });
 
-            // Colonne Produit
-            $row.append($('<td class="text-start">').append(
-                $('<input>', {
-                    type: 'text',
-                    class: 'form-control',
-                    name: `name_${line.id}`,
-                    value: line.name,
-                    readonly: true
-                })
-            ));
+            // En-tête : case à cocher + nom du produit
+            var $header = $('<div>', { class: 'd-flex align-items-center gap-2 mb-3 pb-2 border-bottom' });
+            $header.append($('<input>', {
+                type: 'checkbox',
+                class: 'form-check-input flex-shrink-0',
+                name: `selection_${line.id}`,
+            }));
+            $header.append($('<strong>', { class: 'text-dark', text: line.name }));
+            $cardBody.append($header);
 
-            // Colonne Motif
+            // Ligne Motif
             var $select = $('<select>', {
-                class: 'form-control',
+                class: 'form-select form-select-sm',
                 name: 'reason_' + line.id
             });
-            var reasons = line.reasons
+            var reasons = line.reasons;
             $.each(reasons, function (value, text) {
-                $select.append($('<option>', {
-                    value: value,
-                    text: text
-                }));
+                $select.append($('<option>', { value: value, text: text }));
             });
-            $row.append($('<td class="text-start">').append($select));
+            var $motifRow = $('<div>', { class: 'd-flex justify-content-between align-items-center mb-2' });
+            $motifRow.append($('<span>', { class: 'text-muted fw-semibold small', text: 'Motif' }));
+            $motifRow.append($('<div>', { class: 'ms-2 flex-grow-1' }).append($select));
+            $cardBody.append($motifRow);
 
-
-            // Colonne Quantité avec boutons - et +
+            // Ligne Quantité
             var $qtyInput = $('<input>', {
                 type: 'text',
-                class: 'form-control text-center qty-input',
+                class: 'form-control form-control-sm text-center qty-input',
                 name: 'qty_' + line.id,
                 value: 1,
                 min: 1,
                 max: line.qty || 1,
-                'data-max': line.qty || 1
+                'data-max': line.qty || 1,
+                style: 'width: 50px;'
             });
-
             var $btnDecrement = $('<button>', {
                 type: 'button',
-                class: 'btn btn-outline-secondary qty-btn-decrement',
+                class: 'btn btn-outline-secondary btn-sm qty-btn-decrement',
                 text: '-',
                 'data-line-id': line.id
             });
-
             var $btnIncrement = $('<button>', {
                 type: 'button',
-                class: 'btn btn-outline-secondary qty-btn-increment',
+                class: 'btn btn-outline-secondary btn-sm qty-btn-increment',
                 text: '+',
                 'data-line-id': line.id
             });
+            var $inputGroup = $('<div>', { class: 'input-group input-group-sm', style: 'width: 110px;' })
+                .append($btnDecrement).append($qtyInput).append($btnIncrement);
 
-            var $inputGroup = $('<div>', {
-                class: 'input-group',
-                style: 'width: 120px'
-            }).append($btnDecrement).append($qtyInput).append($btnIncrement);
+            var $qtyRow = $('<div>', { class: 'd-flex justify-content-between align-items-center' });
+            $qtyRow.append($('<span>', { class: 'text-muted fw-semibold small', text: 'Quantité' }));
+            $qtyRow.append($inputGroup);
+            $cardBody.append($qtyRow);
 
-            $row.append($('<td>').append($inputGroup));
-
-            $tbody.append($row);
+            $card.append($cardBody);
+            $container.append($card);
         });
 
         if (lines.length > 0) {

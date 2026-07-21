@@ -8,7 +8,7 @@
             <div class="row">
               
               <!-- 🌐 Liens utiles -->
-              <div class="col-12 col-lg-2 pt24 pb24">
+              <div class="col-lg-2 pt24 pb24">
                 <h5 class="mb-3">Liens utiles</h5>
                 <ul class="list-unstyled">
                   <li><a href="/">Accueil</a></li>
@@ -21,18 +21,18 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-12 col-lg-5 pt24 pb24">
+              <div class="col-lg-5 pt24 pb24">
                 <h5 class="mb-3">À propos de nous</h5>
-                <p style="display: block !important;">
+                <p>
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
                 </p>
-                <p style="display: block !important;">
-                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d'optimiser leurs performances.
+                <p>
+                  Nos produits sont conçus pour les petites et moyennes entreprises désireuses d’optimiser leurs performances.
                 </p>
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-12 col-lg-4 offset-lg-1 pt24 pb24">
+              <div id="connect" class="col-lg-4 offset-lg-1 pt24 pb24">
                 <h5 class="mb-3">Rejoignez-nous</h5>
                 <ul class="list-unstyled">
                   <li>
@@ -48,12 +48,35 @@
                   <li>
                     <i class="fa fa-phone fa-fw me-2"></i>
                     <a t-att-href="'tel:%s' % website.company_id.phone">
-                      <t t-esc="website.company_id.phone or '+223 00 000 0000'"/>
+                      <t t-esc="website.company_id.phone or '+261 00 000 0000'"/>
                     </a>
                   </li>
                 </ul>
 
-                <!-- 🔗 Réseaux sociaux dynamiques supprimés -->
+                <!-- 🔗 Réseaux sociaux dynamiques -->
+                <div class="s_social_media text-start">
+                  <h5 class="mb-2">Suivez-nous</h5>
+                  <t t-if="website.company_id.social_facebook">
+                    <a t-att-href="website.company_id.social_facebook" target="_blank" aria-label="Facebook">
+                      <i class="fa fa-facebook rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_twitter">
+                    <a t-att-href="website.company_id.social_twitter" target="_blank" aria-label="Twitter">
+                      <i class="fa fa-twitter rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_linkedin">
+                    <a t-att-href="website.company_id.social_linkedin" target="_blank" aria-label="LinkedIn">
+                      <i class="fa fa-linkedin rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                  <t t-if="website.company_id.social_youtube">
+                    <a t-att-href="website.company_id.social_youtube" target="_blank" aria-label="YouTube">
+                      <i class="fa fa-youtube rounded-circle shadow-sm me-2"></i>
+                    </a>
+                  </t>
+                </div>
               </div>
             </div>
           </div>
@@ -63,13 +86,13 @@
         <div class="o_footer_copyright o_colored_level o_cc">
           <div class="container py-3">
             <div class="row">
-              <div class="col-12 col-sm text-center text-sm-start text-muted">
+              <div class="col-sm text-center text-sm-start text-muted">
                 <span>
-                  © <t t-esc="website.company_id.name or 'Emakhealthcare'"/> - 
+                  © <t t-esc="website.company_id.name or 'Nom de l’entreprise'"/> - 
                   <t t-esc="datetime.datetime.now().year"/>
                 </span>
               </div>
-              <div class="col-12 col-sm text-center text-sm-end text-muted">
+              <div class="col-sm text-center text-sm-end text-muted">
                 <span>Développé avec ❤️ par <a href="/">Dagodoo</a></span>
               </div>
             </div>

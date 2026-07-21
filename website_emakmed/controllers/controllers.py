@@ -32,24 +32,10 @@ class Website(Home):
         return request.render("website_emakmed.best_sellers_template", value)
     
     
-# NOTE (correctif espace client) :
-# La classe CustomerPortalCustom ci-dessous détournait systématiquement
-# /my et /my/home vers la page d'accueil ('/'), empêchant toute utilisation
-# du portail client standard d'Odoo (historique commandes, adresses,
-# factures) pour les clients de la boutique en ligne.
-#
-# Elle est retirée : /my et /my/home utilisent maintenant le comportement
-# standard d'Odoo (portal.CustomerPortal), déjà hérité automatiquement.
-#
-# Le tableau de bord "officine" (/my-officine/compte-client,
-# /my_officine/invoices, /my_officine/credits, /my_officine/statements)
-# n'est PAS affecté par ce changement : ce sont des routes distinctes,
-# indépendantes de /my, qui continuent de fonctionner à l'identique pour
-# les comptes officine.
-#
-# class CustomerPortalCustom(CustomerPortal):
-#     @route(['/my', '/my/home'], type='http', auth="user", website=True)
-#     def home(self, **kw):
-#         return request.redirect('/')
+class CustomerPortalCustom(CustomerPortal):
+    @route(['/my', '/my/home'], type='http', auth="user", website=True)
+    def home(self, **kw):
+        return request.redirect('/')
 
+        
 

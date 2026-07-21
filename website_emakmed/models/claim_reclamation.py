@@ -40,17 +40,6 @@ class Claim(models.Model):
         string="État",
         default="draft",
     )
-
-    source = fields.Selection(
-        [
-            ("normal", "Normal"),
-            ("extranet", "Extranet / Site Web"),
-        ],
-        string="Source",
-        default="normal",
-        required=True
-    )
-
     line_ids = fields.One2many("claim.reclamation.line", "claim_id", string="Lignes")
     all_reasons = fields.Char(compute="_compute_all_reasons")
 

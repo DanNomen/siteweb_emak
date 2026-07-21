@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_claim_reclamation_manager,claim_reclamation_manager,model_claim_reclamation,base.group_user,1,1,1,1
 access_claim_reclamation_line_manager,claim_reclamation_line_manager,model_claim_reclamation_line,base.group_user,1,1,1,1
+access_recap_promos_wizard,recap_promos_wizard,model_recap_promos_wizard,base.group_user,1,1,1,1
