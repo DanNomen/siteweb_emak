@@ -11,6 +11,10 @@
           }
         </style>
         <style>
+          /* Supprimer l'espace entre le contenu principal et le footer */
+          #wrapwrap > main { padding-bottom: 0 !important; margin-bottom: 0 !important; }
+          #wrapwrap { padding-bottom: 0 !important; }
+          .o_footer { margin-top: 0 !important; }
           #bottom.o_footer .s_text_block { margin-top: 0 !important; padding-top: 0 !important; }
           #bottom.o_footer .s_text_block > .container { padding-top: 8px !important; padding-bottom: 4px !important; }
         </style>
