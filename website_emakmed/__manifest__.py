@@ -33,7 +33,6 @@
         "views/templates/my_officine_template.xml",
         # Reports
         "report/mansual_report.xml",
-        "report/recap_promos_report.xml",
     ],
     "installable": True,
     "application": True,
