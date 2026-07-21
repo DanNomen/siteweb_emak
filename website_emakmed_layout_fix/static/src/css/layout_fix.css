@@ -77,9 +77,18 @@ section.s_text_block::after {
 .o_portal_pager,
 .o_shop_pagination,
 nav.o_shop_pagination,
-.oe_website_sale .o_pager,
-/* Override direct des classes Bootstrap mt-5 mb-5 pb-5 sur la pagination Odoo */
-.oe_website_sale .d-flex.justify-content-center {
+.oe_website_sale .o_pager {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Sélecteur haute spécificité (ID #wrap) pour battre Bootstrap .mb-5 .mt-5 !important */
+#wrap .d-flex.justify-content-center.mt-5,
+#wrap .d-flex.justify-content-center.mb-5,
+#wrap .d-flex.justify-content-center.pb-5,
+#wrap .d-flex.justify-content-center.mt-5.mb-5.pb-5 {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
