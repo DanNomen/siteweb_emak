@@ -17,6 +17,13 @@
           .o_footer { margin-top: 0 !important; }
           #bottom.o_footer .s_text_block { margin-top: 0 !important; padding-top: 0 !important; }
           #bottom.o_footer .s_text_block > .container { padding-top: 8px !important; padding-bottom: 4px !important; }
+          /* Supprimer les vagues / shape dividers Odoo dans le footer */
+          #bottom.o_footer .o_we_shape,
+          #bottom.o_footer .s_text_block > .o_we_shape,
+          #bottom.o_footer section::before,
+          #bottom.o_footer section::after,
+          #bottom.o_footer .s_text_block::before,
+          #bottom.o_footer .s_text_block::after { display: none !important; height: 0 !important; }
         </style>
         <section class="s_text_block py-0 m-0">
           <div class="container">
