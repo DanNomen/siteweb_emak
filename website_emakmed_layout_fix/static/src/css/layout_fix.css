@@ -80,9 +80,10 @@ nav.o_shop_pagination,
 .oe_website_sale .o_pager,
 /* Override direct des classes Bootstrap mt-5 mb-5 pb-5 sur la pagination Odoo */
 .oe_website_sale .d-flex.justify-content-center {
-    margin-top: 8px !important;
+    margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
+    padding-top: 0 !important;
 }
 
 /* Supprimer tout espace résiduel juste avant le footer */
