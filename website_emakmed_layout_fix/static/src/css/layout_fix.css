@@ -1,0 +1,67 @@
+/* ================================================================
+   EMAKMED LAYOUT FIX — Suppression des espaces et shapes globaux
+   ================================================================ */
+
+/* ---------------------------------------------------------------
+   1. Supprimer l'espace blanc entre le contenu et le footer
+   --------------------------------------------------------------- */
+#wrapwrap > main {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+#wrapwrap {
+    padding-bottom: 0 !important;
+}
+
+.o_footer {
+    margin-top: 0 !important;
+}
+
+/* ---------------------------------------------------------------
+   2. Supprimer les shape dividers / vagues colorées (o_we_shape)
+   Odoo ajoute ces formes automatiquement entre les sections
+   --------------------------------------------------------------- */
+.o_we_shape {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Pseudo-éléments ::before et ::after qui créent les vagues */
+.s_text_block::before,
+.s_text_block::after,
+section.s_text_block::before,
+section.s_text_block::after {
+    display: none !important;
+    height: 0 !important;
+}
+
+/* ---------------------------------------------------------------
+   3. Supprimer les marges/paddings excessifs des sections Odoo
+   qui créent de l'espace vertical inutile en bas de page
+   --------------------------------------------------------------- */
+.oe_website_footer .o_footer_copyright {
+    margin-top: 0 !important;
+}
+
+/* Supprimer les dégradés de couleur qui apparaissent entre sections */
+.s_parallax_bg::after,
+.s_cover::after,
+.o_half_screen_image::after {
+    display: none !important;
+}
+
+/* Sur mobile: réduction du padding bas pour les pages shop/boutique */
+@media (max-width: 767.98px) {
+    .oe_website_sale .container,
+    .o_wsale_products_grid_table_container {
+        padding-bottom: 4px !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Supprimer l'espace sous la pagination produits */
+    .o_wsale_products_grid_table_container + * {
+        margin-top: 0 !important;
+    }
+}

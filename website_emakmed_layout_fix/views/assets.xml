@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Les assets sont déclarés directement dans le manifest via la clé 'assets' -->
+    <!-- Ce fichier est requis pour la compatibilité Odoo 18 -->
+</odoo>
