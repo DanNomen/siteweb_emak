@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="auth_page_inherit_username" inherit_id="website_emakmed_force_login.auth_page" name="Emakhealthcare - Connexion avec nom d'utilisateur">
+        
+        <!-- ======================= -->
+        <!-- FORMULAIRE DE CONNEXION -->
+        <!-- ======================= -->
+        
+        <!-- Modifier le label du champ email -->
+        <xpath expr="//label[@for='login_email']" position="replace">
+            <label class="emak-label" for="login_email">E-mail ou Nom d'utilisateur</label>
+        </xpath>
+        
+        <!-- Modifier l'input du champ email pour accepter du texte et changer le placeholder -->
+        <xpath expr="//input[@id='login_email']" position="attributes">
+            <attribute name="type">text</attribute>
+            <attribute name="placeholder">votre@email.com ou pseudo</attribute>
+        </xpath>
+
+        <!-- ========================== -->
+        <!-- FORMULAIRE D'INSCRIPTION  -->
+        <!-- ========================== -->
+        
+        <!-- Ajouter le champ Nom d'utilisateur juste après le nom complet -->
+        <xpath expr="//input[@id='reg_name']" position="after">
+            <label class="emak-label" for="reg_username">Nom d'utilisateur</label>
+            <input id="reg_username" name="username" type="text"
+                   class="emak-input" placeholder="Choisissez un pseudo"
+                   autocomplete="username" required="required"/>
+        </xpath>
+        
+    </template>
+</odoo>
