@@ -3,6 +3,15 @@
   <template id="custom_footer_dynamic" inherit_id="website.layout">
     <xpath expr="//footer" position="replace">
       <footer id="bottom" class="o_footer o_colored_level o_cc">
+        <style>
+          @media (max-width: 767.98px) {
+              #bottom.o_footer {
+                  display: block !important;
+                  /* On ajoute 70px de padding pour ne pas être caché par le menu de navigation flottant */
+                  padding-bottom: 70px !important;
+              }
+          }
+        </style>
         <section class="s_text_block pt40 pb16">
           <div class="container">
             <div class="row">

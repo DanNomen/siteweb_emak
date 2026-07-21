@@ -40,7 +40,7 @@
         </xpath>
 
         <xpath expr="//div[hasclass('o_footer_copyright')]" position="after">
-            <div class="o_footer_copyright o_colored_level o_cc emak-mobile-footer" style="background-color: #000; color: #fff; display: block !important; visibility: visible !important; padding-bottom: 70px !important; position: relative; z-index: 10;" t-if="request.website.name == 'Emakhealthcare'">
+            <div class="o_footer_copyright o_colored_level o_cc" style="background-color: #000; color: #fff; display: block !important; visibility: visible !important;" t-if="request.website.name == 'Emakhealthcare'">
                 <div class="container py-3">
                     <div class="row g-1">
                         <div class="col-12 col-sm text-center text-sm-start" style="color: rgba(255,255,255,0.6);">
