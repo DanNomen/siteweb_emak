@@ -52,16 +52,60 @@ section.s_text_block::after {
     display: none !important;
 }
 
-/* Sur mobile: réduction du padding bas pour les pages shop/boutique */
+/* ---------------------------------------------------------------
+   4. Supprimer le grand espace entre la pagination PRODUITS et le footer
+   --------------------------------------------------------------- */
+
+/* Conteneur principal de la boutique */
+.oe_website_sale,
+.oe_website_sale .container {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Grille de produits */
+.o_wsale_products_grid_table_container,
+.o_wsale_products_page,
+#products_grid,
+#products_grid_before,
+#products_grid_after {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* La barre de pagination (numéros de page 1 2 3) */
+.o_portal_pager,
+.o_shop_pagination,
+nav.o_shop_pagination,
+.oe_website_sale .o_pager {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Supprimer tout espace résiduel juste avant le footer */
+#wrapwrap > main > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Sur mobile : encore plus agressif */
 @media (max-width: 767.98px) {
     .oe_website_sale .container,
-    .o_wsale_products_grid_table_container {
-        padding-bottom: 4px !important;
+    .o_wsale_products_grid_table_container,
+    .oe_website_sale {
+        padding-bottom: 0 !important;
         margin-bottom: 0 !important;
     }
 
     /* Supprimer l'espace sous la pagination produits */
     .o_wsale_products_grid_table_container + * {
         margin-top: 0 !important;
+    }
+    
+    /* Cibler le div parent de la pagination sur mobile */
+    .oe_website_sale > .container:last-child,
+    .oe_website_sale > .container > .row:last-child {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
     }
 }
