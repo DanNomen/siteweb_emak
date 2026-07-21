@@ -33,6 +33,7 @@
               <img t-if="website.company_id.logo"
                    t-att-src="image_data_uri(website.company_id.logo)"
                    alt="Logo"
+                   fetchpriority="high" width="150" height="45"
                    style="height: 45px; width: auto;" />
               <span t-if="not website.company_id.logo" class="fw-bold fs-4" style="color: #2E7D32;">Emakhealthcare</span>
             </a>

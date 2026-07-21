@@ -9,6 +9,7 @@
     <template id="products_page" name="Emakhealthcare - Liste des produits">
         <t t-call="website.layout">
             <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
             <div id="wrap" style="background-color: #F8F9FA; font-family: 'Inter', sans-serif; min-height: 80vh;">
 
@@ -387,7 +388,7 @@
                                                 <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
                                                      class="product-img"
                                                      alt="produit"
-                                                     loading="lazy"
+                                                     loading="lazy" width="512" height="512"
                                                      onerror="this.src='/web/static/img/placeholder.png'"/>
                                             </a>
 

@@ -9,6 +9,8 @@
     <template id="homepage_content" name="Emakhealthcare - Contenu page d'accueil">
         <t t-call="website.layout">
             <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+            <link rel="preload" as="image" href="/emakhealthcare_website_theme/static/src/img/votre_sante.png" fetchpriority="high"/>
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
             <style>
                 #wrap > .oe_structure:empty { display: none !important; }
@@ -258,7 +260,8 @@
                                         <!-- Image Produit -->
                                         <a href="/promotions" class="d-block pt-4 pb-2 px-3 text-center">
                                             <img t-attf-src="/web/image/product.template/#{product.id}/image_512"
-                                                 class="img-fluid" style="height: 140px; object-fit: contain;" alt="Produit"/>
+                                                 class="img-fluid" style="height: 140px; object-fit: contain;" alt="Produit"
+                                                 loading="lazy" width="512" height="512"/>
                                         </a>
 
                                         <!-- Infos Produit -->
