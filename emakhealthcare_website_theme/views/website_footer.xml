@@ -14,7 +14,7 @@
         </xpath>
         
         <xpath expr="//div[@id='connect']/ul" position="after">
-            <ul class="list-unstyled" style="font-size: 1.1rem; line-height: 1.8; display: block !important;" t-if="request.website.name == 'Emakhealthcare'">
+            <ul class="list-unstyled mb-0" style="font-size: 1.1rem; line-height: 1.8; display: block !important;" t-if="request.website.name == 'Emakhealthcare'">
                 <li class="d-flex align-items-center mb-2">
                     <i class="fa fa-comment fa-fw me-3 text-white"></i>
                     <a href="/contactus" class="text-decoration-none fw-bold" style="color: #2E7D32;">Contactez-nous</a>
@@ -41,7 +41,7 @@
 
         <xpath expr="//div[hasclass('o_footer_copyright')]" position="after">
             <div class="o_footer_copyright o_colored_level o_cc" style="background-color: #000; color: #fff; display: block !important; visibility: visible !important;" t-if="request.website.name == 'Emakhealthcare'">
-                <div class="container py-3">
+                <div class="container py-1">
                     <div class="row g-1">
                         <div class="col-12 col-sm text-center text-sm-start" style="color: rgba(255,255,255,0.6);">
                             <span>© Emakhealthcare - 2026</span>

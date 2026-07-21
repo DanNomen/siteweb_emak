@@ -10,7 +10,7 @@
               }
           }
         </style>
-        <section class="s_text_block pt8 pb8">
+        <section class="s_text_block p-0 m-0">
           <div class="container">
             <div class="row">
               
@@ -28,20 +28,20 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-lg-5 pt8 pb8">
-                <h5 class="mb-3">À propos de nous</h5>
-                <p>
+              <div class="col-lg-5 p-0 m-0">
+                <h5 class="mb-1 mt-2">À propos de nous</h5>
+                <p class="mb-1">
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
                 </p>
-                <p>
+                <p class="mb-1">
                   Nos produits sont conçus pour les petites et moyennes entreprises désireuses d’optimiser leurs performances.
                 </p>
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-lg-4 offset-lg-1 pt8 pb8">
-                <h5 class="mb-3">Rejoignez-nous</h5>
-                <ul class="list-unstyled">
+              <div id="connect" class="col-lg-4 offset-lg-1 p-0 m-0">
+                <h5 class="mb-1 mt-2">Rejoignez-nous</h5>
+                <ul class="list-unstyled mb-0">
                   <li>
                     <i class="fa fa-comment fa-fw me-2"></i>
                     <a href="/contactus">Contactez-nous</a>
@@ -67,7 +67,7 @@
 
         <!-- 🔒 COPYRIGHT -->
         <div class="o_footer_copyright o_colored_level o_cc">
-          <div class="container py-3">
+          <div class="container py-1">
             <div class="row">
               <div class="col-sm text-center text-sm-start text-muted">
                 <span>
