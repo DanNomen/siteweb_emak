@@ -5,7 +5,7 @@
 /* ---------------------------------------------------------------
    1. Supprimer l'espace blanc entre le contenu et le footer
    --------------------------------------------------------------- */
-#wrapwrap > main {
+#wrapwrap>main {
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
 }
@@ -78,7 +78,7 @@ section.s_text_block::after {
 .o_shop_pagination,
 nav.o_shop_pagination,
 .oe_website_sale .o_pager {
-    margin-top: 0 !important;
+    margin-top: 5px !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     padding-top: 0 !important;
@@ -96,13 +96,14 @@ nav.o_shop_pagination,
 }
 
 /* Supprimer tout espace résiduel juste avant le footer */
-#wrapwrap > main > *:last-child {
+#wrapwrap>main>*:last-child {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
 }
 
 /* Sur mobile : encore plus agressif */
 @media (max-width: 767.98px) {
+
     .oe_website_sale .container,
     .o_wsale_products_grid_table_container,
     .oe_website_sale {
@@ -111,13 +112,13 @@ nav.o_shop_pagination,
     }
 
     /* Supprimer l'espace sous la pagination produits */
-    .o_wsale_products_grid_table_container + * {
+    .o_wsale_products_grid_table_container+* {
         margin-top: 0 !important;
     }
-    
+
     /* Cibler le div parent de la pagination sur mobile */
-    .oe_website_sale > .container:last-child,
-    .oe_website_sale > .container > .row:last-child {
+    .oe_website_sale>.container:last-child,
+    .oe_website_sale>.container>.row:last-child {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
     }
