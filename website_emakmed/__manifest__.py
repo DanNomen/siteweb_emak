@@ -31,8 +31,6 @@
         "views/templates/client_portal_template.xml",
         "views/templates/claim_reclamation_template.xml",
         "views/templates/my_officine_template.xml",
-        # wizard
-        "wizard/recap_promos_wizard_views.xml",
         # Reports
         "report/mansual_report.xml",
         "report/recap_promos_report.xml",
