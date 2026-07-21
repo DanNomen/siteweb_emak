@@ -10,6 +10,10 @@
               }
           }
         </style>
+        <style>
+          #bottom.o_footer .s_text_block { margin-top: 0 !important; padding-top: 0 !important; }
+          #bottom.o_footer .s_text_block > .container { padding-top: 8px !important; padding-bottom: 4px !important; }
+        </style>
         <section class="s_text_block py-0 m-0">
           <div class="container">
             <div class="row">
@@ -28,7 +32,7 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-lg-5 px-3 py-2">
+              <div class="col-lg-5 px-3 py-1">
                 <h5 class="mb-1 mt-2">À propos de nous</h5>
                 <p class="mb-1">
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
@@ -39,7 +43,7 @@
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-lg-4 offset-lg-1 px-3 py-2">
+              <div id="connect" class="col-lg-4 offset-lg-1 px-3 py-1">
                 <h5 class="mb-1 mt-2">Rejoignez-nous</h5>
                 <ul class="list-unstyled mb-0">
                   <li>
