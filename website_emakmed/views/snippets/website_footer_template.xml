@@ -10,7 +10,7 @@
               }
           }
         </style>
-        <section class="s_text_block p-0 m-0">
+        <section class="s_text_block py-0 m-0">
           <div class="container">
             <div class="row">
               
@@ -28,7 +28,7 @@
               </div>
 
               <!-- 🏢 À propos -->
-              <div class="col-lg-5 p-0 m-0">
+              <div class="col-lg-5 px-3 py-2">
                 <h5 class="mb-1 mt-2">À propos de nous</h5>
                 <p class="mb-1">
                   Nous sommes une équipe de passionnés dédiée à offrir des produits innovants pour améliorer la vie de chacun.
@@ -39,7 +39,7 @@
               </div>
 
               <!-- 📞 Contact & Réseaux -->
-              <div id="connect" class="col-lg-4 offset-lg-1 p-0 m-0">
+              <div id="connect" class="col-lg-4 offset-lg-1 px-3 py-2">
                 <h5 class="mb-1 mt-2">Rejoignez-nous</h5>
                 <ul class="list-unstyled mb-0">
                   <li>
