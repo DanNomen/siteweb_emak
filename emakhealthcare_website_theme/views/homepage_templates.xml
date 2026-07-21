@@ -282,7 +282,7 @@
             </t>
 
             <!-- 4. BANDEAU CTA -->
-            <section class="py-5">
+            <section class="py-2">
                 <div class="container">
                     <div class="p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center position-relative overflow-hidden"
                          style="background: linear-gradient(135deg, #5CA383 0%, #2E7D32 100%); border-radius: 20px;">

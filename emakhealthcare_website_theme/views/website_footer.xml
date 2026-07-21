@@ -42,11 +42,11 @@
         <xpath expr="//div[hasclass('o_footer_copyright')]" position="after">
             <div class="o_footer_copyright o_colored_level o_cc" style="background-color: #000; color: #fff; display: block !important; visibility: visible !important;" t-if="request.website.name == 'Emakhealthcare'">
                 <div class="container py-1">
-                    <div class="row g-1">
-                        <div class="col-12 col-sm text-center text-sm-start" style="color: rgba(255,255,255,0.6);">
+                    <div class="row g-0">
+                        <div class="col-12 col-sm text-center text-sm-start" style="color: rgba(255,255,255,0.6); line-height: 1.2;">
                             <span>© Emakhealthcare - 2026</span>
                         </div>
-                        <div class="col-12 col-sm text-center text-sm-end" style="color: rgba(255,255,255,0.6);">
+                        <div class="col-12 col-sm text-center text-sm-end" style="color: rgba(255,255,255,0.6); line-height: 1.2;">
                             <span>Développé par <a href="https://wa.me/22371019797" class="text-white text-decoration-none fw-bold" target="_blank"><i class="fab fa-whatsapp text-success me-1"></i>Social360</a></span>
                         </div>
                     </div>
