@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- NOTE : le ref ci-dessous est un placeholder. Si l'installation
-         échoue sur ce record, remplacez 'votre_module_merge_custom.view_account_merge_wizard_form'
-         par le vrai xml_id (Paramètres > Technique > Vues, modèle account.merge.wizard). -->
+    <!-- On cherche la vue formulaire PRINCIPALE du modèle account.merge.wizard
+         par domaine plutôt que par xml_id fixe (qu'on ne connaît pas). -->
     <record id="view_account_merge_wizard_form_control" model="ir.ui.view">
         <field name="name">account.merge.wizard.form.control</field>
         <field name="model">account.merge.wizard</field>
-        <field name="inherit_id" ref="votre_module_merge_custom.view_account_merge_wizard_form"/>
+        <field name="inherit_id" search="[('model','=','account.merge.wizard'),('type','=','form'),('mode','=','primary')]"/>
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
                 <group string="Contrôle et sécurité" col="2">
