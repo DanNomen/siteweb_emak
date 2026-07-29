@@ -18,15 +18,21 @@ class AccountMergeWizard(models.TransientModel):
         help="Si coché : calcule et affiche l'impact SANS rien écrire en base. "
              "Décochez uniquement après avoir vérifié l'aperçu."
     )
-    preview_line_count = fields.Integer(string="Nb pièces à transférer", readonly=True)
+    preview_line_count = fields.Integer(
+        string="Nb pièces à transférer",
+        compute='_compute_preview_stats',
+        store=False,
+    )
     preview_balance = fields.Monetary(
         string="Solde total concerné",
-        readonly=True,
+        compute='_compute_preview_stats',
+        store=False,
         currency_field='currency_id',
     )
     preview_target_summary = fields.Char(
         string="Résumé cible(s)",
-        readonly=True,
+        compute='_compute_preview_stats',
+        store=False,
         help="Affiche clairement quel compte va absorber quels comptes.",
     )
     currency_id = fields.Many2one(
@@ -42,6 +48,52 @@ class AccountMergeWizard(models.TransientModel):
         string="Tapez CONFIRMER pour valider",
         help="Sécurité anti-clic-accidentel sur un volume important de pièces.",
     )
+
+    # -------------------------------------------------------------------
+    # CALCUL EN TEMPS RÉEL des statistiques d'impact
+    # Déclenché dès que l'utilisateur change une sélection ou une cible.
+    # -------------------------------------------------------------------
+    @api.depends(
+        'wizard_line_ids',
+        'wizard_line_ids.is_selected',
+        'wizard_line_ids.is_target',
+    )
+    def _compute_preview_stats(self):
+        for wizard in self:
+            selected = wizard.wizard_line_ids.filtered(
+                lambda l: l.display_type == 'account' and l.is_selected
+            )
+            total_count = 0
+            total_balance = 0.0
+            summary_parts = []
+
+            for group_lines in selected.grouped('grouping_key').values():
+                if len(group_lines) < 2:
+                    continue
+                targets = group_lines.filtered('is_target')
+                sources = (group_lines - targets) if targets else group_lines[1:]
+                if not sources:
+                    continue
+                src_ids = sources.account_id.ids
+                aml = self.env['account.move.line'].search(
+                    [('account_id', 'in', src_ids)]
+                )
+                grp_count = len(aml)
+                grp_balance = sum(aml.mapped('balance'))
+                total_count += grp_count
+                total_balance += grp_balance
+                target_code = targets.account_id.code if targets else group_lines[0].account_id.code
+                summary_parts.append(
+                    "%s ← %s (%s pièces)" % (
+                        target_code,
+                        ', '.join(sources.account_id.mapped('code')),
+                        grp_count,
+                    )
+                )
+
+            wizard.preview_line_count = total_count
+            wizard.preview_balance = total_balance
+            wizard.preview_target_summary = ' | '.join(summary_parts) if summary_parts else ''
 
     # -------------------------------------------------------------------
     # CŒUR DE LA LOGIQUE : détermination EXPLICITE cible / sources
@@ -106,28 +158,26 @@ class AccountMergeWizard(models.TransientModel):
     # ACTION APERÇU (dry-run preview)
     # -------------------------------------------------------------------
     def action_preview(self):
-        """Calcule l'impact de la fusion sans rien modifier, et affiche
-        clairement QUI absorbe QUOI."""
+        """Affiche une notification récapitulative.
+        Les champs 'Nb pièces' et 'Solde concerné' sont déjà mis à jour
+        en temps réel par _compute_preview_stats dès que la sélection change.
+        Ce bouton sert à afficher une confirmation visuelle avant la fusion."""
         self.ensure_one()
+        # La méthode _get_groups_target_and_sources valide aussi la configuration
+        # (cible explicite, pièces hachées, etc.)
         groups = self._get_groups_target_and_sources()
-
-        total_count = 0
-        total_balance = 0.0
         summary_parts = []
         for target, sources, _lines in groups:
-            lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
-            total_count += len(lines)
-            total_balance += sum(lines.mapped('balance'))
+            grp_lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
             summary_parts.append(
-                "%s <- %s (%s pièces)" % (
-                    target.code, ', '.join(sources.mapped('code')), len(lines)
+                "%s ← %s (%s pièces, solde %s %s)" % (
+                    target.code,
+                    ', '.join(sources.mapped('code')),
+                    len(grp_lines),
+                    round(sum(grp_lines.mapped('balance')), 2),
+                    self.currency_id.name or '',
                 )
             )
-
-        self.preview_line_count = total_count
-        self.preview_balance = total_balance
-        self.preview_target_summary = ' | '.join(summary_parts)
-
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -137,7 +187,7 @@ class AccountMergeWizard(models.TransientModel):
                     "%(summary)s\n\n"
                     "Total : %(count)s pièces, solde %(balance)s %(currency)s"
                 ) % {
-                    'summary': self.preview_target_summary,
+                    'summary': ' | '.join(summary_parts),
                     'count': self.preview_line_count,
                     'balance': self.preview_balance,
                     'currency': self.currency_id.name or '',
