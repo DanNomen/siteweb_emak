@@ -44,6 +44,11 @@ class AccountMergeWizard(models.TransientModel):
         default=False,
         help="Dangereux : à cocher uniquement en connaissance de cause.",
     )
+    confirm_delete_source = fields.Boolean(
+        string="Je comprends que le compte source sera DÉFINITIVEMENT SUPPRIMÉ",
+        default=False,
+        help="À cocher obligatoirement pour exécuter la fusion réelle."
+    )
     confirmation_text = fields.Char(
         string="Tapez CONFIRMER pour valider",
         help="Sécurité anti-clic-accidentel sur un volume important de pièces.",
@@ -266,6 +271,13 @@ class AccountMergeWizard(models.TransientModel):
                     'sticky': True,
                 }
             }
+
+        # Vérification case à cocher de suppression
+        if not self.confirm_delete_source:
+            raise UserError(_(
+                "Vous devez cocher la case 'Je comprends que le compte source sera DÉFINITIVEMENT SUPPRIMÉ' "
+                "pour pouvoir exécuter la fusion."
+            ))
 
         # Anti-clic-accidentel sur les gros volumes
         if line_count > 100 and self.confirmation_text != 'CONFIRMER':

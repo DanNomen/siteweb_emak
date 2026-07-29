@@ -10,8 +10,12 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <group string="Contrôle et sécurité" col="2">
+                    <div colspan="2" class="alert alert-warning" role="alert" invisible="dry_run">
+                        <strong>Attention :</strong> Le(s) compte(s) source (non-cibles) sera/seront DÉFINITIVEMENT supprimés. Le transfert peut prendre plusieurs minutes, merci de patienter sans fermer la page.
+                    </div>
                     <field name="dry_run"/>
                     <field name="ignore_lock_date_check" invisible="dry_run"/>
+                    <field name="confirm_delete_source" invisible="dry_run"/>
                     <field name="confirmation_text" invisible="dry_run or preview_line_count &lt;= 100"/>
                     <field name="preview_line_count" readonly="1"/>
                     <field name="preview_balance" readonly="1"/>
