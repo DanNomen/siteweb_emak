@@ -153,7 +153,14 @@ class AccountMergeWizard(models.TransientModel):
         if self.ignore_lock_date_check:
             return
         company = self.env.company
-        lock_date = company.fiscalyear_lock_date or company.period_lock_date
+        # Odoo 18 a retiré 'period_lock_date' (remplacé par le système
+        # "Hard Lock date" / "Lock Everything" / exceptions par journal).
+        # On reste défensif pour ne pas planter selon la version exacte.
+        lock_date = (
+            getattr(company, 'fiscalyear_lock_date', False)
+            or getattr(company, 'hard_lock_date', False)
+            or getattr(company, 'period_lock_date', False)
+        )
         if not lock_date:
             return
         locked_lines = self.env['account.move.line'].search([
