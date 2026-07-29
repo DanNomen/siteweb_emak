@@ -8,7 +8,7 @@
         <field name="model">account.merge.wizard</field>
         <field name="inherit_id" search="[('model','=','account.merge.wizard'),('type','=','form'),('mode','=','primary')]"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet" position="inside">
+            <xpath expr="//form" position="inside">
                 <group string="Contrôle et sécurité" col="2">
                     <field name="dry_run"/>
                     <field name="ignore_lock_date_check" invisible="dry_run"/>
