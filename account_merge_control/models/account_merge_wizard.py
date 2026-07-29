@@ -247,7 +247,7 @@ class AccountMergeWizard(models.TransientModel):
                 grp_lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
                 self.env['account.merge.log'].create({
                     'wizard_reference': str(self.id),
-                    'source_account_ids': [(6, 0, sources.ids)],
+                    'source_accounts_info': ', '.join(sources.mapped(lambda a: f"{a.code} {a.name}")),
                     'destination_account_id': target.id,
                     'line_count': len(grp_lines),
                     'balance_before_source': sum(grp_lines.mapped('balance')),
@@ -291,7 +291,7 @@ class AccountMergeWizard(models.TransientModel):
 
                     self.env['account.merge.log'].create({
                         'wizard_reference': str(self.id),
-                        'source_account_ids': [(6, 0, sources.ids)],
+                        'source_accounts_info': ', '.join(sources.mapped(lambda a: f"{a.code} {a.name}")),
                         'destination_account_id': target.id,
                         'line_count': grp_count,
                         'balance_before_source': grp_balance,
@@ -317,7 +317,7 @@ class AccountMergeWizard(models.TransientModel):
         except Exception as e:
             self.env['account.merge.log'].create({
                 'wizard_reference': str(self.id),
-                'source_account_ids': [(6, 0, all_sources.ids)],
+                'source_accounts_info': ', '.join(all_sources.mapped(lambda a: f"{a.code} {a.name}")),
                 'line_count': line_count,
                 'balance_before_source': balance_before,
                 'state': 'failed',

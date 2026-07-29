@@ -14,9 +14,9 @@ class AccountMergeLog(models.Model):
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
     wizard_reference = fields.Char(string="Référence wizard", help="ID technique du wizard ayant déclenché la fusion")
-    source_account_ids = fields.Many2many(
-        'account.account', string="Compte(s) source",
-        help="Comptes vidés lors de la fusion"
+    source_accounts_info = fields.Char(
+        string="Compte(s) source",
+        help="Codes et noms des comptes vidés et supprimés"
     )
     destination_account_id = fields.Many2one(
         'account.account', string="Compte destination",

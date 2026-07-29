@@ -11,7 +11,7 @@
                   decoration-muted="state == 'dry_run'">
                 <field name="create_date" string="Date"/>
                 <field name="partner_id"/>
-                <field name="source_account_ids" widget="many2many_tags"/>
+                <field name="source_accounts_info"/>
                 <field name="destination_account_id"/>
                 <field name="line_count"/>
                 <field name="balance_before_source"/>
@@ -31,7 +31,7 @@
                     <group>
                         <group>
                             <field name="partner_id"/>
-                            <field name="source_account_ids" widget="many2many_tags"/>
+                            <field name="source_accounts_info"/>
                             <field name="destination_account_id"/>
                             <field name="company_id"/>
                         </group>
