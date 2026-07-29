@@ -1,31 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Hérite de la vue formulaire du wizard de fusion de comptes du module account natif.
-         XML ID réel : account.account_merge_wizard_form
-         La vue native utilise <form> > <group> (pas de <sheet>), donc le xpath
-         cible <group> pour insérer les champs de contrôle. -->
+    <!-- NOTE : le ref ci-dessous est un placeholder. Si l'installation
+         échoue sur ce record, remplacez 'votre_module_merge_custom.view_account_merge_wizard_form'
+         par le vrai xml_id (Paramètres > Technique > Vues, modèle account.merge.wizard). -->
     <record id="view_account_merge_wizard_form_control" model="ir.ui.view">
         <field name="name">account.merge.wizard.form.control</field>
         <field name="model">account.merge.wizard</field>
-        <field name="inherit_id" ref="account.account_merge_wizard_form"/>
+        <field name="inherit_id" ref="votre_module_merge_custom.view_account_merge_wizard_form"/>
         <field name="arch" type="xml">
-            <!-- Insertion du groupe de contrôle AVANT le footer,
-                 à l'intérieur de la balise <form> (pas de <sheet> dans la vue native) -->
-            <xpath expr="//group" position="after">
+            <xpath expr="//sheet" position="inside">
                 <group string="Contrôle et sécurité" col="2">
                     <field name="dry_run"/>
                     <field name="ignore_lock_date_check" invisible="dry_run"/>
                     <field name="confirmation_text" invisible="dry_run or preview_line_count &lt;= 100"/>
                     <field name="preview_line_count" readonly="1"/>
                     <field name="preview_balance" readonly="1"/>
+                    <field name="preview_target_summary" readonly="1" invisible="not preview_target_summary"/>
                     <field name="currency_id" invisible="1"/>
                 </group>
             </xpath>
             <xpath expr="//footer" position="inside">
                 <button name="action_preview" type="object" string="Aperçu (dry-run)" class="btn-secondary"/>
             </xpath>
+            <!-- Ajoute la colonne "Compte cible" dans la liste embarquée des comptes.
+                 Si cette xpath échoue (structure différente), ouvrez la vue via
+                 Paramètres > Technique > Vues, éditez son arch, et ajoutez
+                 manuellement <field name="is_target" widget="boolean_toggle"/>
+                 juste après le champ "is_selected" dans le <list>/<tree>. -->
+            <xpath expr="//field[@name='wizard_line_ids']//field[@name='is_selected']" position="after">
+                <field name="is_target" widget="boolean_toggle"/>
+            </xpath>
         </field>
     </record>
 
 </odoo>
+

@@ -19,8 +19,7 @@ class AccountMergeLog(models.Model):
         help="Comptes vidés lors de la fusion"
     )
     destination_account_id = fields.Many2one(
-        'account.account', string="Compte destination",
-        help="Compte cible principal (optionnel, peut varier selon les groupes)"
+        'account.account', string="Compte destination", required=True
     )
     partner_id = fields.Many2one('res.partner', string="Client concerné")
     company_id = fields.Many2one('res.company', string="Société", default=lambda self: self.env.company)
@@ -44,5 +43,5 @@ class AccountMergeLog(models.Model):
     def _compute_display_name(self):
         for rec in self:
             partner = rec.partner_id.name or '—'
-            dest = rec.destination_account_id.code if rec.destination_account_id else '—'
+            dest = rec.destination_account_id.code or '—'
             rec.display_name = f"[{rec.state}] {partner} -> {dest} ({rec.line_count} pièces)"

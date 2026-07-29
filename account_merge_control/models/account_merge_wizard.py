@@ -24,6 +24,11 @@ class AccountMergeWizard(models.TransientModel):
         readonly=True,
         currency_field='currency_id',
     )
+    preview_target_summary = fields.Char(
+        string="Résumé cible(s)",
+        readonly=True,
+        help="Affiche clairement quel compte va absorber quels comptes.",
+    )
     currency_id = fields.Many2one(
         'res.currency',
         default=lambda self: self.env.company.currency_id,
@@ -39,55 +44,89 @@ class AccountMergeWizard(models.TransientModel):
     )
 
     # -------------------------------------------------------------------
-    # HELPERS : récupère les comptes sélectionnés depuis les lignes
-    # NOTE : on n'exclut PAS les lignes ayant un champ 'info' (message
-    #        d'avertissement), car on autorise explicitement la fusion
-    #        de comptes appartenant à la même société (cas EMAK/APPROMED).
+    # CŒUR DE LA LOGIQUE : détermination EXPLICITE cible / sources
+    # par groupe, basée sur le nouveau champ is_target coché par l'utilisateur.
     # -------------------------------------------------------------------
-    def _get_source_accounts_for_preview(self):
-        """Retourne les comptes sources (lignes 2..N de chaque groupe sélectionné).
+    def _get_groups_target_and_sources(self):
+        """Retourne une liste de tuples (target_account, source_accounts, group_lines)
+        pour chaque groupe sélectionné.
 
-        Le 1er compte de chaque groupe devient la destination dans la logique
-        native ; les suivants sont transférés vers lui.
-        On inclut toutes les lignes is_selected, qu'elles aient un 'info' ou non.
+        Lève une erreur claire si un groupe n'a pas exactement UNE ligne
+        cochée comme cible (is_target), ou si une des sources a des pièces
+        hachées (ce qui casserait l'inaltérabilité en la déplaçant).
         """
         self.ensure_one()
         selected_lines = self.wizard_line_ids.filtered(
             lambda l: l.display_type == 'account' and l.is_selected
         )
-        sources = self.env['account.account']
-        for group_lines in selected_lines.grouped('grouping_key').values():
-            sorted_lines = group_lines.sorted('sequence')
-            if len(sorted_lines) >= 2:
-                # Les sources sont les comptes après le 1er (destination)
-                sources |= sorted_lines[1:].account_id
-        return sources
+        if not selected_lines:
+            raise UserError(_("Cochez au moins 2 comptes dans un même groupe."))
 
-    def _get_all_selected_accounts(self):
-        """Retourne tous les comptes sélectionnés (toutes positions)."""
-        self.ensure_one()
-        return self.wizard_line_ids.filtered(
-            lambda l: l.display_type == 'account' and l.is_selected
-        ).account_id
+        results = []
+        for grouping_key, group_lines in selected_lines.grouped('grouping_key').items():
+            if len(group_lines) < 2:
+                continue  # un seul compte coché dans ce groupe : rien à fusionner
+
+            targets = group_lines.filtered('is_target')
+            if len(targets) == 0:
+                raise UserError(_(
+                    "Groupe '%(codes)s' : aucun compte cible sélectionné. "
+                    "Cochez la case 'Compte cible' sur le compte qui doit "
+                    "SURVIVRE (ex: 41110000) avant de continuer."
+                ) % {'codes': ', '.join(group_lines.mapped('account_id.code'))})
+            if len(targets) > 1:
+                raise UserError(_(
+                    "Groupe '%(codes)s' : plusieurs comptes cibles cochés. "
+                    "Ne cochez 'Compte cible' que sur UN SEUL compte par groupe."
+                ) % {'codes': ', '.join(group_lines.mapped('account_id.code'))})
+
+            target_line = targets
+            source_lines = group_lines - target_line
+
+            # Sécurité inaltérabilité : si une SOURCE (qui va être vidée/déplacée)
+            # a des pièces hachées, on bloque, car déplacer ses écritures casse
+            # la chaîne de hash. Le compte hachage doit être la CIBLE, pas la source.
+            hashed_sources = source_lines.filtered('account_has_hashed_entries')
+            if hashed_sources and not self.ignore_lock_date_check:
+                raise UserError(_(
+                    "Groupe '%(codes)s' : le(s) compte(s) %(hashed)s a/ont des "
+                    "pièces hachées (inaltérabilité) et est/sont configuré(s) "
+                    "comme SOURCE (à vider). Ceci casserait la chaîne de hash. "
+                    "Cochez plutôt ce compte comme 'Compte cible', ou cochez "
+                    "'Forcer même si période verrouillée' en connaissance de cause."
+                ) % {
+                    'codes': ', '.join(group_lines.mapped('account_id.code')),
+                    'hashed': ', '.join(hashed_sources.mapped('account_id.code')),
+                })
+
+            results.append((target_line.account_id, source_lines.account_id, group_lines))
+        return results
 
     # -------------------------------------------------------------------
     # ACTION APERÇU (dry-run preview)
     # -------------------------------------------------------------------
     def action_preview(self):
-        """Calcule l'impact de la fusion sans rien modifier."""
+        """Calcule l'impact de la fusion sans rien modifier, et affiche
+        clairement QUI absorbe QUOI."""
         self.ensure_one()
-        sources = self._get_source_accounts_for_preview()
-        if not sources:
-            raise UserError(_(
-                "Sélectionnez au moins 2 comptes dans un même groupe pour "
-                "calculer l'aperçu."
-            ))
+        groups = self._get_groups_target_and_sources()
 
-        lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
-        total_balance = sum(lines.mapped('balance'))
+        total_count = 0
+        total_balance = 0.0
+        summary_parts = []
+        for target, sources, _lines in groups:
+            lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
+            total_count += len(lines)
+            total_balance += sum(lines.mapped('balance'))
+            summary_parts.append(
+                "%s <- %s (%s pièces)" % (
+                    target.code, ', '.join(sources.mapped('code')), len(lines)
+                )
+            )
 
-        self.preview_line_count = len(lines)
+        self.preview_line_count = total_count
         self.preview_balance = total_balance
+        self.preview_target_summary = ' | '.join(summary_parts)
 
         return {
             'type': 'ir.actions.client',
@@ -95,12 +134,11 @@ class AccountMergeWizard(models.TransientModel):
             'params': {
                 'title': _("Aperçu de la fusion"),
                 'message': _(
-                    "%(count)s pièces comptables seront transférées depuis "
-                    "%(nb_src)s compte(s) source.\n"
-                    "Solde total concerné : %(balance)s %(currency)s"
+                    "%(summary)s\n\n"
+                    "Total : %(count)s pièces, solde %(balance)s %(currency)s"
                 ) % {
+                    'summary': self.preview_target_summary,
                     'count': self.preview_line_count,
-                    'nb_src': len(sources),
                     'balance': self.preview_balance,
                     'currency': self.currency_id.name or '',
                 },
@@ -112,8 +150,6 @@ class AccountMergeWizard(models.TransientModel):
     # VÉRIFICATION PÉRIODES VERROUILLÉES
     # -------------------------------------------------------------------
     def _check_locked_periods(self, accounts):
-        """Bloque si des écritures sont dans une période verrouillée,
-        sauf si l'utilisateur force explicitement."""
         if self.ignore_lock_date_check:
             return
         company = self.env.company
@@ -135,95 +171,80 @@ class AccountMergeWizard(models.TransientModel):
     # SURCHARGE action_merge : contrôles + dry-run + savepoint + audit
     # -------------------------------------------------------------------
     def action_merge(self):
-        """Point d'entrée surchargé : ajoute contrôles, dry-run, savepoint et audit."""
         self.ensure_one()
+        groups = self._get_groups_target_and_sources()
 
-        sources = self._get_source_accounts_for_preview()
-        all_selected = self._get_all_selected_accounts()
+        all_sources = self.env['account.account']
+        for _target, sources, _lines in groups:
+            all_sources |= sources
+        self._check_locked_periods(all_sources)
 
-        if not all_selected:
-            raise UserError(_(
-                "Sélectionnez au moins 2 comptes dans un même groupe."
-            ))
+        # Calcul global (pour contrôle anti-clic et log)
+        lines = self.env['account.move.line'].search([('account_id', 'in', all_sources.ids)])
+        line_count = len(lines)
+        balance_before = sum(lines.mapped('balance'))
 
-        # 1. Vérification périodes verrouillées
-        if sources:
-            self._check_locked_periods(sources)
-
-        # 2. Calcul de l'aperçu (pour log et contrôle de volume)
-        line_count = 0
-        balance_before = 0.0
-        if sources:
-            lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
-            line_count = len(lines)
-            balance_before = sum(lines.mapped('balance'))
-
-        # 3. Mode simulation : on s'arrête ici
+        # Mode simulation : on s'arrête ici, log par groupe
         if self.dry_run:
-            self.env['account.merge.log'].create({
-                'wizard_reference': str(self.id),
-                'source_account_ids': [(6, 0, sources.ids)],
-                'line_count': line_count,
-                'balance_before_source': balance_before,
-                'state': 'dry_run',
-                'notes': "Simulation uniquement, aucune donnée modifiée.",
-            })
+            for target, sources, _lines in groups:
+                grp_lines = self.env['account.move.line'].search([('account_id', 'in', sources.ids)])
+                self.env['account.merge.log'].create({
+                    'wizard_reference': str(self.id),
+                    'source_account_ids': [(6, 0, sources.ids)],
+                    'destination_account_id': target.id,
+                    'line_count': len(grp_lines),
+                    'balance_before_source': sum(grp_lines.mapped('balance')),
+                    'state': 'dry_run',
+                    'notes': "Simulation uniquement, aucune donnée modifiée.",
+                })
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _("Simulation terminée"),
                     'message': _(
-                        "%(count)s pièces auraient été transférées depuis "
-                        "%(nb)s compte(s) source. "
+                        "%(count)s pièces seraient transférées au total. "
                         "Décochez 'Mode simulation' pour exécuter réellement."
-                    ) % {'count': line_count, 'nb': len(sources)},
+                    ) % {'count': line_count},
                     'sticky': True,
                 }
             }
 
-        # 4. Anti-clic-accidentel sur les gros volumes
+        # Anti-clic-accidentel sur les gros volumes
         if line_count > 100 and self.confirmation_text != 'CONFIRMER':
             raise UserError(_(
                 "%(count)s pièces vont être transférées. Par sécurité, tapez "
                 "CONFIRMER dans le champ prévu avant de relancer l'action."
             ) % {'count': line_count})
 
-        # 5. Exécution réelle, protégée par un savepoint
-        log_vals = {
-            'wizard_reference': str(self.id),
-            'source_account_ids': [(6, 0, sources.ids)],
-            'line_count': line_count,
-            'balance_before_source': balance_before,
-        }
+        # Exécution réelle, protégée par un savepoint, groupe par groupe
         try:
             with self.env.cr.savepoint():
-                # On appelle _action_merge directement par groupe pour contourner
-                # le filtre 'not l.info' du super() qui bloque la fusion
-                # intra-société (cas EMAK/APPROMED : 401100/40110000 même société).
-                merged_any = False
-                for group_lines in self.wizard_line_ids.filtered(
-                    lambda l: l.display_type == 'account' and l.is_selected
-                ).grouped('grouping_key').values():
-                    sorted_lines = group_lines.sorted('sequence')
-                    if len(sorted_lines) >= 2:
-                        self._action_merge(
-                            sorted_lines.sorted('account_has_hashed_entries', reverse=True).account_id
-                        )
-                        merged_any = True
+                for target, sources, group_lines in groups:
+                    grp_move_lines = self.env['account.move.line'].search(
+                        [('account_id', 'in', sources.ids)]
+                    )
+                    grp_count = len(grp_move_lines)
+                    grp_balance = sum(grp_move_lines.mapped('balance'))
 
-                if not merged_any:
-                    raise UserError(_(
-                        "Aucun groupe avec au moins 2 comptes sélectionnés. "
-                        "Impossible de lancer la fusion."
-                    ))
+                    # IMPORTANT : on passe la cible EN PREMIER, suivie des sources,
+                    # pour forcer explicitement quel compte survit (au lieu de
+                    # dépendre de l'ordre de séquence ou du tri par hash).
+                    self._action_merge(target + sources)
 
-                log_vals.update({'state': 'done'})
-                self.env['account.merge.log'].create(log_vals)
-                _logger.info(
-                    "Fusion comptes %s : %s pièces transférées.",
-                    sources.mapped('code'), line_count,
-                )
+                    self.env['account.merge.log'].create({
+                        'wizard_reference': str(self.id),
+                        'source_account_ids': [(6, 0, sources.ids)],
+                        'destination_account_id': target.id,
+                        'line_count': grp_count,
+                        'balance_before_source': grp_balance,
+                        'state': 'done',
+                    })
+                    _logger.info(
+                        "Fusion : %s -> %s (%s pièces)",
+                        sources.mapped('code'), target.code, grp_count,
+                    )
+
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
@@ -237,9 +258,15 @@ class AccountMergeWizard(models.TransientModel):
         except UserError:
             raise
         except Exception as e:
-            log_vals.update({'state': 'failed', 'error_message': str(e)})
-            self.env['account.merge.log'].create(log_vals)
-            _logger.exception("Échec fusion comptes %s", sources.mapped('code'))
+            self.env['account.merge.log'].create({
+                'wizard_reference': str(self.id),
+                'source_account_ids': [(6, 0, all_sources.ids)],
+                'line_count': line_count,
+                'balance_before_source': balance_before,
+                'state': 'failed',
+                'error_message': str(e),
+            })
+            _logger.exception("Échec fusion comptes %s", all_sources.mapped('code'))
             raise UserError(_(
                 "La fusion a échoué et a été annulée (rollback automatique).\n"
                 "Détail technique : %s"
@@ -247,22 +274,31 @@ class AccountMergeWizard(models.TransientModel):
 
 
 class AccountMergeWizardLine(models.TransientModel):
-    """Surcharge de la ligne du wizard pour autoriser la fusion intra-société.
-
-    La contrainte native '_apply_different_companies_constraint' bloque
-    la fusion de deux comptes appartenant à la même société (elle pose un
-    message d'erreur dans le champ 'info'). Pour le cas EMAK/APPROMED
-    (401100 → 40110000, même société), on neutralise cette contrainte.
-    """
+    """Ajoute le champ 'Compte cible' explicite + neutralise la contrainte
+    native qui bloque la fusion de comptes d'une même société."""
     _inherit = 'account.merge.wizard.line'
 
-    def _apply_different_companies_constraint(self):
-        """On autorise explicitement la fusion intra-société.
+    is_target = fields.Boolean(
+        string="Compte cible",
+        help="Cochez UNIQUEMENT sur le compte qui doit survivre après la "
+             "fusion (ex: 41110000). Les autres comptes cochés du même "
+             "groupe seront vidés et transférés dans celui-ci."
+    )
 
-        La fusion de comptes appartenant à la même société est techniquement
-        supportée par _action_merge (il remplace simplement les FK). La
-        contrainte native est une mesure de prudence qui ne correspond pas
-        au besoin EMAK/APPROMED.
-        """
-        # No-op : on n'empêche pas la fusion intra-société.
+    def write(self, vals):
+        """Si on coche is_target=True sur une ligne, décoche automatiquement
+        les autres lignes du même groupe (comportement 'radio button')."""
+        res = super().write(vals)
+        if vals.get('is_target'):
+            for line in self:
+                siblings = line.wizard_id.wizard_line_ids.filtered(
+                    lambda l: l.grouping_key == line.grouping_key and l.id != line.id
+                )
+                if siblings:
+                    siblings.write({'is_target': False})
+        return res
+
+    def _apply_different_companies_constraint(self):
+        """On autorise explicitement la fusion intra-société (cas EMAK/APPROMED :
+        comptes dupliqués au sein de la MÊME société)."""
         return
