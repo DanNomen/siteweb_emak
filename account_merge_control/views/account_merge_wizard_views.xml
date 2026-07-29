@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Hérite de la vue formulaire du wizard de fusion de comptes du module account natif.
+         XML ID réel : account.account_merge_wizard_form
+         La vue native utilise <form> > <group> (pas de <sheet>), donc le xpath
+         cible <group> pour insérer les champs de contrôle. -->
+    <record id="view_account_merge_wizard_form_control" model="ir.ui.view">
+        <field name="name">account.merge.wizard.form.control</field>
+        <field name="model">account.merge.wizard</field>
+        <field name="inherit_id" ref="account.account_merge_wizard_form"/>
+        <field name="arch" type="xml">
+            <!-- Insertion du groupe de contrôle AVANT le footer,
+                 à l'intérieur de la balise <form> (pas de <sheet> dans la vue native) -->
+            <xpath expr="//group" position="after">
+                <group string="Contrôle et sécurité" col="2">
+                    <field name="dry_run"/>
+                    <field name="ignore_lock_date_check" invisible="dry_run"/>
+                    <field name="confirmation_text" invisible="dry_run or preview_line_count &lt;= 100"/>
+                    <field name="preview_line_count" readonly="1"/>
+                    <field name="preview_balance" readonly="1"/>
+                    <field name="currency_id" invisible="1"/>
+                </group>
+            </xpath>
+            <xpath expr="//footer" position="inside">
+                <button name="action_preview" type="object" string="Aperçu (dry-run)" class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_account_merge_log_list" model="ir.ui.view">
+        <field name="name">account.merge.log.list</field>
+        <field name="model">account.merge.log</field>
+        <field name="arch" type="xml">
+            <list string="Journal des fusions" default_order="create_date desc"
+                  decoration-success="state == 'done'"
+                  decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'dry_run'">
+                <field name="create_date" string="Date"/>
+                <field name="partner_id"/>
+                <field name="source_account_ids" widget="many2many_tags"/>
+                <field name="destination_account_id"/>
+                <field name="line_count"/>
+                <field name="balance_before_source"/>
+                <field name="balance_after_destination"/>
+                <field name="state"/>
+                <field name="executed_by"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_account_merge_log_form" model="ir.ui.view">
+        <field name="name">account.merge.log.form</field>
+        <field name="model">account.merge.log</field>
+        <field name="arch" type="xml">
+            <form string="Détail fusion">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="source_account_ids" widget="many2many_tags"/>
+                            <field name="destination_account_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="state"/>
+                            <field name="line_count"/>
+                            <field name="balance_before_source"/>
+                            <field name="balance_after_destination"/>
+                            <field name="executed_by"/>
+                        </group>
+                    </group>
+                    <field name="error_message" invisible="state != 'failed'"/>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_account_merge_log" model="ir.actions.act_window">
+        <field name="name">Journal des fusions de comptes</field>
+        <field name="res_model">account.merge.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_account_merge_log"
+              name="Journal des fusions"
+              parent="account.menu_finance_configuration"
+              action="action_account_merge_log"
+              sequence="100"/>
+
+</odoo>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Rappel de la demande client (Cissouma, 28/07/2026) :
+
+        APPROMED :
+          - 41100000 (6 pièces)    -> 41110000
+          - 411100   (7920 pièces) -> 41110000
+        EMAK MED :
+          - 411100   (735 pièces)  -> 41110000
+
+        Objectif final : plus aucune écriture visible sur 41100000 / 411100,
+        tout doit se trouver sur 41110000.
+
+        Ce fichier ne crée AUCUNE donnée exécutable automatiquement (on ne
+        touche jamais à la compta via un data file au chargement du module).
+        Il sert uniquement de pense-bête. Les fusions doivent être lancées
+        manuellement via le wizard, dans l'ordre suivant recommandé :
+
+          1. APPROMED  41100000 -> 41110000   (6 pièces, dry-run puis réel)
+          2. EMAK MED  411100   -> 41110000   (735 pièces, dry-run puis réel)
+          3. APPROMED  411100   -> 41110000   (7920 pièces, dry-run puis réel,
+             EN DERNIER car c'est le plus gros volume)
+
+        Après les 3 fusions : archiver 41100000 et 411100 (Actif = Non)
+        pour empêcher toute réutilisation future.
+    -->
+</odoo>
