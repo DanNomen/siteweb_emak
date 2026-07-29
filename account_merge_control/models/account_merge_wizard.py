@@ -284,6 +284,12 @@ class AccountMergeWizard(models.TransientModel):
                     grp_count = len(grp_move_lines)
                     grp_balance = sum(grp_move_lines.mapped('balance'))
 
+                    # Pré-calculer les infos avant que _action_merge ne supprime les comptes
+                    sources_info_str = ', '.join(sources.mapped(lambda a: f"{a.code} {a.name}"))
+                    sources_code_list = sources.mapped('code')
+                    target_code = target.code
+                    target_id = target.id
+
                     # IMPORTANT : on passe la cible EN PREMIER, suivie des sources,
                     # pour forcer explicitement quel compte survit (au lieu de
                     # dépendre de l'ordre de séquence ou du tri par hash).
@@ -291,15 +297,15 @@ class AccountMergeWizard(models.TransientModel):
 
                     self.env['account.merge.log'].create({
                         'wizard_reference': str(self.id),
-                        'source_accounts_info': ', '.join(sources.mapped(lambda a: f"{a.code} {a.name}")),
-                        'destination_account_id': target.id,
+                        'source_accounts_info': sources_info_str,
+                        'destination_account_id': target_id,
                         'line_count': grp_count,
                         'balance_before_source': grp_balance,
                         'state': 'done',
                     })
                     _logger.info(
                         "Fusion : %s -> %s (%s pièces)",
-                        sources.mapped('code'), target.code, grp_count,
+                        sources_code_list, target_code, grp_count,
                     )
 
                 return {
