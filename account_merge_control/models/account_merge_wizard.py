@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+import json
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from odoo.tools import SQL
 
 _logger = logging.getLogger(__name__)
 
@@ -302,12 +304,10 @@ class AccountMergeWizard(models.TransientModel):
                     target_code = target.code
                     target_id = target.id
 
-                    # IMPORTANT : On doit utiliser browse avec une liste d'IDs explicite
-                    # car target + sources ou target | sources va réordonner le recordset
-                    # selon le code du compte (ordre par défaut d'Odoo), ce qui peut
-                    # inverser la cible et la source ! browse([]) préserve l'ordre.
-                    accounts_to_merge = self.env['account.account'].browse([target_id] + sources.ids)
-                    self._action_merge(accounts_to_merge)
+                    # On appelle notre propre logique de fusion personnalisée
+                    # pour contourner le tri automatique et les bugs natifs Odoo
+                    # sur les fusions intra-société.
+                    self._custom_action_merge(target, sources)
 
                     self.env['account.merge.log'].create({
                         'wizard_reference': str(self.id),
@@ -348,6 +348,69 @@ class AccountMergeWizard(models.TransientModel):
                 "La fusion a échoué et a été annulée (rollback automatique).\n"
                 "Détail technique : %s"
             ) % str(e))
+
+    def _custom_action_merge(self, target, sources):
+        """
+        Surcharge complète de _action_merge pour :
+        1. Garantir que la cible RESTE la cible (aucun tri furtif de la part de l'ORM).
+        2. Corriger le bug du 'code_store' d'Odoo pour les fusions intra-société 
+           où Odoo écrasait le code cible par le code source.
+        """
+        accounts = target + sources
+        company_ids_to_write = accounts.company_ids
+
+        # CORRECTION DU BUG NATIF ODOO : on ne garde QUE le code de la cible !
+        code_by_company = {}
+        for company in company_ids_to_write:
+            # Odoo faisait une boucle 'for account in accounts:' et gardait le dernier.
+            # Nous, on veut explicitement que la cible dicte le code.
+            if code := target.with_company(company).sudo().code:
+                code_by_company[company.id] = code
+
+        # Validation natifs
+        self._check_access_rights(accounts)
+
+        # Mise à jour des clés étrangères et références (déplacement des pièces, etc.)
+        wiz = self.env['base.partner.merge.automatic.wizard'].new()
+        wiz._update_foreign_keys_generic('account.account', sources, target)
+        wiz._update_reference_fields_generic('account.account', sources, target)
+
+        # Fusion des traductions du nom du compte (la cible prend la priorité)
+        account_names = self.env.execute_query(SQL(
+            "SELECT id, name FROM account_account WHERE id IN %(account_ids)s",
+            account_ids=tuple(accounts.ids),
+        ))
+        account_name_by_id = dict(account_names)
+        merged_account_name = {}
+        for account_id in sources.ids + [target.id]:
+            if account_id in account_name_by_id:
+                merged_account_name.update(account_name_by_id[account_id])
+
+        self.env.cr.execute(SQL(
+            "UPDATE account_account SET name = %(account_name_json)s WHERE id = %(target_id)s",
+            account_name_json=json.dumps(merged_account_name),
+            target_id=target.id,
+        ))
+
+        # Suppression DÉFINITIVE des comptes sources
+        self.env.invalidate_all()
+        self.env.cr.execute(SQL(
+            "DELETE FROM account_account WHERE id IN %(source_ids)s",
+            source_ids=tuple(sources.ids),
+        ))
+
+        # Nettoyage cache
+        self.env.registry.clear_cache()
+
+        # Écriture finale des codes et sociétés
+        self.env.cr.execute(SQL(
+            "UPDATE account_account SET code_store = %(code_by_company_json)s WHERE id = %(target_id)s",
+            code_by_company_json=json.dumps(code_by_company),
+            target_id=target.id,
+        ))
+
+        target.sudo().company_ids = company_ids_to_write
+        self.env.add_to_compute(self.env['account.account']._fields['tag_ids'], target)
 
 
 class AccountMergeWizardLine(models.TransientModel):

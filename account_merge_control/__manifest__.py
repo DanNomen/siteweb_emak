@@ -2,6 +2,7 @@
 {
     'name': "Account Merge Control - Contrôle Total Fusion Comptes",
     'version': '18.0.1.0.0',
+    'author': 'Dan Ahemed',
     'summary': "Surcouche de sécurité, dry-run et audit sur le wizard interne account.merge.wizard",
     'description': """
 Module d'hérédité sur account.merge.wizard (module custom interne)
