@@ -302,10 +302,12 @@ class AccountMergeWizard(models.TransientModel):
                     target_code = target.code
                     target_id = target.id
 
-                    # IMPORTANT : on passe la cible EN PREMIER, suivie des sources,
-                    # pour forcer explicitement quel compte survit (au lieu de
-                    # dépendre de l'ordre de séquence ou du tri par hash).
-                    self._action_merge(target + sources)
+                    # IMPORTANT : On doit utiliser browse avec une liste d'IDs explicite
+                    # car target + sources ou target | sources va réordonner le recordset
+                    # selon le code du compte (ordre par défaut d'Odoo), ce qui peut
+                    # inverser la cible et la source ! browse([]) préserve l'ordre.
+                    accounts_to_merge = self.env['account.account'].browse([target_id] + sources.ids)
+                    self._action_merge(accounts_to_merge)
 
                     self.env['account.merge.log'].create({
                         'wizard_reference': str(self.id),
