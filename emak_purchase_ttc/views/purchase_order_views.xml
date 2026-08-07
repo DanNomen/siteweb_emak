@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_order_form_inherit_ttc" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.ttc</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Renommer Prix Unitaire en Prix Unitaire HT -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='price_unit']" position="attributes">
+                <attribute name="string">Prix Unitaire HT</attribute>
+            </xpath>
+
+            <!-- Montant HT juste après Prix Unitaire HT -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='price_unit']" position="after">
+                <field name="price_subtotal" string="Montant HT"/>
+            </xpath>
+
+            <!-- Ajouter Prix Unitaire TTC après Taxes -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='taxes_id']" position="after">
+                <field name="price_unit_ttc" string="Prix Unitaire TTC"/>
+            </xpath>
+
+            <!-- Masquer le price_subtotal original à la fin (car on en a déjà un après PU HT) -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='price_subtotal'][2]" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+
+            <!-- Ajouter Montant TTC en dernière position (après le price_subtotal original masqué) -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='price_subtotal'][2]" position="after">
+                <field name="price_total" string="Montant TTC"/>
+            </xpath>
+
+            <!-- Vue formulaire: Prix Unitaire HT et TTC -->
+            <xpath expr="//field[@name='order_line']/form//field[@name='price_unit']" position="attributes">
+                <attribute name="string">Prix Unitaire HT</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='price_unit']" position="after">
+                <field name="price_unit_ttc" string="Prix Unitaire TTC"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
