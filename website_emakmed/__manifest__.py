@@ -5,7 +5,7 @@
     "description": """
         Website sale emak med
     """,
-    "author": "Daniel Ahmed NOMEN",
+    "author": "Daniel Ahmed NOMENJANAHARY",
     "website": "",
     "category": "Website/Website",
     "version": "18.0.1.1.0",
