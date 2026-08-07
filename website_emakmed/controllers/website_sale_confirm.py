@@ -12,7 +12,7 @@ class WebsiteConfirmOrder(http.Controller):
 
         # Passer en 'sent' pour qu'elle ne soit plus considérée comme un panier brouillon
         if order.state == 'draft':
-            order.write({'state': 'sent'})
+            order.sudo().write({'state': 'sent'})
 
         # Sauvegarder l'ID pour la page de confirmation avant de reset le panier
         request.session['sale_last_order_id'] = order.id
