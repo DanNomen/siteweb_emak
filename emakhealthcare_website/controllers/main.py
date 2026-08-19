@@ -19,6 +19,13 @@ _logger = logging.getLogger(__name__)
 
 EMAKHEALTHCARE_WEBSITE_NAME = "Emakhealthcare"
 
+# Catégories à masquer sur le site Emakhealthcare
+EMAKHEALTHCARE_EXCLUDED_CATEGORIES = [
+    'PHARMACIE',
+    'PROTHÈSE ET IMPLANT',
+    'MÉDICAMENT',
+]
+
 
 class EmakhealthcareWebsite(EmakmedWebsite):
     """Surcharge du controller website_emakmed pour le site Emakhealthcare."""
@@ -34,9 +41,10 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             )
             ProductTemplate = request.env['product.template'].sudo()
 
-            # Catégories publiques (max 6)
-            categories = request.env['product.public.category'].sudo().search(
-                [('parent_id', '=', False)], limit=6
+            # Catégories (max 6), sans les catégories exclues pour ce site
+            categories = request.env['product.category'].sudo().search(
+                [('parent_id', '=', False), ('name', 'not in', EMAKHEALTHCARE_EXCLUDED_CATEGORIES)],
+                limit=6
             )
 
             # Offres spéciales : produits avec prix barré
@@ -73,7 +81,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             return request.not_found()
 
         ProductTemplate = request.env['product.template'].sudo()
-        PPCategory = request.env['product.public.category'].sudo()
+        PPCategory = request.env['product.category'].sudo()
 
         # Filtres
         domain = [('website_published', '=', True)]
@@ -83,7 +91,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         if category_id:
             cat = PPCategory.search([('id', '=', category_id)], limit=1)
             if cat:
-                domain += [('public_categ_ids', 'child_of', cat.id)]
+                domain += [('categ_id', 'child_of', cat.id)]
 
         # Tri
         order_map = {
@@ -102,7 +110,12 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         offset = (current_page - 1) * PRODUCTS_PER_PAGE
 
         products = ProductTemplate.search(domain, limit=PRODUCTS_PER_PAGE, offset=offset, order=order)
-        categories = PPCategory.search([('parent_id', '=', False)])
+        # Catégories de la sidebar, sans les catégories exclues pour ce site
+        all_root_cats = PPCategory.search([('parent_id', '=', False)])
+        categories = all_root_cats.filtered(
+            lambda c: c.name.upper() not in [n.upper() for n in EMAKHEALTHCARE_EXCLUDED_CATEGORIES]
+            and c.name.upper() not in ['ALL', 'FOURNITURES', 'SALEABLE', 'DELIVERIES']
+        )
 
         values = {
             'products': products,

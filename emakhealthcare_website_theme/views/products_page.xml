@@ -225,7 +225,14 @@
                                 var stock = parseInt(addBtn.dataset.stock || '999999');
 
                                 if (currentQty >= stock) {
-                                    return; // Bloque l'ajout si la quantité dépasse le stock disponible
+                                    // Message bloquant : stock insuffisant
+                                    var msg = document.createElement('div');
+                                    msg.className = 'emakhc-stock-alert';
+                                    msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#fff3cd;border:2px solid #f59e0b;border-radius:12px;padding:14px 22px;font-size:0.9rem;font-weight:600;color:#92400e;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.15);max-width:90vw;text-align:center;';
+                                    msg.innerHTML = 'Nous ne disposons que de <strong>' + stock + ' unité(s)</strong> de ce produit en stock.';
+                                    document.body.appendChild(msg);
+                                    setTimeout(function() { msg.remove(); }, 3500);
+                                    return;
                                 }
 
                                 plusBtn.disabled = true;
@@ -284,6 +291,7 @@
                                 var newQty = parseInt(input.value);
                                 var card = input.closest('.cart-action-wrap');
                                 var addBtn = card.querySelector('.btn-add-to-cart');
+                                var stock = parseInt((addBtn &amp;&amp; addBtn.dataset.stock) || (input.dataset.maxStock) || '999999');
 
                                 input.disabled = true;
                                 if (isNaN(newQty) || newQty &lt;= 0) {
@@ -298,6 +306,25 @@
                                         input.value = selector.dataset.qty;
                                         input.disabled = false;
                                         console.warn(typeof reason === 'string' ? reason : "Impossible de mettre à jour la quantité.");
+                                    });
+                                } else if (newQty > stock) {
+                                    // Quantité supérieure au stock : message bloquant
+                                    var msg = document.createElement('div');
+                                    msg.className = 'emakhc-stock-alert';
+                                    msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#fff3cd;border:2px solid #f59e0b;border-radius:12px;padding:14px 22px;font-size:0.9rem;font-weight:600;color:#92400e;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.15);max-width:90vw;text-align:center;';
+                                    msg.innerHTML = 'Nous ne disposons que de <strong>' + stock + ' unité(s)</strong> de ce produit. Votre quantité a été ajustée.';
+                                    document.body.appendChild(msg);
+                                    setTimeout(function() { msg.remove(); }, 3500);
+                                    // Corriger la valeur à la quantité max disponible
+                                    input.value = stock;
+                                    newQty = stock;
+                                    input.disabled = true;
+                                    updateCart(productId, undefined, newQty, function() {
+                                        selector.dataset.qty = newQty;
+                                        input.disabled = false;
+                                    }, function(reason) {
+                                        input.value = selector.dataset.qty;
+                                        input.disabled = false;
                                     });
                                 } else {
                                     updateCart(productId, undefined, newQty, function() {
@@ -353,6 +380,30 @@
                                     <span>Voir toutes les catégories</span>
                                     <i class="fa fa-chevron-right" style="font-size: 0.7rem;"></i>
                                 </a>
+                                <!-- Liste des catégories avec sous-catégories -->
+                                <div class="mt-3">
+                                    <t t-set="excluded_cats" t-value="['PHARMACIE', 'PROTHÈSE ET IMPLANT', 'MÉDICAMENT', 'ALL', 'FOURNITURES', 'SALEABLE', 'DELIVERIES', 'LAIT', 'MATER', 'ECG', 'DIALYSE']"/>
+                                    <t t-set="sidebar_cats" t-value="request.env['product.category'].sudo().search([('parent_id', '=', False)])"/>
+                                    <t t-foreach="sidebar_cats" t-as="cat">
+                                        <t t-if="cat.name.upper() not in excluded_cats">
+                                            <a t-attf-href="/produits?categ_id=#{cat.id}&amp;search=#{search}&amp;sort_by=#{sort_by}"
+                                               t-attf-class="cat-link #{'active' if categ_id == cat.id else ''}">
+                                                <t t-esc="cat.name"/>
+                                            </a>
+                                            <t t-if="cat.child_id">
+                                                <div class="ps-3 border-start ms-2 mb-1">
+                                                    <t t-foreach="cat.child_id" t-as="subcat">
+                                                        <a t-attf-href="/produits?categ_id=#{subcat.id}&amp;search=#{search}&amp;sort_by=#{sort_by}"
+                                                           t-attf-class="cat-link py-1 #{'active' if categ_id == subcat.id else ''}"
+                                                           style="font-size: 0.8rem;">
+                                                            <t t-esc="subcat.name"/>
+                                                        </a>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </t>
+                                    </t>
+                                </div>
                             </div>
                         </div>
 
@@ -443,13 +494,11 @@
                                                     <!-- Sélecteur de quantité (caché par défaut) -->
                                                     <div class="qty-selector" data-qty="0">
                                                         <button class="qty-btn qty-minus" type="button">−</button>
-                                                        <input type="number" class="qty-display" value="1" min="1" style="width: 40px; text-align: center; border: none; outline: none; font-weight: bold; background: transparent; -moz-appearance: textfield;"/>
+                                                        <input type="number" class="qty-display" value="1" min="1"
+                                                               t-att-data-max-stock="stock_qty"
+                                                               style="width: 40px; text-align: center; border: none; outline: none; font-weight: bold; background: transparent; -moz-appearance: textfield;"/>
                                                         <button class="qty-btn qty-plus" type="button">+</button>
                                                     </div>
-                                                </div>
-
-                                                <div class="mt-2 fw-bold" style="color: #CC0000; font-size: 0.82rem;">
-                                                    En stock : <t t-esc="stock_qty"/>
                                                 </div>
 
                                             </div>

@@ -1,12 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Rendre le champ téléphone obligatoire dans le formulaire d'adresse du checkout -->
-    <template id="address_phone_required" inherit_id="website_sale.address" name="Téléphone obligatoire">
+    <!-- Rendre obligatoires tous les champs importants du formulaire d'adresse -->
+    <template id="address_phone_required" inherit_id="website_sale.address" name="Champs adresse obligatoires">
+
+        <!-- Téléphone obligatoire -->
         <xpath expr="//input[@name='phone']" position="attributes">
             <attribute name="required">required</attribute>
         </xpath>
+
+        <!-- Rue / Adresse obligatoire -->
+        <xpath expr="//input[@name='street']" position="attributes">
+            <attribute name="required">required</attribute>
+        </xpath>
+
+        <!-- Ville obligatoire -->
+        <xpath expr="//input[@name='city']" position="attributes">
+            <attribute name="required">required</attribute>
+        </xpath>
+
+        <!-- Code postal obligatoire -->
+        <xpath expr="//input[@name='zip']" position="attributes">
+            <attribute name="required">required</attribute>
+        </xpath>
+
+        <!-- Pays obligatoire -->
+        <xpath expr="//select[@name='country_id']" position="attributes">
+            <attribute name="required">required</attribute>
+        </xpath>
+
+        <!-- Supprimer la mention "optionnel" sur code postal (affiché deux fois : avant et après ville) -->
+        <xpath expr="//div[@id='div_zip']" position="replace">
+            <div id="div_zip" class="col-md-4 mb-2">
+                <label class="col-form-label" for="o_zip">Code postal</label>
+                <input id="o_zip" type="text" name="zip" class="form-control"
+                       required="required" t-att-value="partner_sudo.zip"/>
+            </div>
+        </xpath>
+
     </template>
+
 
 
     <template id="confirmation_create_account_banner"

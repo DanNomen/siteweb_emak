@@ -92,7 +92,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         ProductTemplate = request.env['product.template'].sudo()
 
         categories = InternalCategory.search([])
-        excluded_names = ['ALL', 'DELIVERIES', 'EXPENSES', 'SALEABLE']
+        excluded_names = ['ALL', 'DELIVERIES', 'EXPENSES', 'SALEABLE', 'PHARMACIE', 'PROTHÈSE ET IMPLANT', 'MÉDICAMENT']
 
         # Ajouter le nombre de produits publiés pour chaque catégorie
         all_categories = []

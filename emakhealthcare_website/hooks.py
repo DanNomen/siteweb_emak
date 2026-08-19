@@ -25,6 +25,7 @@ def post_init_hook(env):
     website = _get_or_create_website(env, company)
     _set_custom_homepage(env, website)
     _setup_menus(env, website)
+    _update_category_parents(env)
     _logger.info(
         "Emakhealthcare : société id=%s / site web id=%s (domaine: %s)",
         company.id, website.id, website.domain,
@@ -181,4 +182,41 @@ def _setup_menus(env, website):
             "website_id": website.id,
         })
     _logger.info("Menus personnalisés configurés pour le site '%s'.", website.name)
+
+def _update_category_parents(env):
+    """Assigne Drappage, Instruments et Fils de sutures comme sous-catégories de Dispositifs et Consommables.
+       Et ajoute Cosmétique et Complément alimentaire sous Parapharmacie.
+    """
+    Category = env['product.category']
+    
+    # 1. Sous-catégories de DISPOSITIFS ET CONSOMMABLES
+    parent_dispositifs = Category.search([('name', '=ilike', 'DISPOSITIFS ET CONSOMMABLES')], limit=1)
+    if parent_dispositifs:
+        children_names = ['DRAPAGE', 'INSTRUMENTS MEDICAUX', 'MATERIELS MEDICAUX', 'FILS DE SUTURES']
+        children = Category.search([('name', 'in', children_names)])
+        for child in children:
+            if child.parent_id != parent_dispositifs:
+                child.write({'parent_id': parent_dispositifs.id})
+                _logger.info("Catégorie '%s' rattachée à '%s'.", child.name, parent_dispositifs.name)
+    else:
+        _logger.warning("Catégorie parente 'DISPOSITIFS ET CONSOMMABLES' introuvable.")
+
+    # 2. Sous-catégories de PARAPHARMACIE
+    parent_parapharmacie = Category.search([('name', '=ilike', 'PARAPHARMACIE')], limit=1)
+    if parent_parapharmacie:
+        para_children = ['COSMÉTIQUE', 'COMPLÉMENT ALIMENTAIRE']
+        for child_name in para_children:
+            child = Category.search([('name', '=ilike', child_name)], limit=1)
+            if not child:
+                child = Category.create({
+                    'name': child_name,
+                    'parent_id': parent_parapharmacie.id
+                })
+                _logger.info("Catégorie '%s' CRÉÉE et rattachée à '%s'.", child.name, parent_parapharmacie.name)
+            elif child.parent_id != parent_parapharmacie:
+                child.write({'parent_id': parent_parapharmacie.id})
+                _logger.info("Catégorie '%s' rattachée à '%s'.", child.name, parent_parapharmacie.name)
+    else:
+        _logger.warning("Catégorie parente 'PARAPHARMACIE' introuvable.")
+
 

@@ -103,7 +103,7 @@
                         </a>
                     </div>
                     <div class="row g-3">
-                        <t t-set="categories" t-value="request.env['product.public.category'].sudo().search([('parent_id','=',False)], limit=6)"/>
+                        <t t-set="categories" t-value="request.env['product.category'].sudo().search([('parent_id','=',False), ('name', 'not in', ['PHARMACIE', 'PROTHÈSE ET IMPLANT', 'MÉDICAMENT'])], limit=6)"/>
                         
                         <t t-foreach="categories" t-as="cat">
                             <div class="col-6 col-md-4 col-lg-2">

@@ -287,6 +287,18 @@
                                        t-attf-class="cat-link #{'active' if category == cat.id else ''}">
                                         <t t-esc="cat.name"/>
                                     </a>
+                                    <!-- Affichage des sous-catégories (niveau 2) -->
+                                    <t t-if="cat.child_id">
+                                        <div class="ps-3 border-start ms-2 mb-2">
+                                            <t t-foreach="cat.child_id" t-as="subcat">
+                                                <a t-attf-href="/produits?category=#{subcat.id}&amp;search=#{search}&amp;sort_by=#{sort_by}"
+                                                   t-attf-class="cat-link py-1 #{'active' if category == subcat.id else ''}"
+                                                   style="font-size: 0.82rem;">
+                                                    <t t-esc="subcat.name"/>
+                                                </a>
+                                            </t>
+                                        </div>
+                                    </t>
                                 </t>
 
                                 <!-- Tri -->

@@ -1,17 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--
-        ============================================================
-        Emakhealthcare – Bandeau d'avantages clients (Marquee v2)
-        ============================================================
-        Positionnement : juste SOUS la section hero carousel
-        de la page d'accueil, à l'intérieur du div#wrap.
-
-        Pour désactiver : archiver la vue emakhc_inject_marquee_banner.
-        ============================================================
-    -->
-
-    <!-- ── 1. Template du bandeau ── -->
     <template id="emakhc_marquee_banner" name="Emakhealthcare – Bandeau avantages clients">
         <t t-if="website and website.name == 'Emakhealthcare'">
             <div class="emakhc-marquee-bar" role="marquee" aria-label="Avantages clients Emakhealthcare">
@@ -31,14 +19,8 @@
                     <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
                     <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">👷</span>
-                        <span class="emakhc-mi-text">Ingénieurs qualifiés</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">🛠</span>
-                        <span class="emakhc-mi-text">SAV 24/24h</span>
+                        <span class="emakhc-mi-icon">📱</span>
+                        <span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span>
                     </span>
                     <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
@@ -56,14 +38,8 @@
                     <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
                     <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">👷</span>
-                        <span class="emakhc-mi-text">Ingénieurs qualifiés</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">🛠</span>
-                        <span class="emakhc-mi-text">SAV 24/24h</span>
+                        <span class="emakhc-mi-icon">📱</span>
+                        <span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span>
                     </span>
                     <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
