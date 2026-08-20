@@ -51,16 +51,32 @@
                         <div class="row g-4">
                             <t t-foreach="all_categories" t-as="cat">
                                 <div class="col-6 col-md-4 col-lg-3">
-                                    <a t-attf-href="/produits?categ_id=#{cat['id']}" class="cat-card p-4 text-center text-decoration-none">
+                                    <a t-attf-href="/produits?categ_id=#{cat['id']}" class="cat-card p-4 text-center text-decoration-none d-flex flex-column h-100">
                                         <div class="cat-icon">
                                             <i class="fa fa-tag" style="font-size: 1.6rem; color: #2E7D32;"></i>
                                         </div>
                                         <div class="fw-bold text-dark mb-2" style="font-size: 0.95rem;">
                                             <t t-esc="cat['name']"/>
                                         </div>
-                                        <span class="cat-count">
-                                            <t t-esc="cat['product_count']"/> article<t t-if="cat['product_count'] != 1">s</t>
-                                        </span>
+                                        <div class="mb-3">
+                                            <span class="cat-count">
+                                                <t t-esc="cat['product_count']"/> article<t t-if="cat['product_count'] != 1">s</t>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Sous-catégories (pills) -->
+                                        <t t-if="cat.get('child_categories')">
+                                            <div class="d-flex flex-wrap justify-content-center gap-1 mt-auto pt-2" style="border-top: 1px solid #f3f4f6;">
+                                                <t t-foreach="cat['child_categories'][:5]" t-as="subcat">
+                                                    <span class="badge rounded-pill" style="background-color: #f3f4f6; color: #4B5563; font-size: 0.7rem; font-weight: 500; border: 1px solid #e5e7eb;">
+                                                        <t t-esc="subcat.name"/>
+                                                    </span>
+                                                </t>
+                                                <t t-if="len(cat['child_categories']) > 5">
+                                                    <span class="badge rounded-pill" style="background-color: #e5e7eb; color: #4B5563; font-size: 0.7rem;">+</span>
+                                                </t>
+                                            </div>
+                                        </t>
                                     </a>
                                 </div>
                             </t>

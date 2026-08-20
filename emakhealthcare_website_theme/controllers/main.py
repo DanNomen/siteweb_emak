@@ -109,8 +109,9 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         InternalCategory = request.env['product.category'].sudo()
         ProductTemplate = request.env['product.template'].sudo()
 
-        categories = InternalCategory.search([])
-        excluded_names = ['ALL', 'DELIVERIES', 'EXPENSES', 'SALEABLE', 'PHARMACIE', 'PROTHÈSE ET IMPLANT', 'MÉDICAMENT']
+        # Ne récupérer que les catégories principales (sans parent)
+        categories = InternalCategory.search([('parent_id', '=', False)])
+        excluded_names = ['ALL', 'DELIVERIES', 'EXPENSES', 'SALEABLE', 'PHARMACIE', 'PROTHÈSE ET IMPLANT', 'PROTHESE ET IMPLANT', 'MÉDICAMENT', 'MEDICAMENT']
 
         # Filtre par compagnie active (Mali=Appromed=1, CI=Alimak=2)
         active_company_id = self._get_active_store_company_id()
@@ -133,6 +134,7 @@ class EmakhealthcareWebsite(EmakmedWebsite):
                     'id': cat.id,
                     'name': cat.name,
                     'product_count': count,
+                    'child_categories': cat.child_id, # Passer les sous-catégories au template
                 })
 
         # Trier par nombre de produits décroissant

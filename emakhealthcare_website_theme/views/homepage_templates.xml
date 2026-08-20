@@ -144,7 +144,7 @@
                         </a>
                     </div>
                     <div class="row g-3">
-                        <t t-set="categories" t-value="request.env['product.category'].sudo().search([('name', 'in', ['BANDAGES ET ORTHESES', 'MATERIELS MEDICAUX', 'PARAPHARMACIE', 'MOBILIERS MÉDICAUX', 'DISPOSITIF ET CONSOMMABLE MEDICAUX', 'DISPOSITIFS ET CONSOMMABLES MÉDICAUX'])], limit=6)"/>
+                        <t t-set="categories" t-value="request.env['product.category'].sudo().search([('name', 'in', ['BANDAGES ET ORTHESES', 'MATERIELS MEDICAUX', 'PARAPHARMACIE', 'MOBILIERS MÉDICAUX', 'DISPOSITIFS ET CONSOMMABLES', 'DISPOSITIFS ET CONSOMMABLES MÉDICAUX'])], limit=6)"/>
                         
                         <t t-foreach="categories" t-as="cat">
                             <div class="col-4 col-md-4 col-lg-2">
