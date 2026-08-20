@@ -207,7 +207,10 @@
                                 var card = plusBtn.closest('.cart-action-wrap');
                                 var addBtn = card.querySelector('.btn-add-to-cart');
                                 var stock = parseInt(addBtn.dataset.stock || '999999');
-                                if (currentQty >= stock) return;
+                                if (currentQty >= stock) {
+                                    alert('Stock insuffisant ! Il ne reste que ' + stock + ' article(s) disponible(s).');
+                                    return;
+                                }
                                 plusBtn.disabled = true;
                                 updateCart(productId, 1, undefined, function() {
                                     var newQty = currentQty + 1;
@@ -318,10 +321,6 @@
                                                     </span>
                                                 </div>
 
-                                                <!-- Stock -->
-                                                <div class="mb-2 fw-bold" style="color: #CC0000; font-size: 0.82rem;">
-                                                    En stock : <t t-esc="stock_qty"/>
-                                                </div>
 
                                                 <!-- Action panier -->
                                                 <div class="cart-action-wrap">

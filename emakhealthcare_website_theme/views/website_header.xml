@@ -85,6 +85,32 @@
             <div class="d-flex align-items-center gap-4">
               <!-- Recherche : MASQUÉE (la barre de recherche est dans le hero) -->
 
+              <!-- Sélecteur de Pays / Store (UI & Logique Session) -->
+              <t t-set="active_store" t-value="request.session.get('emakhc_store_country', 'Mali')"/>
+              <div class="dropdown d-none d-md-block">
+                <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                  <span class="fw-semibold" style="font-size: 1.3rem; line-height: 1;"><t t-if="active_store == 'Mali'">&#x1F1F2;&#x1F1F1;</t><t t-else="">&#x1F1E8;&#x1F1EE;</t></span>
+                  <div class="d-flex flex-column lh-1 d-none d-lg-flex">
+                    <span class="text-muted" style="font-size: 0.75rem;">Store</span>
+                    <span class="fw-semibold" style="font-size: 0.85rem;"><t t-if="active_store == 'Mali'">Mali</t><t t-else="">Côte d'Ivoire</t> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
+                  </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute mt-2">
+                  <li>
+                    <a t-attf-class="dropdown-item py-2 d-flex align-items-center gap-2 {{ 'bg-light fw-bold' if active_store == 'Mali' else '' }}" href="/shop/change_store?store_country=Mali">
+                      <span style="font-size: 1.3rem; line-height: 1;">&#x1F1F2;&#x1F1F1;</span>
+                      <span style="font-size: 0.85rem;">Mali</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a t-attf-class="dropdown-item py-2 d-flex align-items-center gap-2 {{ 'bg-light fw-bold' if active_store == 'CI' else '' }}" href="/shop/change_store?store_country=CI">
+                      <span style="font-size: 1.3rem; line-height: 1;">&#x1F1E8;&#x1F1EE;</span>
+                      <span style="font-size: 0.85rem;">Côte d'Ivoire</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
               <!-- Panier -->
               <t t-nocache="The cart and amount must not be cached">
                 <t t-set="sale_order_id" t-value="request.session.get('sale_order_id')" />

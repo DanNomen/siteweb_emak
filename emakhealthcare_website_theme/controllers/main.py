@@ -23,6 +23,22 @@ EMAKHEALTHCARE_WEBSITE_NAME = "Emakhealthcare"
 class EmakhealthcareWebsite(EmakmedWebsite):
     """Surcharge du controller website_emakmed pour le site Emakhealthcare."""
 
+    @http.route('/shop/change_store', type='http', auth="public", website=True, sitemap=False)
+    def change_store(self, store_country='Mali', **kw):
+        """Permet au visiteur de changer manuellement de store (Mali ou CI)"""
+        request.session['emakhc_store_country'] = store_country
+        return request.redirect(request.httprequest.referrer or '/')
+
+    def _get_active_store_company_id(self):
+        """Retourne l'ID de la compagnie (Appromed = 1 ou Alimak = 2) en fonction du store sélectionné en session."""
+        store_country = request.session.get('emakhc_store_country', 'Mali')
+        if store_country == 'Mali':
+            return 1 # ID APPROMED MALI
+        elif store_country == 'CI':
+            return 2 # ID ALIMAK
+        
+        return request.website.company_id.id
+
     @http.route('/', auth="public", website=True, sitemap=True)
     def index(self, **kw):
         """Affiche la page d'accueil spécifique à Emakhealthcare."""
@@ -57,16 +73,18 @@ class EmakhealthcareWebsite(EmakmedWebsite):
                     break
             offers = promo_products[:4]
 
+            active_company_id = self._get_active_store_company_id()
+            
             # Fallback : produits avec prix barré si aucune règle BXGY active
             if not offers:
-                offers = ProductTemplate.search([
+                offers = ProductTemplate.with_context(allowed_company_ids=[active_company_id]).search([
                     ('website_published', '=', True),
                     ('compare_list_price', '>', 0),
                 ], limit=4)
 
             # Fallback final : 4 premiers produits publiés
             if not offers:
-                offers = ProductTemplate.search([
+                offers = ProductTemplate.with_context(allowed_company_ids=[active_company_id]).search([
                     ('website_published', '=', True),
                 ], limit=4)
 
@@ -131,8 +149,14 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         PPCategory = request.env['product.public.category'].sudo()
         InternalCategory = request.env['product.category'].sudo()
 
-        # Filtres
-        domain = [('website_published', '=', True)]
+        # Récupérer l'ID de la compagnie active (Appromed=1 ou Alimak=2)
+        active_company_id = self._get_active_store_company_id()
+
+        # Filtres de base + filtre par compagnie (company_id = société sélectionnée OU partagé = False)
+        domain = [
+            ('website_published', '=', True),
+            '|', ('company_id', '=', active_company_id), ('company_id', '=', False),
+        ]
         if search:
             domain += [('name', 'ilike', search)]
 
@@ -160,13 +184,15 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         }
         order = order_map.get(sort_by, 'name asc')
 
-        # Récupérer tous les produits correspondant au domaine, avec le contexte de TOUTES les sociétés
+        # Recherche avec toutes les sociétés visibles (le filtre company_id est déjà dans le domaine)
         all_companies = request.env['res.company'].sudo().search([])
         all_products = ProductTemplate.with_context(allowed_company_ids=all_companies.ids).search(domain, order=order)
 
-        # Filtrer : ne montrer que les articles avec stock libre > 0 (ou services) toutes sociétés confondues
-        products_in_stock = all_products.filtered(
-            lambda p: p.type == 'service' or (p.product_variant_id and p.product_variant_id.free_qty > 0) or (not p.product_variant_id and p.qty_available > 0)
+        # Filtrer : seulement les articles avec stock libre > 0 ou les services
+        products_in_stock = all_products.with_context(allowed_company_ids=[active_company_id]).filtered(
+            lambda p: p.type == 'service'
+                or (p.product_variant_id and p.product_variant_id.free_qty > 0)
+                or (not p.product_variant_id and p.qty_available > 0)
         )
 
         product_count = len(products_in_stock)

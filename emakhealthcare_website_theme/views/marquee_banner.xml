@@ -6,42 +6,24 @@
                 <div class="emakhc-marquee-track">
 
                     <!-- Copie 1 -->
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">🚚</span>
-                        <span class="emakhc-mi-text">Livraison rapide et gratuite</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">💳</span>
-                        <span class="emakhc-mi-text">Paiement à la livraison ou via Sarali</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">📱</span>
-                        <span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
                     <!-- Copie 2 (seamless loop) -->
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">🚚</span>
-                        <span class="emakhc-mi-text">Livraison rapide et gratuite</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">💳</span>
-                        <span class="emakhc-mi-text">Paiement à la livraison ou via Sarali</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
-
-                    <span class="emakhc-marquee-item">
-                        <span class="emakhc-mi-icon">📱</span>
-                        <span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span>
-                    </span>
-                    <span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">🚚</span><span class="emakhc-mi-text">Livraison rapide</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
+                    <span class="emakhc-marquee-item"><span class="emakhc-mi-icon">📱</span><span class="emakhc-mi-text">Paiement par Orange money, wave, moov money, carte bancaire</span></span><span class="emakhc-marquee-sep" aria-hidden="true">◆</span>
 
                 </div>
             </div>
