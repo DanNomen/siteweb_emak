@@ -27,11 +27,28 @@ class PromotionController(http.Controller):
         # --- Règles Buy X Get Y ---
         bxgy_rules = all_rules
 
-        # Récupération de tous les produits (sudo requis pour l'utilisateur public, avec contexte multi-société pour le stock)
+        # Récupérer l'ID de la compagnie active
+        store_country = request.session.get('emakhc_store_country', 'Mali')
+        active_company_id = 1 if store_country == 'Mali' else 2
+
         all_companies = request.env['res.company'].sudo().search([])
+        
+        valid_rules = []
+        rule_variants = {}
         all_products = request.env['product.template'].sudo().with_context(allowed_company_ids=all_companies.ids)
+        
         for rule in bxgy_rules:
-            all_products |= rule.product_ids.mapped('product_tmpl_id').sudo().with_context(allowed_company_ids=all_companies.ids)
+            # Filtrer les variantes de la règle par compagnie
+            valid_variants = []
+            for variant in rule.product_ids.sudo().with_context(allowed_company_ids=all_companies.ids):
+                if not variant.product_tmpl_id.company_id or variant.product_tmpl_id.company_id.id == active_company_id:
+                    valid_variants.append(variant)
+            
+            if valid_variants:
+                valid_rules.append(rule)
+                rule_variants[rule.id] = valid_variants
+                for variant in valid_variants:
+                    all_products |= variant.product_tmpl_id
 
         # Calcul des prix identique à la page produits (pricelist du site web)
         current_website = request.website
@@ -55,9 +72,10 @@ class PromotionController(http.Controller):
             product_stocks[pt.id] = int((pt.product_variant_id and pt.product_variant_id.free_qty) or pt.qty_available or 0)
 
         values = {
-            'bxgy_rules': bxgy_rules,
+            'bxgy_rules': valid_rules,
+            'rule_variants': rule_variants,
             'currency': current_website.currency_id,
-            'has_promotions': bool(bxgy_rules),
+            'has_promotions': bool(valid_rules),
             'product_prices': product_prices,
             'product_stocks': product_stocks,
         }
