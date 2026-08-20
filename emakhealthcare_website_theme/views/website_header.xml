@@ -87,9 +87,13 @@
 
               <!-- Sélecteur de Pays / Store (UI & Logique Session) -->
               <t t-set="active_store" t-value="request.session.get('emakhc_store_country', 'Mali')"/>
-              <div class="dropdown d-none d-md-block">
+              <div class="dropdown me-2">
                 <a href="#" class="d-flex align-items-center gap-2 text-decoration-none text-dark" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-                  <span class="fw-semibold" style="font-size: 1.3rem; line-height: 1;"><t t-if="active_store == 'Mali'">&#x1F1F2;&#x1F1F1;</t><t t-else="">&#x1F1E8;&#x1F1EE;</t></span>
+                  <div class="d-flex flex-column align-items-center lh-1 d-lg-none">
+                     <span style="font-size: 0.65rem; font-weight: 600;">Store</span>
+                     <span style="font-size: 0.75rem; font-weight: 700;"><t t-if="active_store == 'Mali'">Mali</t><t t-else="">CI</t> <i class="fa fa-chevron-down ms-1" style="font-size: 0.5rem;"></i></span>
+                  </div>
+                  <span class="fw-semibold d-none d-lg-block" style="font-size: 1.3rem; line-height: 1;"><t t-if="active_store == 'Mali'">&#x1F1F2;&#x1F1F1;</t><t t-else="">&#x1F1E8;&#x1F1EE;</t></span>
                   <div class="d-flex flex-column lh-1 d-none d-lg-flex">
                     <span class="text-muted" style="font-size: 0.75rem;">Store</span>
                     <span class="fw-semibold" style="font-size: 0.85rem;"><t t-if="active_store == 'Mali'">Mali</t><t t-else="">Côte d'Ivoire</t> <i class="fa fa-chevron-down ms-1" style="font-size: 0.6rem;"></i></span>
