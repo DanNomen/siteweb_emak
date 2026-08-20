@@ -89,6 +89,12 @@
                 <span>Panier</span>
             </a>
 
+            <!-- Store Selector -->
+            <a href="#" class="emakhc-nav-item" id="emakhc-mobile-store-btn" aria-label="Store">
+                <span id="emakhc-mobile-store-flag" style="font-size:1.4rem;line-height:1;">&#x1F1F2;&#x1F1F1;</span>
+                <span style="font-size:0.65rem;">Store</span>
+            </a>
+
             <!-- Espace client -->
             <a href="/my" class="emakhc-nav-item ${activeCompte}" aria-label="Espace client">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -101,6 +107,44 @@
         `;
 
         document.body.appendChild(nav);
+
+        // Modal de sélection du store
+        var storeModal = document.createElement('div');
+        storeModal.id = 'emakhc-store-modal';
+        storeModal.style.cssText = [
+            'display:none', 'position:fixed', 'bottom:75px', 'left:50%',
+            'transform:translateX(-50%)', 'background:#fff', 'border-radius:16px',
+            'box-shadow:0 8px 32px rgba(0,0,0,0.18)', 'z-index:10000',
+            'padding:18px 24px', 'min-width:260px',
+        ].join(';');
+        storeModal.innerHTML = [
+            '<div style="font-weight:700;font-size:0.95rem;margin-bottom:14px;color:#111827;">Choisir votre store</div>',
+            '<a href="/shop/change_store?store_country=Mali" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#111827;border:1px solid #e5e7eb;margin-bottom:8px;">',
+            '  <span style="font-size:1.5rem;">&#x1F1F2;&#x1F1F1;</span>',
+            '  <span style="font-weight:600;font-size:0.9rem;">Mali</span>',
+            '</a>',
+            '<a href="/shop/change_store?store_country=CI" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;text-decoration:none;color:#111827;border:1px solid #e5e7eb;">',
+            '  <span style="font-size:1.5rem;">&#x1F1E8;&#x1F1EE;</span>',
+            '  <span style="font-weight:600;font-size:0.9rem;">C\u00f4te d\'Ivoire</span>',
+            '</a>',
+        ].join('');
+        document.body.appendChild(storeModal);
+
+        // Toggle modal au clic sur le bouton Store
+        var storeBtn = document.getElementById('emakhc-mobile-store-btn');
+        if (storeBtn) {
+            storeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                storeModal.style.display = storeModal.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+
+        // Fermer le modal en cliquant ailleurs
+        document.addEventListener('click', function(e) {
+            if (!storeModal.contains(e.target) && e.target !== storeBtn && !storeBtn.contains(e.target)) {
+                storeModal.style.display = 'none';
+            }
+        });
     }
 
     // ── 2. Synchroniser le badge panier ──────────────────────────

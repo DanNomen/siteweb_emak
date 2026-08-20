@@ -112,15 +112,20 @@ class EmakhealthcareWebsite(EmakmedWebsite):
         categories = InternalCategory.search([])
         excluded_names = ['ALL', 'DELIVERIES', 'EXPENSES', 'SALEABLE', 'PHARMACIE', 'PROTHÈSE ET IMPLANT', 'MÉDICAMENT']
 
-        # Ajouter le nombre de produits publiés pour chaque catégorie
+        # Filtre par compagnie active (Mali=Appromed=1, CI=Alimak=2)
+        active_company_id = self._get_active_store_company_id()
+        all_companies = request.env['res.company'].sudo().search([])
+
+        # Ajouter le nombre de produits publiés pour chaque catégorie, filtrés par compagnie
         all_categories = []
         for cat in categories:
             if cat.name.upper() in excluded_names:
                 continue
 
-            count = ProductTemplate.search_count([
+            count = ProductTemplate.with_context(allowed_company_ids=all_companies.ids).search_count([
                 ('categ_id', 'child_of', cat.id),
-                ('website_published', '=', True),
+                ('is_published', '=', True),
+                '|', ('company_id', '=', active_company_id), ('company_id', '=', False),
             ])
             
             if count > 0:
@@ -223,7 +228,6 @@ class EmakhealthcareWebsite(EmakmedWebsite):
             else:
                 price = pt.list_price
             product_prices[pt.id] = price
-
 
         values = {
             'products': products,
