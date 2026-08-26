@@ -35,6 +35,27 @@ class AccountGeneralLedger(models.TransientModel):
     _description = 'General Ledger Report'
 
     @api.model
+    def disable_duplicate_menus(self):
+        """
+        Safely disable duplicate accounting menus from other third-party modules
+        if they are installed. This avoids XML ParseErrors when a module is not installed.
+        """
+        xml_ids_to_disable = [
+            'accounting_pdf_reports.menu_finance_legal_statement',
+            'accounting_pdf_reports.menu_finance_partner_reports',
+            'accounting_pdf_reports.menu_finance_audit_reports',
+            'base_accounting_kit.account_reports_generic_statements',
+            'base_accounting_kit.account_reports_daily_reports',
+            'base_accounting_kit.account_reports_partner',
+            'base_accounting_kit.account_reports_audit',
+            'om_account_daily_reports.menu_finance_daily_reports'
+        ]
+        for xml_id in xml_ids_to_disable:
+            menu = self.env.ref(xml_id, raise_if_not_found=False)
+            if menu:
+                menu.active = False
+
+    @api.model
     def view_report(self, option, tag):
         """
         Returns only account totals for initial page load (NO move line details).

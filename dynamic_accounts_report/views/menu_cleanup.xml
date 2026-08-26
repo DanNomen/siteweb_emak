@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!--
-        Note: Les désactivations de menus des autres modules (base_accounting_kit, etc.)
-        ont été retirées car elles font planter le serveur si ces modules ne sont pas installés.
-    -->
+    <data noupdate="0">
+        <!-- Safely disable duplicate menus via Python -->
+        <function model="account.general.ledger" name="disable_duplicate_menus"/>
+    </data>
 
     <!-- ===== Repositionner Dynamic Financial Reports en 1ère position ===== -->
     <record id="dynamic_report_accounting" model="ir.ui.menu">
