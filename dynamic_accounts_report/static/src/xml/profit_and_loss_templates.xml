@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates>
     <t t-name="dfr_template_new" owl="1">
-        <div class="container">
+        <div class="o_action o_view_controller">
+            <div class="o_content">
+                <div class="container">
             <div style="border-bottom: 1px solid #d8dadd;">
                 <div class="filter_view_dfr pt-3 pb-5">
                     <div class="">
@@ -987,6 +989,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+                </div>
         </div>
     </t>
 </templates>

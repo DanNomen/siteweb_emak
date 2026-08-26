@@ -407,7 +407,7 @@ class ResPartner(models.Model):
                           remain_balance, txt)
         workbook.close()
         output.seek(0)
-        response.stream.write(output.read())
+        response.data = output.read()
         output.close()
 
     def action_share_xlsx(self):

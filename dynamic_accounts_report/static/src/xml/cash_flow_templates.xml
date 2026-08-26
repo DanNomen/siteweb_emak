@@ -2,7 +2,9 @@
 <templates>
     <!-- Template for cash book report -->
     <t t-name="csh_b_template_new" owl="1">
-        <div class="container">
+        <div class="o_action o_view_controller">
+            <div class="o_content">
+                <div class="container">
             <div class="fin_report">
                 <div class="filter_view_gl  pt-3 pb-5"
                      style="border-bottom: 1px solid #d8dadd;">
@@ -378,6 +380,8 @@
                     <br/>
                 </t>
             </div>
+        </div>
+                </div>
         </div>
     </t>
 </templates>

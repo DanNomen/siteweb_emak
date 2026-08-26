@@ -32,6 +32,7 @@ class PartnerLedger extends owl.Component {
             partner_list: null,
             total_list: null,
             date_range: null,
+            date_label: null,
             account: null,
             options: null,
             message_list : [],
@@ -665,6 +666,10 @@ class PartnerLedger extends owl.Component {
             ]
         );
         // Process filtered data
+        // Ensure partner_totals always exists even if no data returned
+        if (!filtered_data['partner_totals']) {
+            filtered_data['partner_totals'] = {};
+        }
         for (let index in filtered_data) {
             const value = filtered_data[index];
             if (index !== 'partner_totals') {

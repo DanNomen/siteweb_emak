@@ -25,6 +25,7 @@ class CashBook extends owl.Component {
             selected_partner: [],
             selected_partner_rec: [],
             date_range: null,
+            date_label: null,
             selected_account_list: [],
             total_debit: null,
             total_credit: null,
@@ -306,8 +307,10 @@ class CashBook extends owl.Component {
         this.state.move_line = move_line_list
         this.state.data = filtered_data
         this.state.total = move_line_totals
-        this.state.total_debit = totalDebitSum.toFixed(2)
-        this.state.total_credit = totalCreditSum.toFixed(2)
+        this.state.total_debit = totalDebitSum.toFixed(2);
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
+        this.state.total_credit = totalCreditSum.toFixed(2);
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
         if (this.unfoldButton.el.classList.contains("selected-filter")) {
            this.unfoldButton.el.classList.remove("selected-filter");
         }

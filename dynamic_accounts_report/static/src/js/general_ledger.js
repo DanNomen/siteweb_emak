@@ -34,6 +34,7 @@ class GeneralLedger extends owl.Component {
             account_list: null,
             account_total_list: null,
             date_range: null,
+            date_label: null,
             options: null,
             method: {
                         'accural': true
@@ -214,23 +215,31 @@ class GeneralLedger extends owl.Component {
                     ...this.state.date_range,
                     start_date: val.target.value
                 };
+                this.state.date_label = null; // will be rebuilt below
             } else if (val.target.name === 'end_date') {
                 this.state.date_range = {
                     ...this.state.date_range,
                     end_date: val.target.value
                 };
+                this.state.date_label = null; // will be rebuilt below
             } else if (val.target.attributes["data-value"].value == 'month') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Ce mois';
             } else if (val.target.attributes["data-value"].value == 'year') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Cette année';
             } else if (val.target.attributes["data-value"].value == 'quarter') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Ce trimestre';
             } else if (val.target.attributes["data-value"].value == 'last-month') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Mois dernier';
             } else if (val.target.attributes["data-value"].value == 'last-year') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Année dernière';
             } else if (val.target.attributes["data-value"].value == 'last-quarter') {
-                this.state.date_range = val.target.attributes["data-value"].value
+                this.state.date_range = val.target.attributes["data-value"].value;
+                this.state.date_label = 'Trimestre dernier';
             }
             else if (val.target.attributes["data-value"].value == 'journal') {
                 if (!val.target.classList.contains("selected-filter")) {
@@ -307,24 +316,40 @@ class GeneralLedger extends owl.Component {
             }
         }
         let filtered_data = await this.orm.call("account.general.ledger", "get_filter_values", [this.state.selected_journal_list, this.state.date_range, this.state.options, this.state.selected_analytic_list,this.state.method]);
+        // Ensure account_totals always exists even if no data returned
+        if (!filtered_data['account_totals']) {
+            filtered_data['account_totals'] = {};
+        }
+        let currency = null;
         for (let index in filtered_data) {
-             const value = filtered_data[index];
+            const value = filtered_data[index];
             if (index !== 'account_totals' && index !== 'journal_ids' && index !== 'analytic_ids') {
-                account_list.push(index)
-            }
-            else {
-                account_totals = value
-                Object.values(account_totals).forEach(account_list => {
-                        totalDebitSum += account_list.total_debit || 0;
-                        totalCreditSum += account_list.total_credit || 0;
-                    });
+                account_list.push(index);
+            } else if (index === 'account_totals') {
+                // Only assign account_totals, not journal_ids or analytic_ids
+                account_totals = value;
+                Object.values(account_totals).forEach(acc => {
+                    currency = acc.currency_id;
+                    totalDebitSum += acc.total_debit || 0;
+                    acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
+                    totalCreditSum += acc.total_credit || 0;
+                    acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
+                    acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
+                });
+            } else if (index === 'journal_ids') {
+                this.state.journals = value;
+            } else if (index === 'analytic_ids') {
+                this.state.analytics = value;
             }
         }
-        this.state.account = account_list
-        this.state.account_data = filtered_data
-        this.state.account_total = account_totals
-        this.state.total_debit = totalDebitSum.toFixed(2)
-        this.state.total_credit = totalCreditSum.toFixed(2)
+        this.state.account = account_list;
+        this.state.account_data = filtered_data;
+        this.state.account_total = account_totals;
+        if (currency) { this.state.currency = currency; }
+        this.state.total_debit = totalDebitSum.toFixed(2);
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
+        this.state.total_credit = totalCreditSum.toFixed(2);
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
         if (this.unfoldButton.el.classList.contains("selected-filter")) {
             this.unfoldButton.el.classList.remove("selected-filter");
         }

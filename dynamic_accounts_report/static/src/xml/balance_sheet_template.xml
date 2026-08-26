@@ -4,7 +4,9 @@
         view and a table view. It has div elements for the filter view and table view,
          with respective classes for styling.-->
     <t t-name="bls_template_new" owl="1">
-        <div class="container">
+        <div class="o_action o_view_controller">
+            <div class="o_content">
+                <div class="container">
             <div class="fin_report">
                 <!--  Filter View  -->
                 <div class="filter_view_dfr pt-3 pb-5">
@@ -1704,6 +1706,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+                </div>
         </div>
     </t>
 </templates>

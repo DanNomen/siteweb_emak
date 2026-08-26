@@ -25,6 +25,7 @@ class BankBook extends owl.Component {
             selected_partner: [],
             selected_partner_rec: [],
             date_range: null,
+            date_label: null,
             options: null,
             selected_account_list: [],
             total_debit: null,

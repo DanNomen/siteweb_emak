@@ -517,7 +517,7 @@ class AccountPartnerLedger(models.TransientModel):
 
         workbook.close()
         output.seek(0)
-        response.stream.write(output.read())
+        response.data = output.read()
         output.close()
 
 

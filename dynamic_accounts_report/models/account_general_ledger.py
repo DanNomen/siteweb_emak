@@ -58,6 +58,8 @@ class AccountGeneralLedger(models.TransientModel):
         account_dict['analytic_ids'] = self.env[
             'account.analytic.account'].search_read(
             [], ['name'])
+        # Always initialize account_totals so the frontend never receives undefined
+        account_dict['account_totals'] = account_totals
         for account in account_ids:
             move_line_id = move_line_ids.filtered(
                 lambda x: x.account_id == account)
@@ -177,6 +179,8 @@ class AccountGeneralLedger(models.TransientModel):
         account_dict['analytic_ids'] = self.env[
             'account.analytic.account'].search_read(
             [], ['name'])
+        # Always initialize account_totals so the frontend never receives undefined
+        account_dict['account_totals'] = account_totals
         for account in account_ids:
             move_line_id = move_line_ids.filtered(
                 lambda x: x.account_id == account)
@@ -189,13 +193,9 @@ class AccountGeneralLedger(models.TransientModel):
                 move_line_list.append(move_line_data)
             account_dict[account.display_name] = move_line_list
             currency_id = self.env.company.currency_id.symbol
-            total_debit = round(sum(move_line_id.mapped('debit')), 2)
-            total_credit = round(sum(move_line_id.mapped('credit')), 2)
             account_totals[account.display_name] = {
-                'total_debit': total_debit,
-                'total_debit_display': "{:,.2f}".format(total_debit),
-                'total_credit': total_credit,
-                'total_credit_display': "{:,.2f}".format(total_credit),
+                'total_debit': round(sum(move_line_id.mapped('debit')), 2),
+                'total_credit': round(sum(move_line_id.mapped('credit')), 2),
                 'currency_id': currency_id,
                 'account_id': account.id}
             account_dict['account_totals'] = account_totals
@@ -329,5 +329,5 @@ class AccountGeneralLedger(models.TransientModel):
                                       filter_head)
         workbook.close()
         output.seek(0)
-        response.stream.write(output.read())
+        response.data = output.read()
         output.close()

@@ -5,7 +5,9 @@
     @param {Object} state - The state object containing the component's state data.
     -->
     <t t-name="pl_template_new" owl="1">
-        <div class="container">
+        <div class="o_action o_view_controller">
+            <div class="o_content">
+                <div class="container">
             <div class="fin_report">
                 <!-- Filter View -->
                 <div class="filter_view_pl pt-3 pb-5">
@@ -721,6 +723,8 @@
                     <br/>
                 </t>
             </div>
+        </div>
+                </div>
         </div>
     </t>
 </templates>
