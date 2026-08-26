@@ -28,7 +28,7 @@
                    "Balance, Balance Sheet, Profit and Loss, Cash Book, Partner"
                    "Ledger, Aged Payable, Aged Receivable, Bank book and Tax"
                    "Reports in Odoo 18 community edition, Reporting, Odoo18 Accounting, odoo18 reporting, odoo18, odoo18 accounts reports",
-    'author': 'Cybrosys Techno Solutions',
+    'author': 'Cybrosys Techno Solutions / Dan Ahmed',
     'company': 'Cybrosys Techno Solutions',
     'maintainer': 'Cybrosys Techno Solutions',
     'website': "https://www.cybrosys.com",
