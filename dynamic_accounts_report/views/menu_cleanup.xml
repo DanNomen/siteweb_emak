@@ -9,4 +9,20 @@
     <record id="dynamic_report_accounting" model="ir.ui.menu">
         <field name="sequence" eval="5"/>
     </record>
+
+    <!-- Action Serveur pour nettoyer les doublons manuellement -->
+    <record id="action_clean_duplicate_menus" model="ir.actions.server">
+        <field name="name">Nettoyer les Menus Doublons</field>
+        <field name="model_id" ref="dynamic_accounts_report.model_account_general_ledger"/>
+        <field name="state">code</field>
+        <field name="code">
+            env['account.general.ledger'].disable_duplicate_menus()
+        </field>
+    </record>
+
+    <menuitem id="menu_clean_duplicate_menus"
+              name="Nettoyer les Doublons"
+              action="action_clean_duplicate_menus"
+              parent="dynamic_accounts_report.dynamic_report_accounting"
+              sequence="100"/>
 </odoo>
