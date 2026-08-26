@@ -1,45 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!--
-        Nettoyage des menus dupliqués dans l'onglet Analyse > Comptabilité.
-        Désactive les menus parentaux des modules tiers qui créent des doublons
-        quand accounting_pdf_reports, base_accounting_kit et om_account_daily_reports
-        sont tous installés en même temps que dynamic_accounts_report.
+        Note: Les désactivations de menus des autres modules (base_accounting_kit, etc.)
+        ont été retirées car elles font planter le serveur si ces modules ne sont pas installés.
     -->
-
-    <!-- ===== accounting_pdf_reports : désactiver ses menus parentaux ===== -->
-    <record id="accounting_pdf_reports.menu_finance_legal_statement" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="accounting_pdf_reports.menu_finance_partner_reports" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="accounting_pdf_reports.menu_finance_audit_reports" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
-    <!-- ===== base_accounting_kit : désactiver ses menus parentaux ===== -->
-    <record id="base_accounting_kit.account_reports_generic_statements" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="base_accounting_kit.account_reports_daily_reports" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="base_accounting_kit.account_reports_partner" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="base_accounting_kit.account_reports_audit" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
-    <!-- ===== om_account_daily_reports : désactiver son menu parental ===== -->
-    <record id="om_account_daily_reports.menu_finance_daily_reports" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
 
     <!-- ===== Repositionner Dynamic Financial Reports en 1ère position ===== -->
     <record id="dynamic_report_accounting" model="ir.ui.menu">
         <field name="sequence" eval="5"/>
     </record>
-
 </odoo>
