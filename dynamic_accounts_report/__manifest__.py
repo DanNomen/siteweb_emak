@@ -36,6 +36,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/accounting_report_views.xml',
+        'views/menu_cleanup.xml',
         'report/trial_balance.xml',
         'report/general_ledger_templates.xml',
         'report/financial_report_template.xml',

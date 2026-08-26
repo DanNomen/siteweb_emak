@@ -212,12 +212,9 @@
                                             <!-- Account Header Row -->
                                             <tr class="o_heading" style="border-bottom: 1px solid #dee2e6; background: #f8f9fa;">
                                                 <th style="padding: 6px 4px;">
-                                                    <div data-bs-toggle="collapse"
-                                                         t-attf-href="#account-{{i}}"
-                                                         aria-expanded="false"
-                                                         t-attf-aria-controls="account-{{i}}"
-                                                         class="ms-3 collapsed"
-                                                         style="cursor: pointer;">
+                                                    <div class="ms-3"
+                                                         style="cursor: pointer;"
+                                                         t-on-click="(ev) => this.expandAccount(ev, account)">
                                                         <a class="btn header o_heading" style="padding: 2px 4px; font-weight: 600; font-size: 0.9rem;">
                                                             <span class="toggle-icon">
                                                                 <i class="fa fa-caret-down"/>
@@ -268,54 +265,62 @@
                                             </tr>
 
                                             <!-- Detail Lines -->
-                                            <t t-foreach="state.account_data[account]"
-                                               t-as="valuelist"
-                                               t-key="valuelist_index">
-                                                <tr class="border-bottom border-gainsboro collapse"
-                                                    t-attf-id="account-{{i}}"
-                                                    style="border-bottom: 1px solid #f0f0f0;">
-                                                    <th colspan="6" style="padding: 5px 4px 5px 28px;">
-                                                        <span style="gap: 12px; display: flex; align-items: center;">
-                                                            <t t-esc="valuelist[0]['move_name']"/>
-                                                            <a type="button"
-                                                               class="dropdown-toggle"
-                                                               data-bs-toggle="dropdown"
-                                                               style="font-size: 0.75rem; opacity: 0.6;">
-                                                            </a>
-                                                            <div class="dropdown-menu journals">
-                                                                <button t-att-data-id="valuelist[0]['move_id'][0]"
-                                                                        type="button"
-                                                                        t-on-click="gotoJournalEntry"
-                                                                        style="border: none; background-color: inherit; padding: 4px 8px; font-size: 14px; cursor: pointer; display: inline-block;">
-                                                                    Voir l'écriture
-                                                                </button>
-                                                            </div>
-                                                        </span>
+                                            <t t-if="state.account_total[account]._loading">
+                                                <tr class="collapse" t-attf-id="account-{{i}}">
+                                                    <th colspan="9" style="text-align: center; padding: 10px; font-weight: normal; font-size: 0.85rem;">
+                                                        <i class="fa fa-spinner fa-spin"/> Chargement...
                                                     </th>
-                                                    <th style="padding: 5px 6px; white-space: nowrap; font-size: 0.85rem;">
-                                                        <t t-esc="valuelist[0]['date']"/>
-                                                    </th>
-                                                    <th style="padding: 5px 6px; font-size: 0.85rem;">
-                                                        <t t-esc="valuelist[0]['name']"/>
-                                                    </th>
-                                                    <th style="padding: 5px 6px; font-size: 0.85rem;">
-                                                        <t t-if="valuelist[0]['partner_id']"
-                                                           t-esc="valuelist[0]['partner_id'][1]"/>
-                                                    </th>
-                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
-                                                        <t t-if="valuelist[0]['debit']"
-                                                           t-esc="state.account_data.account_totals[account]['currency_id']"/>
-                                                        <t t-if="valuelist[0]['debit']"
-                                                           t-esc="valuelist[0]['debit']"/>
-                                                    </th>
-                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
-                                                        <t t-if="valuelist[0]['credit']"
-                                                           t-esc="state.account_data.account_totals[account]['currency_id']"/>
-                                                        <t t-if="valuelist[0]['credit']"
-                                                           t-esc="valuelist[0]['credit']"/>
-                                                    </th>
-                                                    <th style="padding: 5px 6px;"/>
                                                 </tr>
+                                            </t>
+                                            <t t-if="state.account_total[account]._lines_loaded and state.account_total[account]._expanded">
+                                                <t t-foreach="state.account_total[account]._lines"
+                                                   t-as="line"
+                                                   t-key="line_index">
+                                                    <tr class="border-bottom border-gainsboro"
+                                                        style="border-bottom: 1px solid #f0f0f0;">
+                                                        <th colspan="6" style="padding: 5px 4px 5px 28px;">
+                                                            <span style="gap: 12px; display: flex; align-items: center;">
+                                                                <t t-esc="line['move_name']"/>
+                                                                <a type="button"
+                                                                   class="dropdown-toggle"
+                                                                   data-bs-toggle="dropdown"
+                                                                   style="font-size: 0.75rem; opacity: 0.6;">
+                                                                </a>
+                                                                <div class="dropdown-menu journals">
+                                                                    <button t-att-data-id="line['move_id'][0]"
+                                                                            type="button"
+                                                                            t-on-click="gotoJournalEntry"
+                                                                            style="border: none; background-color: inherit; padding: 4px 8px; font-size: 14px; cursor: pointer; display: inline-block;">
+                                                                        Voir l'écriture
+                                                                    </button>
+                                                                </div>
+                                                            </span>
+                                                        </th>
+                                                        <th style="padding: 5px 6px; white-space: nowrap; font-size: 0.85rem;">
+                                                            <t t-esc="line['date']"/>
+                                                        </th>
+                                                        <th style="padding: 5px 6px; font-size: 0.85rem;">
+                                                            <t t-esc="line['name']"/>
+                                                        </th>
+                                                        <th style="padding: 5px 6px; font-size: 0.85rem;">
+                                                            <t t-if="line['partner_id']"
+                                                               t-esc="line['partner_id'][1]"/>
+                                                        </th>
+                                                        <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                            <t t-if="line['debit']"
+                                                               t-esc="state.account_total[account]['currency_id']"/>
+                                                            <t t-if="line['debit']"
+                                                               t-esc="line['debit']"/>
+                                                        </th>
+                                                        <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                            <t t-if="line['credit']"
+                                                               t-esc="state.account_total[account]['currency_id']"/>
+                                                            <t t-if="line['credit']"
+                                                               t-esc="line['credit']"/>
+                                                        </th>
+                                                        <th style="padding: 5px 6px;"/>
+                                                    </tr>
+                                                </t>
                                             </t>
 
                                         </t>

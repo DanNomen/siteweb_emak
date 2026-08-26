@@ -53,56 +53,84 @@ class GeneralLedger extends owl.Component {
         });
     }
     async load_data() {
-        let account_list = []
-        let account_totals = ''
-        let totalDebitSum = 0;
-        let totalCreditSum = 0;
-        let currency;
         var self = this;
         var action_title = self.props.action.display_name;
         try {
-            var self = this;
-            let filtered_data = await this.orm.call("account.general.ledger", "get_filter_values", [self.state.selected_journal_list, self.state.date_range, self.state.options, self.state.selected_analytic_list,self.state.method]);
-            self.state.journals = filtered_data['journal_ids']
-            self.state.analytics = filtered_data['analytic_ids']
-            account_totals = filtered_data['account_totals']
-            self.state.account_data = await self.orm.call("account.general.ledger", "view_report", [self.wizard_id, action_title,]);
-            for (const [index, value] of Object.entries(self.state.account_data)){
-                if (index !== 'account_totals' && index !== 'journal_ids' && index !== 'analytic_ids') {
-                    account_list.push(index)
-                } else if (index == 'journal_ids') {
-                    self.state.journals = value
-                }
-                else if (index == 'analytic_ids') {
-                    self.state.analytics = value
-                }
-                else {
-                    account_totals = value
-                    Object.values(account_totals).forEach(account_list => {
-                        currency = account_list.currency_id
-                        totalDebitSum += account_list.total_debit || 0;
-                        account_list.total_debit_display = this.formatNumberWithSeparators(account_list.total_debit || 0);
-                        totalCreditSum += account_list.total_credit || 0;
-                        account_list.total_credit_display = this.formatNumberWithSeparators(account_list.total_credit || 0);
-                        let balance = account_list.total_debit - account_list.total_credit;
-                        account_list.balance_display = this.formatNumberWithSeparators(balance);
-                    });
-                }
-            }
-            self.state.account = account_list
-            self.state.account_list = account_list
-            self.state.account_data_list = self.state.account_data
-            self.state.account_total_list = account_totals
-            self.state.account_total = account_totals
-            self.state.currency = currency
-            self.state.total_debit = totalDebitSum.toFixed(2)
-            self.state.total_debit_display = this.formatNumberWithSeparators(self.state.total_debit)
-            self.state.total_credit = totalCreditSum.toFixed(2)
-            self.state.total_credit_display = this.formatNumberWithSeparators(self.state.total_credit)
-            self.state.title = action_title
+            // Only fetch account totals (fast read_group query), NO line details
+            const data = await this.orm.call(
+                "account.general.ledger", "view_report", [self.wizard_id, action_title]
+            );
+            self._processAccountData(data);
+            self.state.title = action_title;
+        } catch (el) {
+            console.error('GeneralLedger load_data error:', el);
         }
-        catch (el) {
-            window.location.href;
+    }
+
+    _processAccountData(data) {
+        /** Shared helper to process account data for both load_data and applyFilter */
+        const account_totals = data['account_totals'] || {};
+        let totalDebitSum = 0;
+        let totalCreditSum = 0;
+        let currency = null;
+
+        Object.values(account_totals).forEach(acc => {
+            currency = acc.currency_id || currency;
+            totalDebitSum += acc.total_debit || 0;
+            acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
+            totalCreditSum += acc.total_credit || 0;
+            acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
+            acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
+            acc._lines_loaded = false; // lazy load flag
+            acc._lines = [];          // will be populated on expand
+        });
+
+        const account_list = Object.keys(account_totals);
+        this.state.account = account_list;
+        this.state.account_list = account_list;
+        this.state.account_data = data;
+        this.state.account_data_list = data;
+        this.state.account_total = account_totals;
+        this.state.account_total_list = account_totals;
+        if (data['journal_ids']) { this.state.journals = data['journal_ids']; }
+        if (data['analytic_ids']) { this.state.analytics = data['analytic_ids']; }
+        if (currency) { this.state.currency = currency; }
+        this.state.total_debit = totalDebitSum.toFixed(2);
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
+        this.state.total_credit = totalCreditSum.toFixed(2);
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
+    }
+
+    async expandAccount(ev, accountName) {
+        /** Lazy-load move lines for a single account when user expands it */
+        ev.preventDefault();
+        const acc = this.state.account_total[accountName];
+        if (!acc) return;
+
+        // Toggle collapse if already loaded
+        if (acc._lines_loaded) {
+            acc._expanded = !acc._expanded;
+            return;
+        }
+
+        acc._loading = true;
+        try {
+            const lines = await this.orm.call(
+                "account.general.ledger", "get_account_lines",
+                [acc.account_id,
+                 this.state.selected_journal_list || [],
+                 this.state.date_range || null,
+                 this.state.options || null,
+                 this.state.selected_analytic_list || [],
+                 this.state.method || null]
+            );
+            acc._lines = lines;
+            acc._lines_loaded = true;
+            acc._expanded = true;
+        } catch (e) {
+            console.error('Failed to load lines for', accountName, e);
+        } finally {
+            acc._loading = false;
         }
     }
     async printPdf(ev) {
@@ -437,8 +465,11 @@ class GeneralLedger extends owl.Component {
         return filters
     }
 }
-GeneralLedger.defaultProps = {
-    resIds: [],
+GeneralLedger.props = {
+    action: { type: Object },
+    actionStack: { type: Array, optional: true },
+    '*': true,
 };
+GeneralLedger.defaultProps = { resIds: [] };
 GeneralLedger.template = 'gl_template_new';
 actionRegistry.add("gen_l", GeneralLedger);

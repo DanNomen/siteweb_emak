@@ -148,49 +148,48 @@
                                             </strong>
                                         </th>
                                     </tr>
-                                    <t t-foreach="account_data[account]"
-                                       t-as="valuelist"
-                                       t-key="valuelist_index">
-                                        <tr class="border-bottom">
-                                            <th colspan="6" style="width:10%">
-                                                <span>
-                                                    <t t-esc="valuelist[0]['move_name']"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%">
-                                                <span>
-                                                    <t t-esc="valuelist[0]['date']"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%">
-                                                <span>
-                                                    <t t-esc="valuelist[0]['name']"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%">
-                                                <span>
-                                                    <t t-if="valuelist[0]['partner_id']"
-                                                       t-esc="valuelist[0]['partner_id'][1]"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%">
-                                                <span>
-                                                    <t t-if="valuelist[0]['debit']"
-                                                       t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="valuelist[0]['debit']"
-                                                       t-esc="valuelist[0]['debit']"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%">
-                                                <span>
-                                                    <t t-if="valuelist[0]['credit']"
-                                                       t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="valuelist[0]['credit']"
-                                                       t-esc="valuelist[0]['credit']"/>
-                                                </span>
-                                            </th>
-                                            <th style="width:10%"/>
-                                        </tr>
+                                    <t t-if="account_data.get(account)">
+                                        <t t-foreach="account_data[account]"
+                                           t-as="valuelist"
+                                           t-key="valuelist_index">
+                                            <t t-set="move_data" t-value="valuelist[0] if isinstance(valuelist, list) else valuelist"/>
+                                            <tr class="border-bottom">
+                                                <th colspan="6" style="width:10%">
+                                                    <span>
+                                                        <t t-esc="move_data.get('move_name', '')"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10%">
+                                                    <span>
+                                                        <t t-esc="move_data.get('date', '')"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10%">
+                                                    <span>
+                                                        <t t-esc="move_data.get('name', '')"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10%">
+                                                    <span>
+                                                        <t t-if="move_data.get('partner_id')"
+                                                           t-esc="move_data['partner_id'][1]"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10%">
+                                                    <span>
+                                                        <t t-if="move_data.get('debit')"
+                                                           t-esc="move_data['debit']"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10%">
+                                                    <span>
+                                                        <t t-if="move_data.get('credit')"
+                                                           t-esc="move_data['credit']"/>
+                                                    </span>
+                                                </th>
+                                                <th style="width:10% border:0px solid transparent;"/>
+                                            </tr>
+                                        </t>
                                     </t>
                                     </t>
                                 </tbody>
