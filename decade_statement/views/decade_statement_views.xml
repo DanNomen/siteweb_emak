@@ -82,6 +82,9 @@
                     </div>
                     <group>
                         <group string="Période">
+                            <field name="month_ref"
+                                   string="Mois de référence"
+                                   options="{'datepicker': {'minViewMode': 'months', 'format': 'MM/YYYY'}}"/>
                             <field name="decade_number"
                                    widget="selection"
                                    string="Numéro de Décade"/>

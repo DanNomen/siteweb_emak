@@ -32,6 +32,11 @@ class DecadeStatement(models.Model):
         readonly=True,
         store=True,
     )
+    month_ref = fields.Date(
+        string='Mois de référence',
+        default=lambda self: fields.Date.today().replace(day=1),
+        help='Premier jour du mois concerné. Changez ce champ pour générer une décade sur un mois passé.',
+    )
     decade_number = fields.Selection(
         selection=[
             ('1', 'Décade 1  (1 → 10)'),
@@ -116,24 +121,24 @@ class DecadeStatement(models.Model):
         else:
             return ref_date.replace(day=21), ref_date.replace(day=last_day), 3
 
-    @api.onchange('decade_number')
+    @api.onchange('decade_number', 'month_ref')
     def _onchange_decade_number(self):
-        """Auto-remplit date_start et date_end selon la décade choisie (mois courant)."""
-        if not self.decade_number:
+        """Auto-remplit date_start et date_end selon la décade et le mois choisis."""
+        if not self.decade_number or not self.month_ref:
             return
-        today = fields.Date.today()
-        year = today.year
-        month = today.month
+        ref = self.month_ref
+        year = ref.year
+        month = ref.month
         last_day = calendar.monthrange(year, month)[1]
         if self.decade_number == '1':
-            self.date_start = today.replace(day=1)
-            self.date_end = today.replace(day=10)
+            self.date_start = ref.replace(day=1)
+            self.date_end = ref.replace(day=10)
         elif self.decade_number == '2':
-            self.date_start = today.replace(day=11)
-            self.date_end = today.replace(day=20)
+            self.date_start = ref.replace(day=11)
+            self.date_end = ref.replace(day=20)
         elif self.decade_number == '3':
-            self.date_start = today.replace(day=21)
-            self.date_end = today.replace(day=last_day)
+            self.date_start = ref.replace(day=21)
+            self.date_end = ref.replace(day=last_day)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -195,8 +200,8 @@ class DecadeStatement(models.Model):
             'params': {
                 'title': _('Génération réussie'),
                 'message': _(
-                    '%d client(s) trouvé(s) avec %d facture(s) au total.'
-                ) % (len(partners), len(all_invoices)),
+                    '%d client(s) trouvé(s) avec %d facture(s) du %s au %s.'
+                ) % (len(partners), len(invoices), self.date_start, self.date_end),
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.client', 'tag': 'reload'},
@@ -279,6 +284,7 @@ class DecadeStatement(models.Model):
         statement = self.create({
             'date_start': date_start,
             'date_end': date_end,
+            'month_ref': date_start.replace(day=1),
             'decade_number': decade_number_str,
             'state': 'draft',
         })
