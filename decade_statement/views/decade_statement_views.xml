@@ -84,17 +84,21 @@
                         <group string="Période">
                             <field name="month_ref"
                                    string="Mois de référence"
+                                   required="1"
                                    options="{'datepicker': {'minViewMode': 'months', 'format': 'MM/YYYY'}}"/>
                             <field name="decade_number"
                                    widget="selection"
+                                   required="1"
                                    string="Numéro de Décade"/>
                             <field name="date_start"
                                    string="Date début"
                                    readonly="1"
+                                   force_save="1"
                                    invisible="not decade_number"/>
                             <field name="date_end"
                                    string="Date fin"
                                    readonly="1"
+                                   force_save="1"
                                    invisible="not decade_number"/>
                         </group>
                         <group string="Résumé">
