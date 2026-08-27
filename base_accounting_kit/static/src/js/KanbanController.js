@@ -93,8 +93,7 @@ class CustomKanbanController extends KanbanController {
         }
     }
 }
-CustomKanbanController.components = {
-    ...CustomKanbanController.components, View }
+CustomKanbanController.components = Object.assign({}, CustomKanbanController.components, { View });
 CustomKanbanController.template = "base_accounting_kit.CustomKanbanView";
 
 export class BankCustomKanbanRenderer extends KanbanRenderer {
@@ -112,18 +111,16 @@ export class BankReconcileKanbanRecord extends KanbanRecord {
 }
 BankReconcileKanbanRecord.template = "base_accounting_kit.BankReconcileKanbanRecord";
 
-BankCustomKanbanRenderer.components = {
-    ...KanbanRenderer.components,
+BankCustomKanbanRenderer.components = Object.assign({}, KanbanRenderer.components, {
     KanbanRecord: BankReconcileKanbanRecord,
-}
+});
 BankCustomKanbanRenderer.template = "base_accounting_kit.BankRecKanbanRenderer";
 
-export const customKanbanView = {
-    ...kanbanView,
+export const customKanbanView = Object.assign({}, kanbanView, {
     Controller: CustomKanbanController,
     Renderer: BankCustomKanbanRenderer,
     searchMenuTypes: ["filter"],
-};
+});
 
 // Register it to the views registry
 registry.category("views").add("custom_kanban", customKanbanView);

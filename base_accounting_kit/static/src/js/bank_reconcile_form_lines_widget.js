@@ -12,7 +12,7 @@ export class BankReconcileFormLinesWidget extends Component {
         this.orm = useService("orm")
     }
     range(n){
-        return[...Array(Math.max(n,0)).keys()];
+        return Array.from(Array(Math.max(n,0)).keys());
     }
     get record(){
         return this.props.record;
@@ -69,7 +69,7 @@ export class BankReconcileFormLinesWidget extends Component {
             columns.push(["taxes", _t("Taxes")]);
         }
         columns.push(["debit", _t("Debit")], ["credit", _t("Credit")], ["__trash", ""]);
-        return {...data,columns:columns}
+        return Object.assign({}, data, {columns:columns})
     }
 }
 BankReconcileFormLinesWidget.template = 'base_accounting_kit.bank_reconcile_widget_lines_widget';

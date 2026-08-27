@@ -8,3 +8,4 @@ access_account_partner_ledger,access.account.partner.ledger,model_account_partne
 access_age_receivable_report,access.age.receivable.report,model_age_receivable_report,account.group_account_user,1,1,1,1
 access_age_payable_report,access.age.payable.report,model_age_payable_report,account.group_account_user,1,1,1,1
 access_tax_report,access.tax.report,model_tax_report,account.group_account_user,1,1,1,1
+

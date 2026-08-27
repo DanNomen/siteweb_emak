@@ -692,40 +692,6 @@ class PartnerLedger extends owl.Component {
         }
     }
 
-    formatNumberWithSeparators(partner_data.total_debit || 0);
-                    partner_data.total_credit_display = this.formatNumberWithSeparators(partner_data.total_credit || 0);
-                });
-            }
-        }
-
-        // Format entries
-        Object.entries(filtered_data).forEach(([key, value]) => {
-            if (key !== 'partner_totals') {
-                value.forEach(entry => {
-                    entry[0].debit_display = this.formatNumberWithSeparators(entry[0].debit || 0);
-                    entry[0].credit_display = this.formatNumberWithSeparators(entry[0].credit || 0);
-                    entry[0].amount_currency_display = this.formatNumberWithSeparators(entry[0].amount_currency || 0);
-                });
-            }
-        });
-
-        // Update state
-        this.state.partners = partner_list;
-        this.state.data = filtered_data;
-        this.state.total = partner_totals;
-        this.state.total_debit = totalDebitSum;
-        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
-        this.state.total_credit = totalCreditSum;
-        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
-
-        if (this.unfoldButton.el && this.unfoldButton.el.classList.contains("selected-filter")) {
-            this.unfoldButton.el.classList.remove("selected-filter");
-        }
-    } catch (error) {
-        console.error('Error applying filters:', error);
-    }
-    }
-
 
 
     getDomain() {

@@ -265,5 +265,5 @@ class AgedPayable extends owl.Component {
 }
 AgedPayable.template = 'age_p_template_new';
 
-AgedPayableReport.props = ['*'];
+AgedPayable.props = ['*'];
 actionRegistry.add("age_p", AgedPayable);

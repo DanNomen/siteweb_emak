@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_decade_statement_action" model="ir.actions.report">
+        <field name="name">Relevé Décadaire</field>
+        <field name="model">decade.statement.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">decade_statement.report_decade_statement_template</field>
+        <field name="report_file">decade_statement.report_decade_statement_template</field>
+        <field name="binding_model_id" ref="decade_statement.model_decade_statement_line"/>
+        <field name="print_report_name">'Relevé_%s' % (object.partner_id.name)</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_decade_statement_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <t t-set="factures" t-value="doc.invoice_ids.sorted(key=lambda i: i.invoice_date or '')"/>
+                    <t t-set="today" t-value="datetime.datetime.now().date()"/>
+                    <div class="page">
+                        <!-- Header -->
+                        <div style="padding: 20px; margin-bottom: 15px; background-color: #f9fff9; border-radius: 8px;">
+                            <div class="text-center" style="margin-bottom: 10px;">
+                                <h2 style="color: #6CB14F; margin: 0; font-weight: bold; font-size: 24px;">
+                                    RELEVÉ DE LA DÉCADE
+                                </h2>
+                                <p style="margin: 5px 0 0 0; font-size: 13px; color: #555;">
+                                    Période :
+                                    <strong style="color: #6CB14F;">
+                                        <t t-esc="doc.statement_id.date_start.strftime('%d/%m/%Y')"/> - <t t-esc="doc.statement_id.date_end.strftime('%d/%m/%Y')"/>
+                                    </strong>
+                                </p>
+                            </div>
+
+                            <hr style="margin: 12px 0; border: none; border-top: 2px solid #6CB14F; opacity: 0.3;"/>
+
+                            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                                <div style="flex: 1;">
+                                    <strong style="color: #6CB14F;">Client :</strong><br/>
+                                    <span style="font-size: 14px; font-weight: bold;"><t t-esc="doc.partner_id.name"/></span>
+                                </div>
+
+                                <div style="flex: 1; text-align: right;">
+                                    <strong style="color: #6CB14F;">Date d'édition :</strong><br/>
+                                    <span style="font-size: 14px; font-weight: bold;">
+                                        <t t-esc="datetime.datetime.now().strftime('%d/%m/%Y %H:%M')"/>
+                                    </span><br/>
+                                    <strong style="color: #6CB14F;">Imprimé par :</strong><br/>
+                                    <span style="font-size: 14px; font-weight: bold;">
+                                        <t t-esc="doc.env.user.name"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lettre -->
+                        <div style="padding: 14px 18px; border: 1px solid #e6e6e6; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="font-weight: bold; margin-bottom: 6px; color: #333;">
+                                Relevé N° <t t-esc="doc.statement_id.name"/>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                Cher/Chère <strong><t t-esc="doc.partner_id.name"/></strong>,
+                            </div>
+                            <div style="font-size: 12.5px; color: #444; line-height: 1.4;">
+                                Veuillez trouver ci-dessous le détail de votre relevé pour cette décade. Ce document récapitule vos factures récentes ainsi que tout solde impayé antérieur.<br/>
+                                Si votre paiement a été effectué récemment, veuillez ignorer ce message. N'hésitez pas à contacter notre service comptable pour toute clarification.<br/>
+                                Cordialement
+                            </div>
+                        </div>
+
+                        <!-- Totaux -->
+                        <t t-set="total_facture" t-value="sum(f.amount_total for f in factures if f.move_type == 'out_invoice') - sum(f.amount_total for f in factures if f.move_type == 'out_refund')"/>
+                        <t t-set="total_du" t-value="sum(f.amount_residual_signed for f in factures)"/>
+                        <t t-set="total_paye" t-value="total_facture - total_du"/>
+
+                        <div style="margin: 10px 0 6px 0; font-size: 13px;">
+                            <strong>Montant dû du client :</strong>
+                            <span style="font-size: 14px; font-weight: bold; color: #d9534f;">
+                                <t t-esc="'{:,.2f}'.format(total_du).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
+                            </span>
+                        </div>
+
+                        <!-- Tableau -->
+                        <table class="table table-sm table-bordered" style="width: 100%;">
+                            <thead style="background-color: #6CB14F; color: white;">
+                                <tr>
+                                    <th class="text-center">Facture N°</th>
+                                    <th class="text-center">Date facture</th>
+                                    <th class="text-center">Date échéance</th>
+                                    <th class="text-center">Montant facturé</th>
+                                    <th class="text-center">Montant réglé</th>
+                                    <th class="text-center">Montant dû</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="factures" t-as="facture">
+                                    <t t-set="is_overdue"
+                                       t-value="bool(facture.invoice_date_due and facture.invoice_date_due &lt; doc.statement_id.date_start)"/>
+                                    <tr t-att-style="('background-color:#ffe6e6;color:#b30000;font-weight:bold;' if is_overdue else '')">
+                                        <td class="text-center"><t t-esc="facture.name"/></td>
+                                        <td class="text-center"><t t-esc="facture.invoice_date and facture.invoice_date.strftime('%d/%m/%Y') or ''"/></td>
+                                        <td class="text-center"
+                                            t-att-style="('color:red;font-weight:bold;' if facture.invoice_date_due and facture.invoice_date_due &lt; today else '')">
+                                            
+                                            <t t-esc="facture.invoice_date_due and facture.invoice_date_due.strftime('%d/%m/%Y') or ''"/>
+                                        </td>
+                                        
+                                        <t t-set="sign" t-value="1 if facture.move_type == 'out_invoice' else -1"/>
+                                        <t t-set="f_amount_total" t-value="facture.amount_total * sign"/>
+                                        <t t-set="f_amount_residual" t-value="facture.amount_residual_signed"/>
+                                        <t t-set="f_amount_paid" t-value="f_amount_total - f_amount_residual"/>
+
+                                        <td class="text-end"><t t-esc="'{:,.2f}'.format(f_amount_total).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/></td>
+                                        <td class="text-end"><t t-esc="'{:,.2f}'.format(f_amount_paid).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/></td>
+                                        <td class="text-end">
+                                            <t t-esc="'{:,.2f}'.format(f_amount_residual).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Logique facture antérieure -->
+                                    <t t-set="origin_statement" t-value="doc.get_invoice_origin_statement(facture)"/>
+                                    <t t-if="origin_statement">
+                                        <tr>
+                                            <td colspan="6" class="text-center" style="font-size: 11px; font-style: italic; color: #d9534f; background-color: #fdf5f5; border-top: none;">
+                                                ⚠️ Ce montant appartient au relevé : <strong><t t-esc="origin_statement"/></strong>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background-color: #f0f8ee; font-weight: bold; border-top: 2px solid #6CB14F;">
+                                    <td colspan="3" class="text-end" style="padding: 8px; font-size: 13px; color: #333;">
+                                        TOTAL
+                                    </td>
+                                    <td class="text-end" style="padding: 8px; font-size: 13px; color: #333;">
+                                        <t t-esc="'{:,.2f}'.format(total_facture).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
+                                    </td>
+                                    <td class="text-end" style="padding: 8px; font-size: 13px; color: #333;">
+                                        <t t-esc="'{:,.2f}'.format(total_paye).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
+                                    </td>
+                                    <td class="text-end" style="padding: 8px; font-size: 13px; font-weight: bold; color: #d9534f;">
+                                        <t t-esc="'{:,.2f}'.format(total_du).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

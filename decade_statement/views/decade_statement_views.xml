@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ====================================================================
+         ACTIONS
+         ==================================================================== -->
+
+    <!-- Action principale : liste des batches décadaires -->
+    <record id="action_decade_statement_list" model="ir.actions.act_window">
+        <field name="name">Relevés par Décade</field>
+        <field name="res_model">decade.statement</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucun relevé décadaire pour l'instant.
+            </p>
+            <p>
+                Les relevés sont générés automatiquement tous les 10 jours.
+                Vous pouvez aussi en créer un manuellement.
+            </p>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         VUE LISTE — decade.statement
+         ==================================================================== -->
+    <record id="view_decade_statement_list" model="ir.ui.view">
+        <field name="name">decade.statement.list</field>
+        <field name="model">decade.statement</field>
+        <field name="arch" type="xml">
+            <list string="Relevés par Décade" decoration-success="state == 'sent'"
+                  decoration-info="state == 'ready'" decoration-muted="state == 'draft'">
+                <field name="name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="decade_number" string="Décade"/>
+                <field name="client_count" string="Nb Clients"/>
+                <field name="total_invoices" string="Nb Factures"/>
+                <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sent'"
+                       decoration-info="state == 'ready'"
+                       decoration-warning="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         VUE FORMULAIRE — decade.statement
+         ==================================================================== -->
+    <record id="view_decade_statement_form" model="ir.ui.view">
+        <field name="name">decade.statement.form</field>
+        <field name="model">decade.statement</field>
+        <field name="arch" type="xml">
+            <form string="Relevé par Décade">
+                <header>
+                    <button name="action_generate_lines"
+                            string="Générer les lignes clients"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_send_all_emails"
+                            string="Envoyer Tous les Emails"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state == 'draft'"
+                            confirm="Envoyer le relevé par email à tous les clients qui n'ont pas encore reçu d'email ?"/>
+                    <button name="action_reset_to_draft"
+                            string="Remettre en Brouillon"
+                            type="object"
+                            invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,ready,sent"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Période">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="decade_number" string="Numéro de Décade"/>
+                        </group>
+                        <group string="Résumé">
+                            <field name="client_count" string="Nombre de clients"/>
+                            <field name="total_invoices" string="Total factures"/>
+                            <field name="total_amount" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id"/>
+                        </group>
+                    </group>
+
+                    <!-- Lignes clients -->
+                    <notebook>
+                        <page string="Clients et Factures" name="clients">
+                            <field name="line_ids" nolabel="1">
+                                <list string="Clients"
+                                      decoration-success="email_sent == True"
+                                      decoration-muted="invoice_count == 0">
+                                    <field name="partner_id" string="Client"/>
+                                    <field name="partner_email" string="Email"/>
+                                    <field name="invoice_count" string="Nb Factures"/>
+                                    <field name="total_amount" widget="monetary"
+                                           options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="email_sent" string="Email Envoyé" widget="boolean"/>
+                                    <field name="email_sent_date" string="Date Envoi"/>
+                                    <button name="action_view_invoices"
+                                            string="Voir Factures"
+                                            type="object"
+                                            icon="fa-list"
+                                            title="Voir les factures de ce client"/>
+                                    <button name="%(decade_statement.report_decade_statement_action)d"
+                                            string="Imprimer"
+                                            type="action"
+                                            icon="fa-print"
+                                            title="Imprimer le PDF"/>
+                                    <button name="action_send_email"
+                                            string="Envoyer Email"
+                                            type="object"
+                                            icon="fa-envelope"
+                                            title="Envoyer le relevé par email"
+                                            invisible="email_sent == True"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         VUE RECHERCHE — decade.statement
+         ==================================================================== -->
+    <record id="view_decade_statement_search" model="ir.ui.view">
+        <field name="name">decade.statement.search</field>
+        <field name="model">decade.statement</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher un relevé">
+                <field name="name" string="Nom"/>
+                <field name="date_start" string="Date début"/>
+                <field name="date_end" string="Date fin"/>
+                <filter string="Brouillon" name="filter_draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter string="Prêt" name="filter_ready"
+                        domain="[('state', '=', 'ready')]"/>
+                <filter string="Envoyé" name="filter_sent"
+                        domain="[('state', '=', 'sent')]"/>
+                <separator/>
+                <filter string="Ce mois-ci" name="filter_this_month"
+                        domain="[('date_start', '&gt;=', (context_today()).strftime('%Y-%m-01'))]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Décade N°" name="group_decade" context="{'group_by': 'decade_number'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         MENU — dans Facturation
+         ==================================================================== -->
+    <menuitem id="menu_decade_statement_root"
+              name="Relevés par Décade"
+              action="action_decade_statement_list"
+              parent="account.menu_finance"
+              sequence="500"/>
+
+</odoo>

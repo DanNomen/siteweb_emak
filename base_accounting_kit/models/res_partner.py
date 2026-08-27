@@ -24,6 +24,7 @@ from odoo import api, fields, models, _
 import base64
 import io
 import json
+# pyrefly: ignore [missing-import]
 import xlsxwriter
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.json import json_default

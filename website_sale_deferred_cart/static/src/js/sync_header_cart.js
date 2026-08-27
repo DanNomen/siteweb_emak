@@ -49,7 +49,7 @@
 
     /**
      * Met à jour les éléments du header à partir d'un objet payload.
-     * Accepte le payload directement OU enveloppé dans { result: ... } (JSON-RPC 2.0).
+     * Accepte le payload directement OU enveloppé dans { result: etc } (JSON-RPC 2.0).
      */
     function updateHeaderBadge(data) {
         if (!data || typeof data !== "object") { return; }
@@ -180,4 +180,4 @@
 
     console.debug("[EmakHC] sync_header_cart.js charg\u00e9 (fetch + XHR + MutationObserver + jQuery).");
 })();
-
+

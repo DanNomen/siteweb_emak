@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="email_template_decade_statement" model="mail.template">
+        <field name="name">Relevé par Décade - Client</field>
+        <field name="model_id" ref="decade_statement.model_decade_statement_line"/>
+        <field name="subject">Relevé de factures — {{ object.statement_id.name }} — {{ object.partner_id.name }}</field>
+        <field name="email_to">{{ object.partner_id.email }}</field>
+        <field name="email_from">{{ object.statement_id.company_id.email or user.email }}</field>
+        <field name="report_template_ids" eval="[(4, ref('decade_statement.report_decade_statement_action'))]"/>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; margin: 0; padding: 20px;">
+    <p>Bonjour <strong><t t-out="object.partner_id.name or ''"/></strong>,</p>
+    <p>
+        Veuillez trouver ci-dessous votre relevé de factures pour la période du
+        <strong><t t-out="str(object.statement_id.date_start)"/></strong>
+        au
+        <strong><t t-out="str(object.statement_id.date_end)"/></strong>.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+        <thead>
+            <tr style="background-color:#4A90D9;color:white;">
+                <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">N° Facture</th>
+                <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">Date</th>
+                <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">État</th>
+                <th style="padding:8px 12px;text-align:right;border:1px solid #ddd;">Montant TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            <t t-foreach="object.invoice_ids" t-as="inv">
+                <tr>
+                    <td style="padding:7px 12px;border:1px solid #ddd;"><t t-out="inv.name or '—'"/></td>
+                    <td style="padding:7px 12px;border:1px solid #ddd;"><t t-out="str(inv.invoice_date) if inv.invoice_date else '—'"/></td>
+                    <td style="padding:7px 12px;border:1px solid #ddd;">
+                        <t t-if="inv.state == 'posted'">Validée</t>
+                        <t t-elif="inv.state == 'draft'">Brouillon</t>
+                        <t t-else=""><t t-out="inv.state"/></t>
+                    </td>
+                    <td style="padding:7px 12px;text-align:right;border:1px solid #ddd;">
+                        <t t-out="'{:,.2f}'.format(inv.amount_total)"/>&#160;<t t-out="inv.currency_id.symbol or ''"/>
+                    </td>
+                </tr>
+            </t>
+        </tbody>
+        <tfoot>
+            <tr style="background-color:#4A90D9;color:white;font-weight:bold;">
+                <td colspan="3" style="padding:8px 12px;border:1px solid #ddd;">TOTAL</td>
+                <td style="padding:8px 12px;text-align:right;border:1px solid #ddd;">
+                    <t t-out="'{:,.2f}'.format(object.total_amount)"/>&#160;<t t-out="object.currency_id.symbol or ''"/>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    <p style="margin-top:20px;">Pour toute question, n'hésitez pas à nous contacter.</p>
+    <p>Cordialement,<br/><strong><t t-out="object.statement_id.company_id.name or ''"/></strong></p>
+</div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+</odoo>

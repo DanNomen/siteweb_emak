@@ -6,7 +6,7 @@ import { useState, useRef } from "@odoo/owl";
 import { useListener, useService} from "@web/core/utils/hooks";
 export class AccountMoveLineListController extends ListController {
      constructor() {
-        super(...arguments);
+        super.setup();
         this.resIdList = [];
      }
      setup(){
@@ -161,8 +161,8 @@ export class AccountMoveLineListController extends ListController {
 
 }
 AccountMoveLineListController.template = 'base_accounting_kit.AccountMoveLineListController';
-export const AccountMoveListView = {
-    ...listView,
+export const CustomListView = Object.assign({}, listView, {
     Controller: AccountMoveLineListController,
-};
-registry.category('views').add('account_move_line_list_controller', AccountMoveListView);
+    buttonTemplate: "base_accounting_kit.buttons",
+});
+registry.category('views').add('account_move_line_list_controller', CustomListView);

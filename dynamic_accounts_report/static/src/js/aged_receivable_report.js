@@ -264,5 +264,5 @@ AgedReceivable.defaultProps = {
     resIds: [],
 };
 
-AgedReceivableReport.props = ['*'];
+AgedReceivable.props = ['*'];
 actionRegistry.add("age_r", AgedReceivable);

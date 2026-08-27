@@ -112,7 +112,7 @@ class FormListView extends Component {
 FormListView.template = "base_accounting_kit.FormListView";
 FormListView.components = { View };
 FormListView.props = {
-    ...standardWidgetProps,
+    
     resModel: { type: String },
 };
 export const formListView = {

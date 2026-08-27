@@ -340,5 +340,5 @@ class CashBook extends owl.Component {
 }
 CashBook.template = 'csh_b_template_new';
 
-CashFlow.props = ['*'];
+CashBook.props = ['*'];
 actionRegistry.add("csh_b", CashBook);
