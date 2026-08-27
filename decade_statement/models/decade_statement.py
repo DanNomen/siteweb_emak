@@ -147,19 +147,18 @@ class DecadeStatement(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     def action_generate_lines(self):
-        """Génère les lignes clients — Option B :
-        - Factures de la période (date dans la décade)
-        - + Factures non-payées antérieures jamais incluses dans un relevé précédent
+        """Génère les lignes clients — filtre strict par période de la décade.
+        Seules les factures dont la date est dans [date_start, date_end] sont incluses.
         """
         self.ensure_one()
         if not self.date_start or not self.date_end:
-            raise UserError(_("Veuillez définir les dates de début et de fin."))
+            raise UserError(_("Veuillez d'abord choisir un Numéro de Décade."))
 
         # Supprimer les lignes existantes avant régénération
         self.line_ids.unlink()
 
-        # ── 1. Factures de la période courante (non-payées) ────────────────────
-        period_invoices = self.env['account.move'].search([
+        # Factures non-payées de la période courante uniquement
+        invoices = self.env['account.move'].search([
             ('move_type', 'in', ['out_invoice', 'out_refund']),
             ('state', 'in', ['posted', 'draft']),
             ('payment_state', 'not in', ['paid', 'reversed']),
@@ -169,39 +168,16 @@ class DecadeStatement(models.Model):
             ('company_id', '=', self.company_id.id),
         ])
 
-        # ── 2. IDs déjà inclus dans des relevés précédents (confirmés ou envoyés)
-        already_included_ids = set(
-            self.env['decade.statement.line'].search([
-                ('statement_id.date_start', '<', self.date_start),
-                ('statement_id.state', 'in', ['ready', 'sent']),
-                ('statement_id.company_id', '=', self.company_id.id),
-            ]).mapped('invoice_ids.id')
-        )
-
-        # ── 3. Factures antérieures non-payées, jamais incluses ────────────────
-        old_invoices = self.env['account.move'].search([
-            ('move_type', 'in', ['out_invoice', 'out_refund']),
-            ('state', 'in', ['posted', 'draft']),
-            ('payment_state', 'not in', ['paid', 'reversed']),
-            ('invoice_date', '<', self.date_start),
-            ('partner_id', '!=', False),
-            ('company_id', '=', self.company_id.id),
-        ]).filtered(lambda inv: inv.id not in already_included_ids)
-
-        # ── 4. Union des deux ensembles ────────────────────────────────────────
-        all_invoices = period_invoices | old_invoices
-
-        if not all_invoices:
+        if not invoices:
             raise UserError(_(
-                "Aucune facture non-payée trouvée pour la période %s → %s"
-                " (ni factures antérieures non incluses)."
+                "Aucune facture non-payée trouvée pour la période %s → %s."
             ) % (self.date_start, self.date_end))
 
-        # ── 5. Grouper par client et créer les lignes ──────────────────────────
-        partners = all_invoices.mapped('partner_id')
+        # Grouper par client et créer les lignes
+        partners = invoices.mapped('partner_id')
         lines_vals = []
         for partner in partners:
-            partner_invoices = all_invoices.filtered(
+            partner_invoices = invoices.filtered(
                 lambda inv, p=partner: inv.partner_id == p
             )
             lines_vals.append({
