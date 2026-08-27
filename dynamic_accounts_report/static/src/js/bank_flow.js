@@ -387,4 +387,6 @@ BankBook.defaultProps = {
     resIds: [],
 };
 BankBook.template = 'bnk_b_template_new';
+
+BankFlow.props = ['*'];
 actionRegistry.add("bnk_b", BankBook);

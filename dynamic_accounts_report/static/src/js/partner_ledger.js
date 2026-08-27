@@ -322,56 +322,91 @@ class PartnerLedger extends owl.Component {
         });
     }
 
-    async load_data() {
-        /**
-         * Loads the data for the partner ledger report.
-         */
-        let partner_list = []
-        let partner_totals = ''
-        let totalDebitSum = 0;
-        let totalCreditSum = 0;
-        let currency;
+    async load_data(initial_render = true) {
         var self = this;
         var action_title = self.props.action.display_name;
         try {
-            var self = this;
-            self.state.data = await self.orm.call("account.partner.ledger", "view_report", [[this.wizard_id], action_title,]);
-            const dataArray = self.state.data;
-             Object.entries(dataArray).forEach(([key, value]) => {
-            if (key !== 'partner_totals') {
-                partner_list.push(key);
-                value.forEach(entry => {
-                    entry[0].debit_display = this.formatNumberWithSeparators(entry[0].debit || 0);
-                    entry[0].credit_display = this.formatNumberWithSeparators(entry[0].credit || 0);
-                    entry[0].amount_currency_display = this.formatNumberWithSeparators(entry[0].amount_currency || 0);
-        });
-            } else {
-                partner_totals = value;
-            }
-            });
-            Object.values(partner_totals).forEach(partner => {
-                currency = partner.currency_id;
-                totalDebitSum += partner.total_debit || 0;
-                totalCreditSum += partner.total_credit || 0;
-                partner.total_debit_display = this.formatNumberWithSeparators(partner.total_debit || 0)
-                partner.total_credit_display = this.formatNumberWithSeparators(partner.total_credit || 0)
-            });
-            self.state.partners = partner_list
-            self.state.partner_list = partner_list
-            self.state.total_list = partner_totals
-            self.state.total = partner_totals
-            self.state.currency = currency
-            self.state.total_debit = totalDebitSum
-            self.state.total_debit_display = this.formatNumberWithSeparators(self.state.total_debit || 0)
-            self.state.total_credit = totalCreditSum
-            self.state.total_credit_display = this.formatNumberWithSeparators(self.state.total_credit || 0)
-            self.state.title = action_title
-        }
-        catch (el) {
-            window.location.href;
+            // Fast read_group query for totals only
+            const data = await this.orm.call(
+                "account.partner.ledger", "view_report", [self.wizard_id, action_title]
+            );
+            self._processPartnerData(data, action_title);
+        } catch (el) {
+            console.error('PartnerLedger load_data error:', el);
         }
     }
-        async printPdf(ev) {
+
+    _processPartnerData(data, action_title) {
+        const partner_totals = data.partner_totals || {};
+        let totalDebitSum = 0;
+        let totalCreditSum = 0;
+        let currency = null;
+
+        Object.values(partner_totals).forEach(partner => {
+            currency = partner.currency_id || currency;
+            totalDebitSum += partner.total_debit || 0;
+            totalCreditSum += partner.total_credit || 0;
+            partner.total_debit_display = this.formatNumberWithSeparators(partner.total_debit || 0);
+            partner.total_credit_display = this.formatNumberWithSeparators(partner.total_credit || 0);
+            partner.initial_balance_display = this.formatNumberWithSeparators(partner.initial_balance || 0);
+            partner.initial_debit_display = this.formatNumberWithSeparators(partner.initial_debit || 0);
+            partner.initial_credit_display = this.formatNumberWithSeparators(partner.initial_credit || 0);
+            partner.balance_display = this.formatNumberWithSeparators((partner.total_debit || 0) - (partner.total_credit || 0));
+            
+            // Lazy loading state
+            partner._lines_loaded = false;
+            partner._lines = [];
+            partner._expanded = false;
+            partner._loading = false;
+        });
+
+        const partner_list = data.partners || Object.keys(partner_totals);
+        this.state.partners = partner_list;
+        this.state.partner_list = partner_list;
+        this.state.total_list = partner_totals;
+        this.state.total = partner_totals;
+        if (currency) this.state.currency = currency;
+        
+        this.state.total_debit = totalDebitSum;
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
+        this.state.total_credit = totalCreditSum;
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
+        this.state.title = action_title;
+    }
+
+    async expandPartner(ev, partnerName) {
+        ev.preventDefault();
+        const partner = this.state.total[partnerName];
+        if (!partner) return;
+
+        if (partner._lines_loaded) {
+            partner._expanded = !partner._expanded;
+            return;
+        }
+
+        partner._loading = true;
+        try {
+            const lines = await this.orm.call(
+                "account.partner.ledger", "get_partner_lines",
+                [
+                    partner.partner_id,
+                    this.state.date_range || null,
+                    this.state.account || null,
+                    this.state.options || null,
+                    this.state.selected_account_ids || []
+                ]
+            );
+            partner._lines = lines;
+            partner._lines_loaded = true;
+            partner._expanded = true;
+        } catch (e) {
+            console.error('Failed to load lines for', partnerName, e);
+        } finally {
+            partner._loading = false;
+        }
+    }
+
+    async printPdf(ev) {
         /**
          * Generates and displays a PDF report for the partner ledger.
          *
@@ -638,48 +673,26 @@ class PartnerLedger extends owl.Component {
     }
 
     async applyAllFilters() {
-    /**
-     * Applies all selected filters (partners, tags, accounts, date range, etc.)
-     */
-    this.state.partners = null;
-    this.state.data = null;
-    this.state.total = null;
-    this.state.filter_applied = true;
-
-    let totalDebitSum = 0;
-    let totalCreditSum = 0;
-    let partner_list = [];
-    let partner_totals = '';
-
-    try {
-        // Call backend with all filter parameters
-        let filtered_data = await this.orm.call(
-            "account.partner.ledger",
-            "get_filter_values",
-            [
-                this.state.selected_partner,           // partner IDs
-                this.state.date_range,                 // date range
-                this.state.account,                    // account type (receivable/payable)
-                this.state.options,                    // options (draft entries, etc.)
-                this.state.selected_tag_ids,           // partner tag IDs
-                this.state.selected_account_ids        // account IDs
-            ]
-        );
-        // Process filtered data
-        // Ensure partner_totals always exists even if no data returned
-        if (!filtered_data['partner_totals']) {
-            filtered_data['partner_totals'] = {};
+        this.state.filter_applied = true;
+        try {
+            const data = await this.orm.call(
+                "account.partner.ledger", "get_filter_values",
+                [
+                    this.state.selected_partner || null,
+                    this.state.date_range || null,
+                    this.state.account || null,
+                    this.state.options || null,
+                    this.state.selected_tag_ids || null,
+                    this.state.selected_account_ids || null
+                ]
+            );
+            this._processPartnerData(data, this.props.action.display_name);
+        } catch (error) {
+            console.error('Error applying filters:', error);
         }
-        for (let index in filtered_data) {
-            const value = filtered_data[index];
-            if (index !== 'partner_totals') {
-                partner_list.push(index);
-            } else {
-                partner_totals = value;
-                Object.values(partner_totals).forEach(partner_data => {
-                    totalDebitSum += partner_data.total_debit || 0;
-                    totalCreditSum += partner_data.total_credit || 0;
-                    partner_data.total_debit_display = this.formatNumberWithSeparators(partner_data.total_debit || 0);
+    }
+
+    formatNumberWithSeparators(partner_data.total_debit || 0);
                     partner_data.total_credit_display = this.formatNumberWithSeparators(partner_data.total_credit || 0);
                 });
             }
@@ -743,3 +756,5 @@ PartnerLedger.defaultProps = {
 };
 PartnerLedger.template = 'pl_template_new';
 actionRegistry.add("p_l", PartnerLedger);
+
+PartnerLedger.props = ['*'];

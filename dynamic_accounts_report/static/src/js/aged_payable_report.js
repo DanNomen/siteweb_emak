@@ -34,124 +34,78 @@ class AgedPayable extends owl.Component {
         });
         this.load_data(self.initial_render = true);
     }
-    async load_data() {
+        async load_data() {
         /**
-         * Loads the data for the aged payable report.
+         * Loads totals only (fast). Lines are lazy-loaded on click.
          */
-        let move_line_list = []
-        let move_lines_total = ''
-        let diff0Sum = 0;
-        let diff1Sum = 0;
-        let diff2Sum = 0;
-        let diff3Sum = 0;
-        let diff4Sum = 0;
-        let diff5Sum = 0;
-        let TotalCredit = 0;
-        let currency;
         var self = this;
-        var action_title = self.props.action.display_name;
         try {
-            var self = this;
-            self.state.data = await self.orm.call("age.payable.report", "view_report", []);
-            for (const index in self.state.data) {
-                const value = self.state.data[index];
-                if (index !== 'partner_totals') {
-                    move_line_list.push(index);
-                } else {
-                    move_lines_total = value;
+            const data = await self.orm.call("age.payable.report", "view_report", []);
+            self._processData(data);
+        } catch (el) {
+            console.error('load_data error:', el);
+        }
+    }
 
-                    for (const moveLine of Object.values(move_lines_total)) {
-                        currency = moveLine.currency_id;
-                        diff0Sum += moveLine.diff0_sum || 0;
-                        diff1Sum += moveLine.diff1_sum || 0;
-                        diff2Sum += moveLine.diff2_sum || 0;
-                        diff3Sum += moveLine.diff3_sum || 0;
-                        diff4Sum += moveLine.diff4_sum || 0;
-                        diff5Sum += moveLine.diff5_sum || 0;
-                        TotalCredit += moveLine.credit_sum || 0;
-                    }
-                }
-            }
-            self.state.move_line = move_line_list
-            self.state.total = move_lines_total
-            self.state.currency = currency
-            self.state.total_credit = TotalCredit
-            self.state.diff0_sum = diff0Sum
-            self.state.diff1_sum = diff1Sum
-            self.state.diff2_sum = diff2Sum
-            self.state.diff3_sum = diff3Sum
-            self.state.diff4_sum = diff4Sum
-            self.state.diff5_sum = diff5Sum
+    _processData(data) {
+        /** Process partner totals from backend response */
+        const partner_totals = data.partner_totals || {};
+        let diff0 = 0, diff1 = 0, diff2 = 0, diff3 = 0, diff4 = 0, diff5 = 0, total = 0;
+        let currency = null;
+
+        Object.values(partner_totals).forEach(p => {
+            currency = p.currency_id || currency;
+            diff0 += p.diff0_sum || 0;
+            diff1 += p.diff1_sum || 0;
+            diff2 += p.diff2_sum || 0;
+            diff3 += p.diff3_sum || 0;
+            diff4 += p.diff4_sum || 0;
+            diff5 += p.diff5_sum || 0;
+            total += p.credit_sum || 0;
+            // Lazy loading state
+            p._lines_loaded = false;
+            p._lines = [];
+            p._expanded = false;
+            p._loading = false;
+        });
+
+        this.state.move_line = data.partners || Object.keys(partner_totals);
+        this.state.total = partner_totals;
+        this.state.currency = currency;
+        this.state.total_credit = total;
+        this.state.diff0_sum = diff0;
+        this.state.diff1_sum = diff1;
+        this.state.diff2_sum = diff2;
+        this.state.diff3_sum = diff3;
+        this.state.diff4_sum = diff4;
+        this.state.diff5_sum = diff5;
+    }
+
+    async expandPartner(ev, partnerName) {
+        /** Lazy-load aged lines for a single partner on click */
+        ev.preventDefault();
+        const partner = this.state.total[partnerName];
+        if (!partner) return;
+        if (partner._lines_loaded) {
+            partner._expanded = !partner._expanded;
+            return;
         }
-        catch (el) {
-            window.location.href;
-        }
-    }
-    gotoJournalEntry(ev) {
-        /**
-         * Navigates to the journal entry form view based on the selected event target.
-         *
-         * @param {Event} ev - The event object triggered by the action.
-         * @returns {Promise} - A promise that resolves to the result of the action.
-         */
-        return this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: 'account.move',
-            res_id: parseInt(ev.target.attributes["data-id"].value, 10),
-            views: [[false, "form"]],
-            target: "current",
-        });
-    }
-    gotoJournalItem(ev) {
-        /**
-         * Navigates to the journal items list view based on the selected event target.
-         *
-         * @param {Event} ev - The event object triggered by the action.
-         * @returns {Promise} - A promise that resolves to the result of the action.
-         */
-        return this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: 'account.move.line',
-            name: "Journal Items",
-            views: [[false, "list"]],
-            domain: [["partner_id", "=", parseInt(ev.target.attributes["data-id"].value, 10)], ['account_type', 'in', ['liability_payable']]],
-            target: "current",
-        });
-    }
-    openPartner(ev) {
-        /**
-         * Opens the partner form view based on the selected event target.
-         *
-         * @param {Event} ev - The event object triggered by the action.
-         * @returns {Promise} - A promise that resolves to the result of the action.
-         */
-        return this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: 'res.partner',
-            res_id: parseInt(ev.target.attributes["data-id"].value, 10),
-            views: [[false, "form"]],
-            target: "current",
-        });
-    }
-    async unfoldAll(ev) {
-        /**
-         * Unfolds all items in the table body if the event target does not have the 'selected-filter' class,
-         * or folds all items if the event target has the 'selected-filter' class.
-         *
-         * @param {Event} ev - The event object triggered by the action.
-         */
-        if (!ev.target.classList.contains("selected-filter")) {
-            for (var length = 0; length < this.tbody.el.children.length; length++) {
-                 this.tbody.el.children[length].classList.add('show')
-            }
-            ev.target.classList.add("selected-filter");
-        } else {
-            for (var length = 0; length < this.tbody.el.children.length; length++) {
-                this.tbody.el.children[length].classList.remove('show')
-            }
-            ev.target.classList.remove("selected-filter");
+        partner._loading = true;
+        try {
+            const lines = await this.orm.call(
+                "age.payable.report", "get_partner_aged_lines",
+                [partner.partner_id, this.state.date_range || null]
+            );
+            partner._lines = lines;
+            partner._lines_loaded = true;
+            partner._expanded = true;
+        } catch (e) {
+            console.error('Failed to load aged lines for', partnerName, e);
+        } finally {
+            partner._loading = false;
         }
     }
+
     async printPdf(ev) {
         /**
          * Generates and displays a PDF report for the aged payable.
@@ -310,4 +264,6 @@ class AgedPayable extends owl.Component {
     }
 }
 AgedPayable.template = 'age_p_template_new';
+
+AgedPayableReport.props = ['*'];
 actionRegistry.add("age_p", AgedPayable);

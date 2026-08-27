@@ -482,4 +482,6 @@ class TaxReport extends owl.Component {
     }
 }
 TaxReport.template = 'tax_r_template_new';
+
+TaxReport.props = ['*'];
 actionRegistry.add("tax_r", TaxReport);

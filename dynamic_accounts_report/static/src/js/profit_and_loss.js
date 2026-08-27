@@ -314,4 +314,6 @@ class ProfitAndLoss extends owl.Component {
     }
 }
 ProfitAndLoss.template = 'dfr_template_new';
+
+ProfitAndLoss.props = ['*'];
 actionRegistry.add("dfr_n", ProfitAndLoss);

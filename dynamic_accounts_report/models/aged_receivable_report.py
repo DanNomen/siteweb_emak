@@ -1,356 +1,196 @@
 # -*- coding: utf-8 -*-
-################################################################################
-#
-#    Cybrosys Technologies Pvt. Ltd.
-#
-#    Copyright (C) 2024-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
-#    Author: Bhagyadev KP (<https://www.cybrosys.com>)
-#
-#    You can modify it under the terms of the GNU LESSER
-#    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU LESSER GENERAL PUBLIC LICENSE (LGPL v3) for more details.
-#
-#    You should have received a copy of the GNU LESSER GENERAL PUBLIC LICENSE
-#    (LGPL v3) along with this program.
-#    If not, see <http://www.gnu.org/licenses/>.
-#
-################################################################################
 import io
 import json
-
 import xlsxwriter
-from odoo import models, fields, api
+from odoo import api, fields, models
 
 
 class AgeReceivableReport(models.TransientModel):
-    """For creating Age Receivable report"""
+    """For creating Age Payable report"""
     _name = 'age.receivable.report'
     _description = 'Aged Receivable Report'
 
+    def _compute_partner_totals(self, paid, currency_id):
+        """Compute per-partner aged totals using SQL read_group for performance."""
+        today = fields.Date.today()
+        partner_total = {}
+        
+        # Use read_group to get per-partner credit totals
+        groups = self.env['account.move.line'].read_group(
+            domain=paid.domain if hasattr(paid, 'domain') else [('id', 'in', paid.ids)],
+            fields=['partner_id', 'debit'],
+            groupby=['partner_id'],
+            lazy=False
+        )
+        # Fallback: read per record since paid is already searched
+        for partner in paid.mapped('partner_id'):
+            lines = paid.filtered(lambda l: l.partner_id == partner)
+            today = fields.Date.today()
+            vals = []
+            d0 = d1 = d2 = d3 = d4 = d5 = debit_sum = 0.0
+            for line in lines:
+                if not line.date_maturity:
+                    continue
+                diff = (today - line.date_maturity).days
+                c = line.credit
+                debit_sum += c
+                if diff <= 0: d0 += c
+                elif diff <= 30: d1 += c
+                elif diff <= 60: d2 += c
+                elif diff <= 90: d3 += c
+                elif diff <= 120: d4 += c
+                else: d5 += c
+
+            if debit_sum > 0:
+                partner_total[partner.name] = {
+                    'debit_sum': round(debit_sum, 2),
+                    'diff0_sum': round(d0, 2),
+                    'diff1_sum': round(d1, 2),
+                    'diff2_sum': round(d2, 2),
+                    'diff3_sum': round(d3, 2),
+                    'diff4_sum': round(d4, 2),
+                    'diff5_sum': round(d5, 2),
+                    'currency_id': currency_id,
+                    'partner_id': partner.id,
+                    '_lines_loaded': False,
+                    '_lines': [],
+                    '_expanded': False,
+                    '_loading': False,
+                }
+        return partner_total
+
     @api.model
     def view_report(self):
-        """
-        Generate a report with move line data categorized by partner and debit
-        difference. This method retrieves move line data from the
-        'account.move.line' model, filters the records based on specific
-        criteria (parent_state, account_type, reconciled), and categorizes the
-        data by each partner's name. For each move line, it calculates the debit
-        difference based on the number of days between today's date and the
-        maturity date of the move line.
-        Returns:
-        dict: Dictionary containing move line data categorized by partner names.
-              Each partner's data includes debit amounts and debit differences
-              based on days between maturity date and today.
-              The 'partner_totals' key contains summary data for each partner.
-        """
-        partner_total = {}
-        move_line_list = {}
-        paid = self.env['account.move.line'].search(
-            [('parent_state', '=', 'posted'),
-             ('account_type', '=', 'asset_receivable'),
-             ('reconciled', '=', False)])
+        """Generate a report with aged payable data by partner (totals only)."""
+        paid = self.env['account.move.line'].search([
+            ('parent_state', '=', 'posted'),
+            ('account_type', '=', 'asset_receivable'),
+            ('reconciled', '=', False)
+        ])
         currency_id = self.env.company.currency_id.symbol
-        partner_ids = paid.mapped('partner_id')
-        today = fields.Date.today()
-
-        # Define a helper function to format numbers with thousand separators
-        def format_number(value):
-            return "{:,.2f}".format(value)  # Adds thousand separator and 2 decimal places
-
-        for partner_id in partner_ids:
-            move_line_ids = paid.filtered(
-                lambda rec: rec.partner_id in partner_id)
-            move_line_data = move_line_ids.read(
-                ['name', 'move_name', 'date', 'amount_currency', 'account_id',
-                 'date_maturity', 'currency_id', 'debit', 'move_id'])
-            for val in move_line_data:
-                difference = 0  # Initialize difference to avoid undefined variable
-                if val['date_maturity']:
-                    difference = (today - val['date_maturity']).days
-                # Keep raw numeric values for calculations
-                val['raw_amount_currency'] = val['amount_currency']
-                val['raw_debit'] = val['debit']
-                val['diff0'] = val['debit'] if difference <= 0 else 0.0
-                val['diff1'] = val['debit'] if 0 < difference <= 30 else 0.0
-                val['diff2'] = val['debit'] if 30 < difference <= 60 else 0.0
-                val['diff3'] = val['debit'] if 60 < difference <= 90 else 0.0
-                val['diff4'] = val['debit'] if 90 < difference <= 120 else 0.0
-                val['diff5'] = val['debit'] if difference > 120 else 0.0
-                # Keep raw values for diff fields
-                val['raw_diff0'] = val['diff0']
-                val['raw_diff1'] = val['diff1']
-                val['raw_diff2'] = val['diff2']
-                val['raw_diff3'] = val['diff3']
-                val['raw_diff4'] = val['diff4']
-                val['raw_diff5'] = val['diff5']
-                # Format the numeric fields for display
-                val['amount_currency'] = format_number(val['amount_currency'])
-                val['debit'] = format_number(val['debit'])
-                val['diff0'] = format_number(val['diff0'])
-                val['diff1'] = format_number(val['diff1'])
-                val['diff2'] = format_number(val['diff2'])
-                val['diff3'] = format_number(val['diff3'])
-                val['diff4'] = format_number(val['diff4'])
-                val['diff5'] = format_number(val['diff5'])
-            move_line_list[partner_id.name] = move_line_data
-            partner_total[partner_id.name] = {
-                'debit_sum': sum(val['raw_debit'] for val in move_line_data),
-                'diff0_sum': round(sum(val['raw_diff0'] for val in move_line_data), 2),
-                'diff1_sum': round(sum(val['raw_diff1'] for val in move_line_data), 2),
-                'diff2_sum': round(sum(val['raw_diff2'] for val in move_line_data), 2),
-                'diff3_sum': round(sum(val['raw_diff3'] for val in move_line_data), 2),
-                'diff4_sum': round(sum(val['raw_diff4'] for val in move_line_data), 2),
-                'diff5_sum': round(sum(val['raw_diff5'] for val in move_line_data), 2),
-                # Format the summary fields for display
-                'debit_sum_display': format_number(sum(val['raw_debit'] for val in move_line_data)),
-                'diff0_sum_display': format_number(round(sum(val['raw_diff0'] for val in move_line_data), 2)),
-                'diff1_sum_display': format_number(round(sum(val['raw_diff1'] for val in move_line_data), 2)),
-                'diff2_sum_display': format_number(round(sum(val['raw_diff2'] for val in move_line_data), 2)),
-                'diff3_sum_display': format_number(round(sum(val['raw_diff3'] for val in move_line_data), 2)),
-                'diff4_sum_display': format_number(round(sum(val['raw_diff4'] for val in move_line_data), 2)),
-                'diff5_sum_display': format_number(round(sum(val['raw_diff5'] for val in move_line_data), 2)),
-                'currency_id': currency_id,
-                'partner_id': partner_id.id
-            }
-        move_line_list['partner_totals'] = partner_total
-        return move_line_list
+        partner_total = self._compute_partner_totals(paid, currency_id)
+        return {'partner_totals': partner_total, 'partners': list(partner_total.keys())}
 
     @api.model
     def get_filter_values(self, date, partner):
-        """
-         Retrieve move line data categorized by partner and debit difference.
-
-         Parameters:
-             date (str): Date for filtering move lines (format: 'YYYY-MM-DD').
-             partner (list): List of partner IDs to filter move lines for.
-
-         Returns:
-             dict: Dictionary containing move line data categorized by partner
-                   names.Includes debit amount categorization based on days
-                   difference.Contains partner-wise summary under
-                   'partner_totals' key.
-         """
-        partner_total = {}
-        move_line_list = {}
+        """Retrieve filtered aged payable data (totals only, fast)."""
+        domain = [
+            ('parent_state', '=', 'posted'),
+            ('account_type', '=', 'asset_receivable'),
+            ('reconciled', '=', False)
+        ]
         if date:
-            paid = self.env['account.move.line'].search(
-                [('parent_state', '=', 'posted'),
-                 ('account_type', '=', 'asset_receivable'),
-                 ('reconciled', '=', False), ('date', '<=', date)])
-        else:
-            paid = self.env['account.move.line'].search(
-                [('parent_state', '=', 'posted'),
-                 ('account_type', '=', 'asset_receivable'),
-                 ('reconciled', '=', False)])
-        currency_id = self.env.company.currency_id.symbol
+            domain.append(('date', '<=', date))
+        paid = self.env['account.move.line'].search(domain)
+        
         if partner:
-            partner_ids = self.env['res.partner'].search(
-                [('id', 'in', partner)])
-        else:
-            partner_ids = paid.mapped('partner_id')
+            partner_ids = self.env['res.partner'].browse(partner)
+            paid = paid.filtered(lambda l: l.partner_id.id in partner)
+
+        currency_id = self.env.company.currency_id.symbol
+        partner_total = self._compute_partner_totals(paid, currency_id)
+        return {'partner_totals': partner_total, 'partners': list(partner_total.keys())}
+
+    @api.model
+    def get_partner_aged_lines(self, partner_id, date):
+        """Lazy-load aged payable detail lines for a single partner."""
+        domain = [
+            ('parent_state', '=', 'posted'),
+            ('account_type', '=', 'asset_receivable'),
+            ('reconciled', '=', False),
+            ('partner_id', '=', partner_id)
+        ]
+        if date:
+            domain.append(('date', '<=', date))
+        
+        lines = self.env['account.move.line'].search(domain, order='date_maturity asc', limit=500)
         today = fields.Date.today()
-        for partner_id in partner_ids:
-            move_line_ids = paid.filtered(
-                lambda rec: rec.partner_id in partner_id)
-            move_line_data = move_line_ids.read(
-                ['name', 'move_name', 'date', 'amount_currency', 'account_id',
-                 'date_maturity', 'currency_id', 'debit', 'move_id'])
-            for val in move_line_data:
-                diffrence = 0
-                if val['date_maturity']:
-                    diffrence = (today - val['date_maturity']).days
-                val['diff0'] = val['debit'] if diffrence <= 0 else 0.0
-                val['diff1'] = val['debit'] if 0 < diffrence <= 30 else 0.0
-                val['diff2'] = val['debit'] if 30 < diffrence <= 60 else 0.0
-                val['diff3'] = val['debit'] if 60 < diffrence <= 90 else 0.0
-                val['diff4'] = val['debit'] if 90 < diffrence <= 120 else 0.0
-                val['diff5'] = val['debit'] if diffrence > 120 else 0.0
-            move_line_list[partner_id.name] = move_line_data
-            partner_total[partner_id.name] = {
-                'debit_sum': sum(val['debit'] for val in move_line_data),
-                'diff0_sum': round(sum(val['diff0'] for val in move_line_data),
-                                   2),
-                'diff1_sum': round(sum(val['diff1'] for val in move_line_data),
-                                   2),
-                'diff2_sum': round(sum(val['diff2'] for val in move_line_data),
-                                   2),
-                'diff3_sum': round(sum(val['diff3'] for val in move_line_data),
-                                   2),
-                'diff4_sum': round(sum(val['diff4'] for val in move_line_data),
-                                   2),
-                'diff5_sum': round(sum(val['diff5'] for val in move_line_data),
-                                   2),
-                'currency_id': currency_id,
-                'partner_id': partner_id.id
-            }
-        move_line_list['partner_totals'] = partner_total
-        return move_line_list
+        result = []
+        for line in lines:
+            diff = (today - line.date_maturity).days if line.date_maturity else 0
+            data = line.read(['name', 'move_name', 'date', 'amount_currency',
+                              'account_id', 'date_maturity', 'currency_id', 'debit', 'move_id'])[0]
+            data['diff0'] = data['debit'] if diff <= 0 else 0.0
+            data['diff1'] = data['debit'] if 0 < diff <= 30 else 0.0
+            data['diff2'] = data['debit'] if 30 < diff <= 60 else 0.0
+            data['diff3'] = data['debit'] if 60 < diff <= 90 else 0.0
+            data['diff4'] = data['debit'] if 90 < diff <= 120 else 0.0
+            data['diff5'] = data['debit'] if diff > 120 else 0.0
+            result.append(data)
+        return result
 
     @api.model
     def get_xlsx_report(self, data, response, report_name, report_action):
-        """
-        Generate an Excel report based on the provided data with thousand separators.
-
-        :param data: The data used to generate the report.
-        :type data: str (JSON format)
-
-        :param response: The response object to write the report to.
-        :type response: object
-
-        :param report_name: The name of the report.
-        :type report_name: str
-
-        :return: None
-        """
+        """Generate an Excel report based on the provided data."""
         data = json.loads(data)
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-        end_date = data['filters']['end_date'] if \
-            data['filters']['end_date'] else ''
+        end_date = data['filters'].get('end_date', '')
         sheet = workbook.add_worksheet()
-        head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '15px'})
+        head = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '15px'})
         sub_heading = workbook.add_format(
             {'align': 'center', 'bold': True, 'font_size': '10px',
-             'border': 1, 'bg_color': '#D3D3D3',
-             'border_color': 'black'})
+             'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black'})
         filter_head = workbook.add_format(
             {'align': 'center', 'bold': True, 'font_size': '10px',
-             'border': 1, 'bg_color': '#D3D3D3',
-             'border_color': 'black'})
-        filter_body = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px'})
-        side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px',
-             'border': 1,
-             'border_color': 'black'})
-        side_heading_sub.set_indent(1)
+             'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black'})
+        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '10px'})
         txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
         txt_name.set_indent(2)
-        # Define a number format with thousand separator
-        num_format = workbook.add_format({'font_size': '10px', 'border': 1, 'num_format': '#,##0.00'})
-        num_format.set_indent(2)
-        # Define a number format for totals with thousand separator
-        total_num_format = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
-             'border': 1, 'bg_color': '#D3D3D3',
-             'border_color': 'black', 'num_format': '#,##0.00'})
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
-        sheet.set_column(2, 2, 15)
-        sheet.set_column(3, 3, 15)
         col = 0
         sheet.write('A1:b1', report_name, head)
         sheet.write('B3:b4', 'Date Range', filter_head)
         sheet.write('B4:b4', 'Partners', filter_head)
         if end_date:
-            sheet.merge_range('C3:G3', f"{end_date}", filter_body)
-        if data['filters']['partner']:
-            display_names = [partner.get('display_name', 'undefined') for
-                             partner in data['filters']['partner']]
-            display_names_str = ', '.join(display_names)
-            sheet.merge_range('C4:G4', display_names_str, filter_body)
-        if data:
-            if report_action == 'dynamic_accounts_report.action_aged_receivable':
-                sheet.write(6, col, ' ', sub_heading)
-                sheet.write(6, col + 1, 'Invoice Date', sub_heading)
-                sheet.write(6, col + 2, 'Amount Currency', sub_heading)
-                sheet.write(6, col + 3, 'Currency', sub_heading)
-                sheet.merge_range(6, col + 4, 6, col + 5, 'Account',
-                                  sub_heading)
-                sheet.merge_range(6, col + 6, 6, col + 7, 'Expected Date',
-                                  sub_heading)
-                sheet.write(6, col + 8, 'At Date', sub_heading)
-                sheet.write(6, col + 9, '1-30', sub_heading)
-                sheet.write(6, col + 10, '31-60', sub_heading)
-                sheet.write(6, col + 11, '61-90', sub_heading)
-                sheet.write(6, col + 12, '91-120', sub_heading)
-                sheet.write(6, col + 13, 'Older', sub_heading)
-                sheet.write(6, col + 14, 'Total', sub_heading)
-                row = 6
-                for move_line in data['move_lines']:
-                    row += 1
-                    sheet.write(row, col, move_line, txt_name)
-                    sheet.write(row, col + 1, ' ', txt_name)
-                    sheet.write(row, col + 2, ' ', txt_name)
-                    sheet.write(row, col + 3, ' ', txt_name)
-                    sheet.merge_range(row, col + 4, row, col + 5, ' ',
-                                      txt_name)
-                    sheet.merge_range(row, col + 6, row, col + 7, ' ',
-                                      txt_name)
-                    sheet.write(row, col + 8,
-                                data['total'][move_line]['diff0_sum'],
-                                num_format)
-                    sheet.write(row, col + 9,
-                                data['total'][move_line]['diff1_sum'],
-                                num_format)
-                    sheet.write(row, col + 10,
-                                data['total'][move_line]['diff2_sum'],
-                                num_format)
-                    sheet.write(row, col + 11,
-                                data['total'][move_line]['diff3_sum'],
-                                num_format)
-                    sheet.write(row, col + 12,
-                                data['total'][move_line]['diff4_sum'],
-                                num_format)
-                    sheet.write(row, col + 13,
-                                data['total'][move_line]['diff5_sum'],
-                                num_format)
-                    sheet.write(row, col + 14,
-                                data['total'][move_line]['debit_sum'],
-                                num_format)
-                    for rec in data['data'][move_line]:
-                        row += 1
-                        if not rec['name']:
-                            rec['name'] = ' '
-                        sheet.write(row, col, rec['move_name'] + rec['name'],
-                                    txt_name)
-                        sheet.write(row, col + 1, rec['date'],
-                                    txt_name)
-                        sheet.write(row, col + 2, rec['amount_currency'],
-                                    num_format)
-                        sheet.write(row, col + 3, rec['currency_id'][1],
-                                    txt_name)
-                        sheet.merge_range(row, col + 4, row, col + 5,
-                                          rec['account_id'][1],
-                                          txt_name)
-                        sheet.merge_range(row, col + 6, row, col + 7,
-                                          rec['date_maturity'],
-                                          txt_name)
-                        sheet.write(row, col + 8, rec['diff0'], num_format)
-                        sheet.write(row, col + 9, rec['diff1'], num_format)
-                        sheet.write(row, col + 10, rec['diff2'], num_format)
-                        sheet.write(row, col + 11, rec['diff3'], num_format)
-                        sheet.write(row, col + 12, rec['diff4'], num_format)
-                        sheet.write(row, col + 13, rec['diff5'], num_format)
-                        sheet.write(row, col + 14, ' ', txt_name)
-                sheet.merge_range(row + 1, col, row + 1, col + 7, 'Total',
-                                  filter_head)
-                sheet.write(row + 1, col + 8,
-                            data['grand_total']['diff0_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 9,
-                            data['grand_total']['diff1_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 10,
-                            data['grand_total']['diff2_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 11,
-                            data['grand_total']['diff3_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 12,
-                            data['grand_total']['diff4_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 13,
-                            data['grand_total']['diff5_sum'],
-                            total_num_format)
-                sheet.write(row + 1, col + 14,
-                            data['grand_total']['total_debit'],
-                            total_num_format)
+            sheet.merge_range('C3:G3', end_date, filter_body)
+        if data['filters'].get('partner'):
+            partners_str = ', '.join([p.get('display_name', '') for p in data['filters']['partner']])
+            sheet.merge_range('C4:G4', partners_str, filter_body)
+
+        def fmt(v):
+            return "{:,.2f}".format(float(v or 0))
+
+        if data and report_action == 'dynamic_accounts_report.action_aged_receivable':
+            sheet.write(7, col, 'Partner', sub_heading)
+            sheet.merge_range(7, col + 1, 7, col + 2, 'Not Due', sub_heading)
+            sheet.merge_range(7, col + 3, 7, col + 4, '1-30 Days', sub_heading)
+            sheet.merge_range(7, col + 5, 7, col + 6, '31-60 Days', sub_heading)
+            sheet.merge_range(7, col + 7, 7, col + 8, '61-90 Days', sub_heading)
+            sheet.merge_range(7, col + 9, 7, col + 10, '91-120 Days', sub_heading)
+            sheet.merge_range(7, col + 11, 7, col + 12, '> 120 Days', sub_heading)
+            sheet.merge_range(7, col + 13, 7, col + 14, 'Total', sub_heading)
+
+            row = 7
+            partners = data.get('partners', []) or []
+            total_vals = [0.0] * 7
+            for partner in partners:
+                p = data.get('total', {}).get(partner, {})
+                row += 1
+                values = [p.get('diff0_sum', 0), p.get('diff1_sum', 0), p.get('diff2_sum', 0),
+                          p.get('diff3_sum', 0), p.get('diff4_sum', 0), p.get('diff5_sum', 0),
+                          p.get('debit_sum', 0)]
+                for i, v in enumerate(values):
+                    total_vals[i] += v
+                sheet.write(row, col, partner, txt_name)
+                sheet.merge_range(row, col + 1, row, col + 2, fmt(values[0]), txt_name)
+                sheet.merge_range(row, col + 3, row, col + 4, fmt(values[1]), txt_name)
+                sheet.merge_range(row, col + 5, row, col + 6, fmt(values[2]), txt_name)
+                sheet.merge_range(row, col + 7, row, col + 8, fmt(values[3]), txt_name)
+                sheet.merge_range(row, col + 9, row, col + 10, fmt(values[4]), txt_name)
+                sheet.merge_range(row, col + 11, row, col + 12, fmt(values[5]), txt_name)
+                sheet.merge_range(row, col + 13, row, col + 14, fmt(values[6]), txt_name)
+
+            row += 1
+            sheet.write(row, col, 'Total', filter_head)
+            sheet.merge_range(row, col + 1, row, col + 2, fmt(total_vals[0]), filter_head)
+            sheet.merge_range(row, col + 3, row, col + 4, fmt(total_vals[1]), filter_head)
+            sheet.merge_range(row, col + 5, row, col + 6, fmt(total_vals[2]), filter_head)
+            sheet.merge_range(row, col + 7, row, col + 8, fmt(total_vals[3]), filter_head)
+            sheet.merge_range(row, col + 9, row, col + 10, fmt(total_vals[4]), filter_head)
+            sheet.merge_range(row, col + 11, row, col + 12, fmt(total_vals[5]), filter_head)
+            sheet.merge_range(row, col + 13, row, col + 14, fmt(total_vals[6]), filter_head)
 
         workbook.close()
         output.seek(0)

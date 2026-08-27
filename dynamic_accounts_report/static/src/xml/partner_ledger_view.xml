@@ -479,233 +479,172 @@
                                 <tbody t-ref="tbody">
                                     <!-- Iterate over partners -->
                                     <t t-if="state.partners">
-                                        <t t-set="i" t-value="0"/>
                                         <t t-foreach="state.partners"
                                            t-as="partner"
                                            t-key="partner_index">
-                                            <t t-set="i" t-value="i + 1"/>
-                                            <t t-if="state.total[partner]['total_debit']">
-                                                <tr class="border-bottom border-dark border-gainsboro">
-                                                <th>
-                                                        <div data-bs-toggle="collapse"
-                                                         t-attf-href="#partner-{{i}}"
-                                                         aria-expanded="false"
-                                                         t-attf-aria-controls="partner-{{i}}"
-                                                         class="ms-3 collapsed">
-                                                        <a class="btn header o_heading">
-                                                            <span class="toggle-icon">
-                                                                <i class="fa fa-caret-down"/>
-                                                            </span>
+                                            <t t-set="pdata" t-value="state.total[partner]"/>
+                                            <t t-if="pdata and pdata['total_debit']">
+                                                <!-- Partner summary row (clickable to expand) -->
+                                                <tr class="border-bottom border-dark o_heading"
+                                                    style="cursor:pointer;"
+                                                    t-on-click="(ev) => expandPartner(ev, partner)">
+                                                    <th colspan="2">
+                                                        <span style="display:flex;align-items:center;gap:8px;padding-left:8px;">
+                                                            <t t-if="pdata._loading">
+                                                                <i class="fa fa-spinner fa-spin text-muted" style="font-size:12px;"/>
+                                                            </t>
+                                                            <t t-elif="pdata._expanded">
+                                                                <i class="fa fa-caret-down" style="font-size:12px;"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <i class="fa fa-caret-right" style="font-size:12px;"/>
+                                                            </t>
                                                             <t t-if="partner != 'false'">
                                                                 <t t-esc="partner"/>
                                                             </t>
-                                                            <t t-else="">
-                                                                <span>
-                                                                    Unknown
-                                                                    Partner
-                                                                </span>
-                                                            </t>
-                                                        </a>
-                                                    </div>
-                                                </th>
-                                                <th colspan="5" class="p-1">
-                                                    <!-- Open Partner Button -->
-                                                    <button t-att-data-id="state.total[partner]['partner_id']"
-                                                            class="btn bg-secondary"
-                                                            t-on-click="openPartner">
-                                                        Open Partner
-                                                    </button>
-                                                    <!-- Journal Items Button -->
-                                                    <button style="margin-left: 3px"
-                                                            t-att-data-id="state.total[partner]['partner_id']"
-                                                            class="btn bg-secondary"
-                                                            t-on-click="gotoJournalItem">
-                                                        Journal Items
-                                                    </button>
-                                                </th>
-                                                <th/>
-                                                <th/>
-                                                <th/>
-                                                <th/>
-                                                <th/>
-                                                <th>
-                                                    <span>
-                                                        <t t-if="state.total[partner]['total_debit']"
-                                                           t-esc="state.total[partner]['currency_id']"/>
-                                                        <t t-if="state.total[partner]['total_debit']"
-                                                           t-esc="state.total[partner]['total_debit_display']"/>
-                                                    </span>
-                                                </th>
-                                                <th>
-                                                    <span>
-                                                        <t t-if="state.total[partner]['total_credit']"
-                                                           t-esc="state.total[partner]['currency_id']"/>
-                                                        <t t-if="state.total[partner]['total_credit']"
-                                                           t-esc="state.total[partner]['total_credit_display']"/>
-                                                    </span>
-                                                </th>
-                                                <th/>
-                                                <th>
-                                                    <span class="fw-bolder">
-                                                        <t t-esc="state.total[partner]['currency_id']"/>
-                                                        <t t-esc="(state.total[partner]['total_debit'] - state.total[partner]['total_credit']).toFixed(2)"/>
-                                                    </span>
-                                                </th>
-                                            </tr>
-                                            </t>
-                                            <!-- Iterate over partner's initial balance -->
-                                            <t t-set="j" t-value="0"/>
-                                            <t t-foreach="state.partners"
-                                               t-as="partner_initial"
-                                               t-key="partner_initial_index">
-                                                <t t-set="j" t-value="j + 1"/>
-                                                <t t-if="j == 1 and state.total[partner]['initial_balance'] != 0">
-                                                    <th colspan="6">
-                                                        <span style="gap: 12px;display: flex;">
-
+                                                            <t t-else="">Unknown Partner</t>
                                                         </span>
                                                     </th>
-                                                    <th>
-                                                    </th>
-                                                    <th>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="state.total[partner]['move_name']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                    </th>
-                                                    <th>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="state.total[partner]['initial_debit'].toFixed(2)"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="state.total[partner]['initial_credit'].toFixed(2)"/>
-                                                        </span>
+                                                    <th colspan="4" class="p-1">
+                                                        <!-- Open Partner Button -->
+                                                        <button t-att-data-id="pdata['partner_id']"
+                                                                class="btn btn-sm btn-secondary"
+                                                                t-on-click.stop="openPartner">
+                                                            Open Partner
+                                                        </button>
+                                                        <!-- Journal Items Button -->
+                                                        <button style="margin-left: 3px"
+                                                                t-att-data-id="pdata['partner_id']"
+                                                                class="btn btn-sm btn-secondary"
+                                                                t-on-click.stop="gotoJournalItem">
+                                                            Journal Items
+                                                        </button>
                                                     </th>
                                                     <th/>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="state.total[partner]['initial_balance'].toFixed(2)"/>
-                                                        </span>
+                                                    <th/>
+                                                    <th/>
+                                                    <th/>
+                                                    <th/>
+                                                    <th class="text-end">
+                                                        <t t-esc="pdata['currency_id']"/>
+                                                        <t t-esc="pdata['total_debit_display']"/>
                                                     </th>
-                                                </t>
-                                            </t>
-                                            <!-- Iterate over partner's value list -->
-                                            <t t-foreach="state.data[partner]"
-                                               t-as="valuelist"
-                                               t-key="valuelist_index">
-                                                <tr class="border-bottom border-gainsboro collapse"
-                                                    t-attf-id="partner-{{i}}"
-                                                    t-att-data-id="valuelist[0]['move_id'][0]">
-                                                    <th colspan="6">
-                                                        <span style="gap: 12px;display: flex;">
-                                                            <t t-esc="valuelist[0]['date']"/>
-                                                            <a type="button"
-                                                               class="dropdown-toggle"
-                                                               data-bs-toggle="dropdown">
-                                                            </a>
-                                                            <div class="dropdown-menu  journals">
-                                                                <button t-att-data-id="valuelist[0]['move_id'][0]"
-                                                                        type="button"
-                                                                        t-on-click="gotoJournalEntry"
-                                                                        style="border: none;
-                                                                            background-color: inherit;
-                                                                            padding: 4px 8px;
-                                                                            font-size: 16px;
-                                                                            cursor: pointer;
-                                                                            display: inline-block;">
-                                                                    View
-                                                                    Journal
-                                                                    Entry
-                                                                </button>
-                                                                <div role="separator"
-                                                                     class="dropdown-divider"/>
-                                                            </div>
-                                                        </span>
+                                                    <th class="text-end">
+                                                        <t t-esc="pdata['currency_id']"/>
+                                                        <t t-esc="pdata['total_credit_display']"/>
                                                     </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="valuelist[0]['jrnl']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-esc="valuelist[0]['code']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['move_name']"
-                                                               t-esc="valuelist[0]['move_id']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['date_maturity']"
-                                                               t-esc="valuelist[0]['date_maturity']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['matching_number']"
-                                                               t-esc="valuelist[0]['matching_number']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['debit']"
-                                                               t-esc="state.total[partner]['currency_id']"/>
-                                                            <t t-if="valuelist[0]['debit']"
-                                                               t-esc="valuelist[0]['debit_display']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['credit']"
-                                                               t-esc="state.total[partner]['currency_id']"/>
-                                                            <t t-if="valuelist[0]['credit']"
-                                                               t-esc="valuelist[0]['credit_display']"/>
-                                                        </span>
-                                                    </th>
-                                                    <th>
-                                                        <span>
-                                                            <t t-if="valuelist[0]['amount_currency']"
-                                                               t-esc="state.total[partner]['currency_id']"/>
-                                                            <t t-if="valuelist[0]['amount_currency']"
-                                                               t-esc="valuelist[0]['amount_currency_display']"/>
-                                                        </span>
+                                                    <th/>
+                                                    <th class="text-end fw-bolder">
+                                                        <t t-esc="pdata['currency_id']"/>
+                                                        <t t-esc="pdata['balance_display']"/>
                                                     </th>
                                                 </tr>
+
+                                                <!-- Initial Balance row (shown when expanded) -->
+                                                <t t-if="pdata._expanded and pdata['initial_balance'] != 0">
+                                                    <tr class="border-bottom border-gainsboro" style="background:#f9f9f9;">
+                                                        <td colspan="6" style="padding-left:24px;font-style:italic;color:#888;">
+                                                            Initial Balance
+                                                        </td>
+                                                        <td/>
+                                                        <td/>
+                                                        <td/>
+                                                        <td/>
+                                                        <td/>
+                                                        <td class="text-end">
+                                                            <t t-esc="pdata['initial_debit_display']"/>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <t t-esc="pdata['initial_credit_display']"/>
+                                                        </td>
+                                                        <td/>
+                                                        <td class="text-end">
+                                                            <t t-esc="pdata['initial_balance_display']"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+
+                                                <!-- Lazy-loaded move lines (shown when expanded) -->
+                                                <t t-if="pdata._expanded">
+                                                    <t t-foreach="pdata._lines" t-as="line" t-key="line_index">
+                                                        <tr class="border-bottom border-gainsboro"
+                                                            t-att-data-id="line['move_id'] and line['move_id'][0]">
+                                                            <td colspan="6" style="padding-left:32px;">
+                                                                <span style="display:flex;gap:12px;align-items:center;">
+                                                                    <t t-esc="line['date']"/>
+                                                                    <a type="button"
+                                                                       class="dropdown-toggle"
+                                                                       data-bs-toggle="dropdown"/>
+                                                                    <div class="dropdown-menu journals">
+                                                                        <button t-att-data-id="line['move_id'] and line['move_id'][0]"
+                                                                                type="button"
+                                                                                t-on-click="gotoJournalEntry"
+                                                                                style="border:none;background:inherit;padding:4px 8px;cursor:pointer;">
+                                                                            View Journal Entry
+                                                                        </button>
+                                                                        <div role="separator" class="dropdown-divider"/>
+                                                                    </div>
+                                                                </span>
+                                                            </td>
+                                                            <td><t t-esc="line['jrnl']"/></td>
+                                                            <td><t t-esc="line['code']"/></td>
+                                                            <td><t t-esc="line['move_name']"/></td>
+                                                            <td>
+                                                                <t t-if="line['date_maturity']">
+                                                                    <t t-esc="line['date_maturity']"/>
+                                                                </t>
+                                                            </td>
+                                                            <td>
+                                                                <t t-if="line['matching_number']">
+                                                                    <t t-esc="line['matching_number']"/>
+                                                                </t>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <t t-if="line['debit']">
+                                                                    <t t-esc="pdata['currency_id']"/>
+                                                                    <t t-esc="line['debit'].toFixed(2)"/>
+                                                                </t>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <t t-if="line['credit']">
+                                                                    <t t-esc="pdata['currency_id']"/>
+                                                                    <t t-esc="line['credit'].toFixed(2)"/>
+                                                                </t>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <t t-if="line['amount_currency']">
+                                                                    <t t-esc="pdata['currency_id']"/>
+                                                                    <t t-esc="line['amount_currency'].toFixed(2)"/>
+                                                                </t>
+                                                            </td>
+                                                            <td/>
+                                                        </tr>
+                                                    </t>
+                                                </t>
                                             </t>
                                         </t>
                                     </t>
-                                    <tr>
-                                        <th/>
-                                        <th colspan="10" class="o_heading">
-                                            Total
-                                        </th>
-                                        <th class="o_heading">
+                                    <!-- Grand Total Row -->
+                                    <tr class="o_heading">
+                                        <th colspan="11">Total</th>
+                                        <th class="text-end">
                                             <t t-esc="state.currency"/>
                                             <t t-out="state.total_debit_display"/>
                                         </th>
-                                        <th class="o_heading">
+                                        <th class="text-end">
                                             <t t-esc="state.currency"/>
                                             <t t-out="state.total_credit_display"/>
                                         </th>
                                         <th/>
-                                        <th class="o_heading">
+                                        <th class="text-end">
                                             <t t-esc="state.currency"/>
-                                            <t t-out="(state.total_debit - state.total_credit).toFixed(2)"/>
+                                            <t t-if="state.total_debit and state.total_credit">
+                                                <t t-esc="(state.total_debit - state.total_credit).toFixed(2)"/>
+                                            </t>
                                         </th>
                                     </tr>
                                 </tbody>
-                            </table>
+</table>
                         </div>
                     </div>
                 </div>

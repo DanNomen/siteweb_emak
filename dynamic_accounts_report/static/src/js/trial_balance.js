@@ -588,4 +588,6 @@ class TrialBalance extends owl.Component {
     }
 }
 TrialBalance.template = 'trl_b_template_new';
+
+TrialBalance.props = ['*'];
 actionRegistry.add("trl_b", TrialBalance);

@@ -287,4 +287,6 @@ BalanceSheet.template = 'bls_template_new';
 //BalanceSheet.components = {
 //    FinancialReportControlPanel
 //}
+
+BalanceSheet.props = ['*'];
 actionRegistry.add("bl_s", BalanceSheet);
