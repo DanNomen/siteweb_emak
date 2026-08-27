@@ -24,16 +24,22 @@ class DecadeStatement(models.Model):
     )
     date_start = fields.Date(
         string='Date début',
-        required=True,
+        readonly=True,
+        store=True,
     )
     date_end = fields.Date(
         string='Date fin',
-        required=True,
-    )
-    decade_number = fields.Integer(
-        string='Décade N°',
         readonly=True,
-        help='1 = jours 1→10, 2 = jours 11→20, 3 = jours 21→fin du mois',
+        store=True,
+    )
+    decade_number = fields.Selection(
+        selection=[
+            ('1', 'Décade 1  (1 → 10)'),
+            ('2', 'Décade 2  (11 → 20)'),
+            ('3', 'Décade 3  (21 → fin du mois)'),
+        ],
+        string='Numéro de Décade',
+        help='Choisir la décade — les dates se remplissent automatiquement.',
     )
     state = fields.Selection(
         selection=[
@@ -110,6 +116,25 @@ class DecadeStatement(models.Model):
         else:
             return ref_date.replace(day=21), ref_date.replace(day=last_day), 3
 
+    @api.onchange('decade_number')
+    def _onchange_decade_number(self):
+        """Auto-remplit date_start et date_end selon la décade choisie (mois courant)."""
+        if not self.decade_number:
+            return
+        today = fields.Date.today()
+        year = today.year
+        month = today.month
+        last_day = calendar.monthrange(year, month)[1]
+        if self.decade_number == '1':
+            self.date_start = today.replace(day=1)
+            self.date_end = today.replace(day=10)
+        elif self.decade_number == '2':
+            self.date_start = today.replace(day=11)
+            self.date_end = today.replace(day=20)
+        elif self.decade_number == '3':
+            self.date_start = today.replace(day=21)
+            self.date_end = today.replace(day=last_day)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -122,7 +147,10 @@ class DecadeStatement(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     def action_generate_lines(self):
-        """Génère les lignes clients à partir des factures de la période."""
+        """Génère les lignes clients — Option B :
+        - Factures de la période (date dans la décade)
+        - + Factures non-payées antérieures jamais incluses dans un relevé précédent
+        """
         self.ensure_one()
         if not self.date_start or not self.date_end:
             raise UserError(_("Veuillez définir les dates de début et de fin."))
@@ -130,8 +158,8 @@ class DecadeStatement(models.Model):
         # Supprimer les lignes existantes avant régénération
         self.line_ids.unlink()
 
-        # Chercher toutes les factures (posted + draft) de la période
-        invoices = self.env['account.move'].search([
+        # ── 1. Factures de la période courante (non-payées) ────────────────────
+        period_invoices = self.env['account.move'].search([
             ('move_type', 'in', ['out_invoice', 'out_refund']),
             ('state', 'in', ['posted', 'draft']),
             ('payment_state', 'not in', ['paid', 'reversed']),
@@ -141,16 +169,39 @@ class DecadeStatement(models.Model):
             ('company_id', '=', self.company_id.id),
         ])
 
-        if not invoices:
+        # ── 2. IDs déjà inclus dans des relevés précédents (confirmés ou envoyés)
+        already_included_ids = set(
+            self.env['decade.statement.line'].search([
+                ('statement_id.date_start', '<', self.date_start),
+                ('statement_id.state', 'in', ['ready', 'sent']),
+                ('statement_id.company_id', '=', self.company_id.id),
+            ]).mapped('invoice_ids.id')
+        )
+
+        # ── 3. Factures antérieures non-payées, jamais incluses ────────────────
+        old_invoices = self.env['account.move'].search([
+            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('state', 'in', ['posted', 'draft']),
+            ('payment_state', 'not in', ['paid', 'reversed']),
+            ('invoice_date', '<', self.date_start),
+            ('partner_id', '!=', False),
+            ('company_id', '=', self.company_id.id),
+        ]).filtered(lambda inv: inv.id not in already_included_ids)
+
+        # ── 4. Union des deux ensembles ────────────────────────────────────────
+        all_invoices = period_invoices | old_invoices
+
+        if not all_invoices:
             raise UserError(_(
-                "Aucune facture (draft ou validée) trouvée pour la période %s → %s."
+                "Aucune facture non-payée trouvée pour la période %s → %s"
+                " (ni factures antérieures non incluses)."
             ) % (self.date_start, self.date_end))
 
-        # Grouper par client et créer les lignes
-        partners = invoices.mapped('partner_id')
+        # ── 5. Grouper par client et créer les lignes ──────────────────────────
+        partners = all_invoices.mapped('partner_id')
         lines_vals = []
         for partner in partners:
-            partner_invoices = invoices.filtered(
+            partner_invoices = all_invoices.filtered(
                 lambda inv, p=partner: inv.partner_id == p
             )
             lines_vals.append({
@@ -169,7 +220,7 @@ class DecadeStatement(models.Model):
                 'title': _('Génération réussie'),
                 'message': _(
                     '%d client(s) trouvé(s) avec %d facture(s) au total.'
-                ) % (len(partners), len(invoices)),
+                ) % (len(partners), len(all_invoices)),
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.client', 'tag': 'reload'},
@@ -232,6 +283,8 @@ class DecadeStatement(models.Model):
         """
         today = fields.Date.today()
         date_start, date_end, decade_number = self._get_decade_range(today)
+        # decade_number est maintenant une Selection string
+        decade_number_str = str(decade_number)
 
         # Vérifier si ce batch existe déjà (pas de doublons)
         existing = self.search([
@@ -250,7 +303,7 @@ class DecadeStatement(models.Model):
         statement = self.create({
             'date_start': date_start,
             'date_end': date_end,
-            'decade_number': decade_number,
+            'decade_number': decade_number_str,
             'state': 'draft',
         })
 

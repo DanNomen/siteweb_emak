@@ -7,7 +7,7 @@
         <field name="report_name">decade_statement.report_decade_statement_template</field>
         <field name="report_file">decade_statement.report_decade_statement_template</field>
         <field name="binding_model_id" ref="decade_statement.model_decade_statement_line"/>
-        <field name="print_report_name">'Relevé_%s' % (object.partner_id.name)</field>
+        <field name="print_report_name">'Relevé_Décade%s_%s' % (object.statement_id.decade_number or '', object.partner_id.name)</field>
         <field name="binding_type">report</field>
     </record>
 
@@ -29,6 +29,13 @@
                                     <strong style="color: #6CB14F;">
                                         <t t-esc="doc.statement_id.date_start.strftime('%d/%m/%Y')"/> - <t t-esc="doc.statement_id.date_end.strftime('%d/%m/%Y')"/>
                                     </strong>
+                                    <t t-if="doc.statement_id.decade_number">
+                                        &#160;&#8212;&#160;
+                                        <strong style="color: #6CB14F;">
+                                            Décade N°
+                                            <t t-esc="doc.statement_id.decade_number"/>
+                                        </strong>
+                                    </t>
                                 </p>
                             </div>
 

@@ -34,7 +34,7 @@
                 <field name="name"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
-                <field name="decade_number" string="Décade"/>
+                <field name="decade_number" string="Décade" widget="badge"/>
                 <field name="client_count" string="Nb Clients"/>
                 <field name="total_invoices" string="Nb Factures"/>
                 <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -82,9 +82,17 @@
                     </div>
                     <group>
                         <group string="Période">
-                            <field name="date_start"/>
-                            <field name="date_end"/>
-                            <field name="decade_number" string="Numéro de Décade"/>
+                            <field name="decade_number"
+                                   widget="selection"
+                                   string="Numéro de Décade"/>
+                            <field name="date_start"
+                                   string="Date début"
+                                   readonly="1"
+                                   invisible="not decade_number"/>
+                            <field name="date_end"
+                                   string="Date fin"
+                                   readonly="1"
+                                   invisible="not decade_number"/>
                         </group>
                         <group string="Résumé">
                             <field name="client_count" string="Nombre de clients"/>
