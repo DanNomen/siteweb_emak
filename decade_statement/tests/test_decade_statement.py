@@ -140,6 +140,7 @@ class TestDecadeStatement(AccountTestInvoicingCommon):
         detail_1 = statement_1.line_ids.invoice_detail_ids
         self.assertEqual(detail_1.invoice_id, invoice)
         self.assertFalse(detail_1.origin_statement_id)  # première apparition
+        self.assertTrue(detail_1.is_new_this_period)  # datée dans la décade 1
 
         statement_3 = self.Statement.create({
             'date_start': date(2026, 3, 21),
@@ -152,6 +153,7 @@ class TestDecadeStatement(AccountTestInvoicingCommon):
         detail_3 = statement_3.line_ids.invoice_detail_ids
         self.assertEqual(detail_3.invoice_id, invoice)
         self.assertEqual(detail_3.origin_statement_id, statement_1)
+        self.assertFalse(detail_3.is_new_this_period)  # reportée, pas datée dans la décade 3
 
         # Vue agrégée au niveau du relevé (tous clients confondus).
         self.assertEqual(statement_3.invoice_detail_ids, detail_3)

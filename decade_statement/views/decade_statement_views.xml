@@ -157,6 +157,7 @@
                                            string="Montant dû" sum="Montant dû"
                                            options="{'currency_field': 'currency_id'}"/>
                                     <field name="currency_id" column_invisible="1"/>
+                                    <field name="is_new_this_period" string="Nouvelle cette décade"/>
                                     <field name="origin_statement_id" string="Relevé d'origine"/>
                                 </list>
                             </field>

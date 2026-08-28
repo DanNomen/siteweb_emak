@@ -61,6 +61,17 @@ class DecadeStatementLineInvoice(models.Model):
             "Vide si la facture apparaît pour la première fois dans ce relevé."
         ),
     )
+    is_new_this_period = fields.Boolean(
+        compute='_compute_is_new_this_period',
+        store=True,
+        readonly=True,
+        string='Nouvelle cette décade',
+        help=(
+            "Coché si la facture est datée dans la période [Date début, Date fin] "
+            "de ce relevé. Décoché si elle a été reprise d'une décade antérieure "
+            "encore impayée (voir Relevé d'origine)."
+        ),
+    )
 
     _sql_constraints = [
         (
@@ -85,3 +96,12 @@ class DecadeStatementLineInvoice(models.Model):
             if older:
                 older = older.sorted(key=lambda r: r.statement_id.date_start)
                 rec.origin_statement_id = older[0].statement_id
+
+    @api.depends('invoice_date', 'statement_id.date_start', 'statement_id.date_end')
+    def _compute_is_new_this_period(self):
+        for rec in self:
+            statement = rec.statement_id
+            rec.is_new_this_period = bool(
+                rec.invoice_date and statement.date_start and statement.date_end
+                and statement.date_start <= rec.invoice_date <= statement.date_end
+            )
