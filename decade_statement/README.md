@@ -34,4 +34,14 @@ L'envoi des relevés aux clients se fait de manière **manuelle** pour vous perm
 ## 4. Consultation des Détails
 
 - Depuis un Relevé par Décade, vous pouvez à tout moment cliquer sur une ligne client pour voir le détail des factures qui composent son relevé (onglet "Factures" sur le formulaire de la ligne).
-- Vous pouvez visualiser instantanément le **Montant Total** dû par chaque client pour la période sélectionnée.
+- Tant que l'email n'a pas été envoyé pour ce client, vous pouvez retirer/ajouter des factures directement sur cette ligne (ex : exclure une facture contestée). Une fois l'email envoyé, la liste est figée pour garder une trace fidèle de ce qui a été transmis.
+- Vous pouvez visualiser instantanément le **Montant Total** dû par chaque client pour la période sélectionnée (converti dans la devise de la société si les factures sont dans une autre devise).
+
+## 5. Multi-société
+
+Le cron parcourt toutes les sociétés actives et génère un relevé distinct par société pour la période courante.
+
+## 6. Archivage et suppression
+
+- Un relevé ne peut être supprimé que s'il est encore en **Brouillon** ; au-delà, archivez-le (bouton Actions > Archiver) plutôt que de le supprimer, pour conserver l'historique.
+- Une ligne client dont l'email a déjà été envoyé ne peut pas être supprimée.

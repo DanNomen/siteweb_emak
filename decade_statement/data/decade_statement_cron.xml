@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
 
+    <!-- Tourne tous les jours mais ne génère un relevé que les jours de
+         bascule (11, 21, 1er du mois) — voir DecadeStatement._get_closed_decade_for_date.
+         Un intervalle fixe de 10 jours dérape car les mois ne font pas tous
+         30 jours ; la vérification quotidienne du jour calendaire exact
+         évite ce problème et est auto-réparatrice en cas d'exécution manquée. -->
     <record id="ir_cron_decade_statement" model="ir.cron">
         <field name="name">Génération automatique Relevés Décadaires</field>
         <field name="model_id" ref="decade_statement.model_decade_statement"/>
         <field name="state">code</field>
         <field name="code">model._cron_generate_decade_statement()</field>
         <field name="user_id" ref="base.user_root"/>
-        <field name="interval_number">10</field>
+        <field name="interval_number">1</field>
         <field name="interval_type">days</field>
         <field name="active">True</field>
         <field name="priority">10</field>

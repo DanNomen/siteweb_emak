@@ -17,13 +17,14 @@
         au
         <strong><t t-out="str(object.statement_id.date_end)"/></strong>.
     </p>
+    <t t-set="origin_map" t-value="object.get_invoices_origin_map()"/>
     <table style="width:100%;border-collapse:collapse;margin-top:16px;">
         <thead>
             <tr style="background-color:#4A90D9;color:white;">
                 <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">N° Facture</th>
                 <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">Date</th>
                 <th style="padding:8px 12px;text-align:left;border:1px solid #ddd;">État</th>
-                <th style="padding:8px 12px;text-align:right;border:1px solid #ddd;">Montant TTC</th>
+                <th style="padding:8px 12px;text-align:right;border:1px solid #ddd;">Montant dû</th>
             </tr>
         </thead>
         <tbody>
@@ -37,14 +38,19 @@
                         <t t-else=""><t t-out="inv.state"/></t>
                     </td>
                     <td style="padding:7px 12px;text-align:right;border:1px solid #ddd;">
-                        <t t-out="'{:,.2f}'.format(inv.amount_total)"/>&#160;<t t-out="inv.currency_id.symbol or ''"/>
+                        <t t-out="'{:,.2f}'.format(inv.amount_residual_signed)"/>&#160;<t t-out="inv.currency_id.symbol or ''"/>
+                    </td>
+                </tr>
+                <tr t-if="origin_map.get(inv.id)">
+                    <td colspan="4" style="padding:2px 12px;border:1px solid #ddd;border-top:none;font-size:11px;font-style:italic;color:#b30000;background-color:#fdf5f5;">
+                        Facture déjà présente dans le relevé : <t t-out="origin_map.get(inv.id)"/>
                     </td>
                 </tr>
             </t>
         </tbody>
         <tfoot>
             <tr style="background-color:#4A90D9;color:white;font-weight:bold;">
-                <td colspan="3" style="padding:8px 12px;border:1px solid #ddd;">TOTAL</td>
+                <td colspan="3" style="padding:8px 12px;border:1px solid #ddd;">TOTAL DÛ</td>
                 <td style="padding:8px 12px;text-align:right;border:1px solid #ddd;">
                     <t t-out="'{:,.2f}'.format(object.total_amount)"/>&#160;<t t-out="object.currency_id.symbol or ''"/>
                 </td>

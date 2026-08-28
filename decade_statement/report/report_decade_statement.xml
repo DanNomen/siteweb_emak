@@ -17,6 +17,7 @@
                 <t t-call="web.external_layout">
                     <t t-set="factures" t-value="doc.invoice_ids.sorted(key=lambda i: i.invoice_date or '')"/>
                     <t t-set="today" t-value="datetime.datetime.now().date()"/>
+                    <t t-set="origin_map" t-value="doc.get_invoices_origin_map()"/>
                     <div class="page">
                         <!-- Header -->
                         <div style="padding: 20px; margin-bottom: 15px; background-color: #f9fff9; border-radius: 8px;">
@@ -125,7 +126,7 @@
                                     </tr>
                                     
                                     <!-- Logique facture antérieure -->
-                                    <t t-set="origin_statement" t-value="doc.get_invoice_origin_statement(facture)"/>
+                                    <t t-set="origin_statement" t-value="origin_map.get(facture.id)"/>
                                     <t t-if="origin_statement">
                                         <tr>
                                             <td colspan="6" class="text-center" style="font-size: 11px; font-style: italic; color: #d9534f; background-color: #fdf5f5; border-top: none;">

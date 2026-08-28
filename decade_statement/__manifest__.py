@@ -24,6 +24,7 @@ Fonctionnalités :
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/decade_statement_security.xml',
         'report/report_decade_statement.xml',
         'data/ir_sequence_data.xml',
         'data/decade_statement_mail_template.xml',

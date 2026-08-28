@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import calendar
 import logging
+from datetime import date, datetime, time, timedelta
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -21,6 +23,11 @@ class DecadeStatement(models.Model):
         readonly=True,
         default=lambda self: _('Nouveau'),
         tracking=True,
+    )
+    active = fields.Boolean(
+        string='Actif',
+        default=True,
+        help="Décochez pour archiver ce relevé sans le supprimer.",
     )
     date_start = fields.Date(
         string='Date début',
@@ -62,6 +69,12 @@ class DecadeStatement(models.Model):
         inverse_name='statement_id',
         string='Clients',
     )
+    invoice_detail_ids = fields.One2many(
+        comodel_name='decade.statement.line.invoice',
+        inverse_name='statement_id',
+        string='Détail des Factures',
+        help="Vue facture par facture (tous clients confondus), avec le relevé d'origine si repris d'une décade antérieure.",
+    )
     company_id = fields.Many2one(
         comodel_name='res.company',
         string='Société',
@@ -91,6 +104,14 @@ class DecadeStatement(models.Model):
         store=True,
     )
 
+    _sql_constraints = [
+        (
+            'unique_period_company',
+            'unique(date_start, date_end, company_id)',
+            "Un relevé existe déjà pour cette période et cette société.",
+        ),
+    ]
+
     # ─────────────────────────────────────────────────────────────────────────
     # Compute
     # ─────────────────────────────────────────────────────────────────────────
@@ -107,38 +128,64 @@ class DecadeStatement(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _get_decade_range(ref_date):
-        """Retourne (date_start, date_end, decade_number) pour une date donnée."""
-        day = ref_date.day
-        year = ref_date.year
-        month = ref_date.month
+    def _compute_period(year, month, decade_number):
+        """Retourne (date_start, date_end) pour un mois/décade donnés.
+        decade_number : '1', '2' ou '3' (ou int équivalent).
+        """
         last_day = calendar.monthrange(year, month)[1]
-
-        if day <= 10:
-            return ref_date.replace(day=1), ref_date.replace(day=10), 1
-        elif day <= 20:
-            return ref_date.replace(day=11), ref_date.replace(day=20), 2
+        decade_number = int(decade_number)
+        if decade_number == 1:
+            return date(year, month, 1), date(year, month, 10)
+        elif decade_number == 2:
+            return date(year, month, 11), date(year, month, 20)
         else:
-            return ref_date.replace(day=21), ref_date.replace(day=last_day), 3
+            return date(year, month, 21), date(year, month, last_day)
+
+    @classmethod
+    def _get_decade_range(cls, ref_date):
+        """Retourne (date_start, date_end, decade_number) pour une date donnée."""
+        decade_number = 1 if ref_date.day <= 10 else (2 if ref_date.day <= 20 else 3)
+        date_start, date_end = cls._compute_period(ref_date.year, ref_date.month, decade_number)
+        return date_start, date_end, decade_number
+
+    @classmethod
+    def _get_closed_decade_for_date(cls, today):
+        """Retourne (date_start, date_end, decade_number) pour la décade qui
+        vient de se terminer la veille de `today`, ou None si `today` n'est
+        pas un jour de bascule.
+
+        Jours de bascule :
+        - le 11 du mois -> décade 1 (1 -> 10) du mois courant vient de finir
+        - le 21 du mois -> décade 2 (11 -> 20) du mois courant vient de finir
+        - le 1er du mois -> décade 3 (21 -> fin) du mois PRÉCÉDENT vient de finir
+
+        Utilisé par le cron quotidien : contrairement à un cron à intervalle
+        fixe de 10 jours (qui dérape car les mois ne font pas tous 30 jours),
+        vérifier le jour calendaire exact garantit un alignement correct sur
+        toute l'année, y compris au passage d'une année à l'autre.
+        """
+        if today.day == 11:
+            date_start, date_end = cls._compute_period(today.year, today.month, 1)
+            return date_start, date_end, 1
+        elif today.day == 21:
+            date_start, date_end = cls._compute_period(today.year, today.month, 2)
+            return date_start, date_end, 2
+        elif today.day == 1:
+            last_day_prev_month = today - timedelta(days=1)
+            date_start, date_end = cls._compute_period(
+                last_day_prev_month.year, last_day_prev_month.month, 3
+            )
+            return date_start, date_end, 3
+        return None
 
     @api.onchange('decade_number', 'month_ref')
     def _onchange_decade_number(self):
         """Auto-remplit date_start et date_end selon la décade et le mois choisis."""
         if not self.decade_number or not self.month_ref:
             return
-        ref = self.month_ref
-        year = ref.year
-        month = ref.month
-        last_day = calendar.monthrange(year, month)[1]
-        if self.decade_number == '1':
-            self.date_start = ref.replace(day=1)
-            self.date_end = ref.replace(day=10)
-        elif self.decade_number == '2':
-            self.date_start = ref.replace(day=11)
-            self.date_end = ref.replace(day=20)
-        elif self.decade_number == '3':
-            self.date_start = ref.replace(day=21)
-            self.date_end = ref.replace(day=last_day)
+        self.date_start, self.date_end = self._compute_period(
+            self.month_ref.year, self.month_ref.month, self.decade_number
+        )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -147,51 +194,98 @@ class DecadeStatement(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('decade.statement') or _('Nouveau')
         return super().create(vals_list)
 
+    def unlink(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError(_(
+                    "Impossible de supprimer le relevé '%s' : il n'est plus en brouillon. "
+                    "Archivez-le plutôt si vous ne l'utilisez plus."
+                ) % rec.name)
+        return super().unlink()
+
     # ─────────────────────────────────────────────────────────────────────────
     # Actions
     # ─────────────────────────────────────────────────────────────────────────
 
+    def _get_period_invoices_domain(self):
+        """Domaine des factures clients non-payées, CUMULATIF jusqu'à la fin
+        de la décade (pas seulement celles datées dans la période).
+
+        Un relevé de décade doit refléter l'encours total du client à cette
+        date : une facture de la décade 1 encore impayée doit réapparaître
+        dans le relevé de la décade 3, avec un renvoi vers le relevé
+        d'origine (voir DecadeStatementLine.get_invoices_origin_map, utilisé
+        dans le rapport PDF). Sans le cumul, une facture ancienne impayée ne
+        serait plus jamais reprise dans aucun relevé après sa décade
+        d'émission.
+
+        Inclut aussi les factures sans invoice_date (ex: brouillons créés
+        hors formulaire) dont la date de création tombe avant la fin de la
+        période, pour éviter qu'elles ne soient jamais reprises dans un relevé.
+        """
+        self.ensure_one()
+        end_dt = datetime.combine(self.date_end, time.max)
+        return [
+            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('state', 'in', ['posted', 'draft']),
+            ('payment_state', 'not in', ['paid', 'reversed']),
+            ('partner_id', '!=', False),
+            ('company_id', '=', self.company_id.id),
+            '|',
+            ('invoice_date', '<=', self.date_end),
+            '&', ('invoice_date', '=', False), ('create_date', '<=', end_dt),
+        ]
+
     def action_generate_lines(self):
-        """Génère les lignes clients — filtre strict par période de la décade.
-        Seules les factures dont la date est dans [date_start, date_end] sont incluses.
+        """Génère les lignes clients avec l'encours cumulatif à la fin de la
+        décade (voir _get_period_invoices_domain) : les factures d'une
+        décade antérieure encore impayées sont reprises, avec un renvoi vers
+        leur relevé d'origine sur le rapport PDF.
+
+        Les lignes déjà envoyées (email_sent) sont conservées telles quelles
+        (on ne perd pas la trace de ce qui a réellement été envoyé) ; seules
+        les lignes non envoyées sont mises à jour ou recréées.
         """
         self.ensure_one()
         if not self.date_start or not self.date_end:
             raise UserError(_("Veuillez d'abord choisir un Numéro de Décade."))
 
-        # Supprimer les lignes existantes avant régénération
-        self.line_ids.unlink()
+        invoices = self.env['account.move'].search(self._get_period_invoices_domain())
 
-        # Factures non-payées de la période courante uniquement
-        invoices = self.env['account.move'].search([
-            ('move_type', 'in', ['out_invoice', 'out_refund']),
-            ('state', 'in', ['posted', 'draft']),
-            ('payment_state', 'not in', ['paid', 'reversed']),
-            ('invoice_date', '>=', self.date_start),
-            ('invoice_date', '<=', self.date_end),
-            ('partner_id', '!=', False),
-            ('company_id', '=', self.company_id.id),
-        ])
-
-        if not invoices:
+        if not invoices and not self.line_ids:
             raise UserError(_(
-                "Aucune facture non-payée trouvée pour la période %s → %s."
-            ) % (self.date_start, self.date_end))
+                "Aucune facture non-payée trouvée à la date du %s."
+            ) % self.date_end)
 
-        # Grouper par client et créer les lignes
         partners = invoices.mapped('partner_id')
-        lines_vals = []
+        existing_by_partner = {line.partner_id: line for line in self.line_ids}
+
+        # Lignes dont le client n'a plus de facture dans la période : on ne les
+        # retire que si l'email n'a pas déjà été envoyé (sinon on garde l'historique).
+        obsolete_lines = self.line_ids.filtered(
+            lambda l: l.partner_id not in partners and not l.email_sent
+        )
+        obsolete_lines.unlink()
+
+        lines_to_create = []
         for partner in partners:
             partner_invoices = invoices.filtered(
                 lambda inv, p=partner: inv.partner_id == p
             )
-            lines_vals.append({
-                'statement_id': self.id,
-                'partner_id': partner.id,
-                'invoice_ids': [(6, 0, partner_invoices.ids)],
-            })
+            line = existing_by_partner.get(partner)
+            if line and not line.email_sent:
+                line.invoice_ids = [(6, 0, partner_invoices.ids)]
+            elif not line:
+                lines_to_create.append({
+                    'statement_id': self.id,
+                    'partner_id': partner.id,
+                    'invoice_ids': [(6, 0, partner_invoices.ids)],
+                })
+            # si line et line.email_sent : on ne touche pas à l'historique envoyé
 
-        self.env['decade.statement.line'].create(lines_vals)
+        if lines_to_create:
+            self.env['decade.statement.line'].create(lines_to_create)
+
         self.state = 'ready'
 
         return {
@@ -200,8 +294,8 @@ class DecadeStatement(models.Model):
             'params': {
                 'title': _('Génération réussie'),
                 'message': _(
-                    '%d client(s) trouvé(s) avec %d facture(s) du %s au %s.'
-                ) % (len(partners), len(invoices), self.date_start, self.date_end),
+                    '%d client(s) trouvé(s) avec %d facture(s) en cours au %s.'
+                ) % (len(partners), len(invoices), self.date_end),
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.client', 'tag': 'reload'},
@@ -209,7 +303,12 @@ class DecadeStatement(models.Model):
         }
 
     def action_send_all_emails(self):
-        """Envoie les relevés par email à tous les clients du batch."""
+        """Met en file d'envoi les relevés par email pour tous les clients du batch.
+
+        Les emails sont mis en queue (force_send=False) plutôt qu'envoyés de
+        façon synchrone, pour ne pas bloquer l'interface sur un lot important
+        de clients ; ils partent ensuite via le cron standard d'Odoo.
+        """
         self.ensure_one()
         if not self.line_ids:
             raise UserError(_("Générez d'abord les lignes clients."))
@@ -223,16 +322,16 @@ class DecadeStatement(models.Model):
                 error_list.append(line.partner_id.name)
                 continue
             try:
-                line.action_send_email()
+                line.action_send_email(force_send=False)
                 sent_count += 1
-            except Exception as e:
-                _logger.error("Erreur envoi email pour %s : %s", line.partner_id.name, e)
+            except Exception:
+                _logger.exception("Erreur envoi email pour %s", line.partner_id.name)
                 error_list.append(line.partner_id.name)
 
         if all(l.email_sent for l in self.line_ids):
             self.state = 'sent'
 
-        msg = _('%d email(s) envoyé(s) avec succès.') % sent_count
+        msg = _('%d email(s) mis en file d\'envoi avec succès.') % sent_count
         if error_list:
             msg += _(' Erreur pour : %s (email manquant ou invalide).') % ', '.join(error_list)
 
@@ -258,46 +357,59 @@ class DecadeStatement(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     @api.model
-    def _cron_generate_decade_statement(self):
-        """Appelée automatiquement par le cron tous les 10 jours.
-        Génère le batch décade pour la période courante.
+    def _cron_generate_decade_statement(self, today=None):
+        """Appelée automatiquement par le cron TOUS LES JOURS (voir
+        data/decade_statement_cron.xml). Ne génère un relevé que le jour où
+        une décade vient de se terminer (le 11, le 21, ou le 1er du mois) —
+        voir _get_closed_decade_for_date(). Les autres jours, ne fait rien.
+
+        Génère un relevé pour chaque société active (le cron tourne avec
+        l'utilisateur technique, pas un utilisateur lié à une société en
+        particulier).
+
+        :param today: uniquement pour les tests, permet de simuler un jour
+            de bascule précis sans dépendre de la date système.
         """
-        today = fields.Date.today()
-        date_start, date_end, decade_number = self._get_decade_range(today)
-        # decade_number est maintenant une Selection string
+        today = today or fields.Date.today()
+        decade_range = self._get_closed_decade_for_date(today)
+        if not decade_range:
+            return
+        date_start, date_end, decade_number = decade_range
         decade_number_str = str(decade_number)
 
-        # Vérifier si ce batch existe déjà (pas de doublons)
-        existing = self.search([
-            ('date_start', '=', date_start),
-            ('date_end', '=', date_end),
-            ('company_id', '=', self.env.company.id),
-        ])
-        if existing:
-            _logger.info(
-                "Relevé Décade pour %s -> %s déjà existant — génération ignorée.", date_start, date_end
-            )
-            return
+        for company in self.env['res.company'].search([]):
+            existing = self.search([
+                ('date_start', '=', date_start),
+                ('date_end', '=', date_end),
+                ('company_id', '=', company.id),
+            ])
+            if existing:
+                _logger.info(
+                    "Relevé Décade pour %s -> %s (société %s) déjà existant — génération ignorée.",
+                    date_start, date_end, company.name,
+                )
+                continue
 
-        _logger.info("Création automatique du relevé décade")
+            _logger.info("Création automatique du relevé décade pour %s", company.name)
 
-        statement = self.create({
-            'date_start': date_start,
-            'date_end': date_end,
-            'month_ref': date_start.replace(day=1),
-            'decade_number': decade_number_str,
-            'state': 'draft',
-        })
+            statement = self.with_company(company).create({
+                'date_start': date_start,
+                'date_end': date_end,
+                'month_ref': date_start.replace(day=1),
+                'decade_number': decade_number_str,
+                'state': 'draft',
+                'company_id': company.id,
+            })
 
-        try:
-            statement.action_generate_lines()
-            _logger.info(
-                "Relevé '%s' généré — %d client(s), montant total : %s.",
-                statement.name,
-                statement.client_count,
-                statement.total_amount,
-            )
-        except UserError as e:
-            _logger.warning(
-                "Relevé '%s' créé sans lignes (aucune facture) : %s", statement.name, str(e)
-            )
+            try:
+                statement.action_generate_lines()
+                _logger.info(
+                    "Relevé '%s' généré — %d client(s), montant total : %s.",
+                    statement.name,
+                    statement.client_count,
+                    statement.total_amount,
+                )
+            except UserError as e:
+                _logger.warning(
+                    "Relevé '%s' créé sans lignes (aucune facture) : %s", statement.name, str(e)
+                )

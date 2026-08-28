@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="decade_statement_company_rule" model="ir.rule">
+        <field name="name">Relevé par Décade : multi-société</field>
+        <field name="model_id" ref="model_decade_statement"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="decade_statement_line_company_rule" model="ir.rule">
+        <field name="name">Ligne Relevé par Décade : multi-société</field>
+        <field name="model_id" ref="model_decade_statement_line"/>
+        <field name="domain_force">['|', ('statement_id.company_id', '=', False), ('statement_id.company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="decade_statement_line_invoice_company_rule" model="ir.rule">
+        <field name="name">Détail Facture Relevé par Décade : multi-société</field>
+        <field name="model_id" ref="model_decade_statement_line_invoice"/>
+        <field name="domain_force">['|', ('statement_id.company_id', '=', False), ('statement_id.company_id', 'in', company_ids)]</field>
+    </record>
+
+</odoo>

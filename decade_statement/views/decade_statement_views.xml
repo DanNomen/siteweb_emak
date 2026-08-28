@@ -145,9 +145,73 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Détail des Factures" name="invoice_details">
+                            <field name="invoice_detail_ids" nolabel="1">
+                                <list string="Factures" decoration-warning="origin_statement_id">
+                                    <field name="partner_id" string="Client"/>
+                                    <field name="invoice_id" string="Facture"/>
+                                    <field name="invoice_date" string="Date facture"/>
+                                    <field name="invoice_date_due" string="Échéance"/>
+                                    <field name="move_state" string="État"/>
+                                    <field name="amount_residual_signed" widget="monetary"
+                                           string="Montant dû" sum="Montant dû"
+                                           options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="origin_statement_id" string="Relevé d'origine"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         VUE FORMULAIRE — decade.statement.line (ouverte au clic sur une ligne
+         cliente dans le relevé, ou depuis le menu Lignes de Relevé). Permet
+         d'ajuster manuellement les factures d'un client avant l'envoi, tant
+         que l'email n'a pas déjà été envoyé.
+         ==================================================================== -->
+    <record id="view_decade_statement_line_form" model="ir.ui.view">
+        <field name="name">decade.statement.line.form</field>
+        <field name="model">decade.statement.line</field>
+        <field name="arch" type="xml">
+            <form string="Ligne Relevé Client">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="statement_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="partner_email" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_amount" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="email_sent" readonly="1"/>
+                            <field name="email_sent_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Factures" name="invoices">
+                            <p class="text-muted" invisible="email_sent == False">
+                                L'email a déjà été envoyé pour ce client : la liste des factures
+                                est figée pour conserver une trace fidèle de ce qui a été transmis.
+                            </p>
+                            <field name="invoice_ids" readonly="email_sent == True">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="invoice_date"/>
+                                    <field name="invoice_date_due"/>
+                                    <field name="state"/>
+                                    <field name="amount_total"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
             </form>
         </field>
     </record>
@@ -172,6 +236,8 @@
                 <separator/>
                 <filter string="Ce mois-ci" name="filter_this_month"
                         domain="[('date_start', '&gt;=', (context_today()).strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <filter string="Archivé" name="filter_inactive" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Grouper par">
                     <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
                     <filter string="Décade N°" name="group_decade" context="{'group_by': 'decade_number'}"/>

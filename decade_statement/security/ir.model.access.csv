@@ -1,3 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_decade_statement,access.decade.statement,model_decade_statement,account.group_account_user,1,1,1,1
-access_decade_statement_line,access.decade.statement.line,model_decade_statement_line,account.group_account_user,1,1,1,1
+access_decade_statement_user,access.decade.statement.user,model_decade_statement,account.group_account_user,1,1,1,0
+access_decade_statement_manager,access.decade.statement.manager,model_decade_statement,account.group_account_manager,1,1,1,1
+access_decade_statement_line_user,access.decade.statement.line.user,model_decade_statement_line,account.group_account_user,1,1,1,0
+access_decade_statement_line_manager,access.decade.statement.line.manager,model_decade_statement_line,account.group_account_manager,1,1,1,1
+access_decade_statement_line_invoice_user,access.decade.statement.line.invoice.user,model_decade_statement_line_invoice,account.group_account_user,1,0,0,0
+access_decade_statement_line_invoice_manager,access.decade.statement.line.invoice.manager,model_decade_statement_line_invoice,account.group_account_manager,1,1,1,1
