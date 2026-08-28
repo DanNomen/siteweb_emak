@@ -89,7 +89,21 @@
                         </div>
 
                         <!-- Tableau -->
-                        <table class="table table-sm table-bordered" style="width: 100%;">
+                        <!-- Le total est un <table> séparé (pas un <tfoot>) placé juste après :
+                             wkhtmltopdf répète thead ET tfoot sur CHAQUE page quand un tableau
+                             est coupé par un saut de page. En sortant le total du tableau, il ne
+                             s'affiche qu'une fois, à la suite naturelle des lignes (donc en
+                             dernière page). Les deux tableaux partagent le même colgroup pour
+                             rester visuellement alignés. -->
+                        <table class="table table-sm table-bordered" style="width: 100%; table-layout: fixed; margin-bottom: 0;">
+                            <colgroup>
+                                <col style="width:16%"/>
+                                <col style="width:14%"/>
+                                <col style="width:14%"/>
+                                <col style="width:18.67%"/>
+                                <col style="width:18.67%"/>
+                                <col style="width:18.66%"/>
+                            </colgroup>
                             <thead style="background-color: #6CB14F; color: white;">
                                 <tr>
                                     <th class="text-center">Facture N°</th>
@@ -136,7 +150,21 @@
                                     </t>
                                 </t>
                             </tbody>
-                            <tfoot>
+                        </table>
+
+                        <!-- Total : table à part (pas de <tfoot>) pour n'apparaître
+                             qu'une fois, à la suite du tableau ci-dessus — voir
+                             note plus haut sur la répétition de tfoot par wkhtmltopdf. -->
+                        <table class="table table-sm table-bordered" style="width: 100%; table-layout: fixed; margin-top: -1px;">
+                            <colgroup>
+                                <col style="width:16%"/>
+                                <col style="width:14%"/>
+                                <col style="width:14%"/>
+                                <col style="width:18.67%"/>
+                                <col style="width:18.67%"/>
+                                <col style="width:18.66%"/>
+                            </colgroup>
+                            <tbody>
                                 <tr style="background-color: #f0f8ee; font-weight: bold; border-top: 2px solid #6CB14F;">
                                     <td colspan="3" class="text-end" style="padding: 8px; font-size: 13px; color: #333;">
                                         TOTAL
@@ -151,7 +179,7 @@
                                         <t t-esc="'{:,.2f}'.format(total_du).replace(',', ' ').replace('.', ',')"/> <t t-esc="doc.currency_id.name"/>
                                     </td>
                                 </tr>
-                            </tfoot>
+                            </tbody>
                         </table>
 
                     </div>
