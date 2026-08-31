@@ -41,38 +41,46 @@ class TaxReport(models.TransientModel):
         tax-related information for the current month. It calculates the net
         amount and tax amount for both sales and purchases based on the tax
         information associated with account move lines.
+
+        Previously this scanned EVERY account.move.line in the database just
+        to enumerate which taxes exist (`search([]).mapped('tax_ids')`), then
+        issued one extra search() per tax. Taxes are looked up directly from
+        account.tax instead, and their totals computed with a single
+        read_group (grouping by a many2many field works fine in Odoo and
+        returns one row per tax) instead of one query per tax.
+
             :return: Dictionary containing sale and purchase data for the
                      current month.
         """
         sale = []
         purchase = []
-        tax_ids = self.env['account.move.line'].search([]).mapped(
-            'tax_ids')
         today = fields.Date.today()
-        for tax in tax_ids:
-            tax_id = self.env['account.move.line'].search(
-                [('tax_ids', '=', tax.id), ('parent_state', '=', 'posted'),
-                 ('date', '>=', get_month(today)[0]),
-                 ('date', '<=', get_month(today)[1])]).read(
-                ['debit', 'credit'])
-            tax_debit_sums = sum(record['debit'] for record in tax_id)
-            tax_credit_sums = sum(record['credit'] for record in tax_id)
+        month_start, month_end = get_month(today)
+
+        taxes = self.env['account.tax'].search([('type_tax_use', 'in', ['sale', 'purchase'])])
+        groups = self.env['account.move.line'].read_group(
+            domain=[('tax_ids', 'in', taxes.ids), ('parent_state', '=', 'posted'),
+                    ('date', '>=', month_start), ('date', '<=', month_end)],
+            fields=['tax_ids', 'debit:sum', 'credit:sum'],
+            groupby=['tax_ids'],
+        )
+        totals_map = {g['tax_ids'][0]: g for g in groups if g.get('tax_ids')}
+
+        for tax in taxes:
+            g = totals_map.get(tax.id, {})
+            tax_debit_sums = g.get('debit') or 0.0
+            tax_credit_sums = g.get('credit') or 0.0
+            entry = {
+                'name': tax.name,
+                'amount': tax.amount,
+                'net': round(tax_debit_sums + tax_credit_sums, 2),
+                'tax': round((tax_debit_sums + tax_credit_sums) * (
+                        tax.amount / 100), 2)
+            }
             if tax.type_tax_use == 'sale':
-                sale.append({
-                    'name': tax.name,
-                    'amount': tax.amount,
-                    'net': round(tax_debit_sums + tax_credit_sums, 2),
-                    'tax': round((tax_debit_sums + tax_credit_sums) * (
-                            tax.amount / 100), 2)
-                })
+                sale.append(entry)
             elif tax.type_tax_use == 'purchase':
-                purchase.append({
-                    'name': tax.name,
-                    'amount': tax.amount,
-                    'net': round(tax_debit_sums + tax_credit_sums, 2),
-                    'tax': round((tax_debit_sums + tax_credit_sums) * (
-                            tax.amount / 100), 2)
-                })
+                purchase.append(entry)
         return {
             'sale': sale,
             'purchase': purchase
@@ -128,7 +136,7 @@ class TaxReport(models.TransientModel):
                             if comparison_type == 'year':
                                 start_date = start_date_first
                                 end_date = end_date_first
-                                for i in range(1, eval(comparison_number) + 1):
+                                for i in range(1, int(comparison_number) + 1):
                                     com_start_date = subtract(start_date,
                                                               years=i)
                                     com_end_date = subtract(end_date, years=i)
@@ -156,7 +164,7 @@ class TaxReport(models.TransientModel):
                                 dynamic_date_num[
                                     f"dynamic_date_num{0}"] = self.get_month_name(
                                     start_date) + ' ' + str(start_date.year)
-                                for i in range(1, eval(comparison_number) + 1):
+                                for i in range(1, int(comparison_number) + 1):
                                     com_start_date = subtract(start_date,
                                                               months=i)
                                     com_end_date = subtract(end_date, months=i)
@@ -190,7 +198,7 @@ class TaxReport(models.TransientModel):
                                     get_quarter_number(
                                         start_date)) + ' ' + str(
                                     start_date.year)
-                                for i in range(1, eval(comparison_number) + 1):
+                                for i in range(1, int(comparison_number) + 1):
                                     com_start_date = subtract(start_date,
                                                               months=i * 3)
                                     com_end_date = subtract(end_date,
@@ -298,7 +306,7 @@ class TaxReport(models.TransientModel):
                         if comparison_type == 'year':
                             start_date = start_date_first
                             end_date = end_date_first
-                            for i in range(1, eval(comparison_number) + 1):
+                            for i in range(1, int(comparison_number) + 1):
                                 com_start_date = subtract(start_date,
                                                           years=i)
                                 com_end_date = subtract(end_date, years=i)
@@ -326,7 +334,7 @@ class TaxReport(models.TransientModel):
                             dynamic_date_num[
                                 f"dynamic_date_num{0}"] = self.get_month_name(
                                 start_date) + ' ' + str(start_date.year)
-                            for i in range(1, eval(comparison_number) + 1):
+                            for i in range(1, int(comparison_number) + 1):
                                 com_start_date = subtract(start_date, months=i)
                                 com_end_date = subtract(end_date, months=i)
                                 tax_id = self.env[
@@ -358,7 +366,7 @@ class TaxReport(models.TransientModel):
                                 f"dynamic_date_num{0}"] = 'Q' + ' ' + str(
                                 get_quarter_number(start_date)) + ' ' + str(
                                 start_date.year)
-                            for i in range(1, eval(comparison_number) + 1):
+                            for i in range(1, int(comparison_number) + 1):
                                 com_start_date = subtract(start_date,
                                                           months=i * 3)
                                 com_end_date = subtract(end_date,
@@ -459,7 +467,7 @@ class TaxReport(models.TransientModel):
                     if comparison_type == 'year':
                         start_date = start_date_first
                         end_date = end_date_first
-                        for i in range(1, eval(comparison_number) + 1):
+                        for i in range(1, int(comparison_number) + 1):
                             com_start_date = subtract(start_date,
                                                       years=i)
                             com_end_date = subtract(end_date, years=i)
@@ -485,7 +493,7 @@ class TaxReport(models.TransientModel):
                         dynamic_date_num[
                             f"dynamic_date_num{0}"] = self.get_month_name(
                             start_date) + ' ' + str(start_date.year)
-                        for i in range(1, eval(comparison_number) + 1):
+                        for i in range(1, int(comparison_number) + 1):
                             com_start_date = subtract(start_date, months=i)
                             com_end_date = subtract(end_date, months=i)
                             tax_id = self.env[
@@ -515,7 +523,7 @@ class TaxReport(models.TransientModel):
                             f"dynamic_date_num{0}"] = 'Q' + ' ' + str(
                             get_quarter_number(start_date)) + ' ' + str(
                             start_date.year)
-                        for i in range(1, eval(comparison_number) + 1):
+                        for i in range(1, int(comparison_number) + 1):
                             com_start_date = subtract(start_date,
                                                       months=i * 3)
                             com_end_date = subtract(end_date,
@@ -626,15 +634,15 @@ class TaxReport(models.TransientModel):
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet()
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px',
+            {'align': 'left', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)

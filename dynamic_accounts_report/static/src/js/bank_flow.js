@@ -52,64 +52,79 @@ class BankBook extends owl.Component {
         /**
          * Loads the data for the bank book report.
          */
-        let move_line_list = []
-        let move_lines_total = ''
-        let accounts = [];
         var self = this;
-        let totalDebitSum = 0;
-        let totalCreditSum = 0;
-        let currency;
-        var action_title = self.props.action.display_name;
         try {
-            var self = this;
-            self.state.data = await self.orm.call("bank.book.report", "view_report", []);
-
-
-            for (const index in self.state.data) {
-                const value = self.state.data[index];
-                if (index !== 'move_lines_total' && index !== 'accounts') {
-                    move_line_list.push(index);
-                } else if (index === 'accounts') {
-                    self.state.accounts = value;
-                } else {
-                    move_lines_total = value;
-                    for (const moveLine of Object.values(move_lines_total)) {
-                        currency = moveLine.currency_id;
-                        totalDebitSum += moveLine.total_debit || 0;
-                        totalCreditSum += moveLine.total_credit || 0;
-                        moveLine.total_debit_display = this.formatNumberWithSeparators(moveLine.total_debit || 0);
-                        moveLine.total_credit_display = this.formatNumberWithSeparators(moveLine.total_credit || 0);
-                        moveLine.balance = this.formatNumberWithSeparators(moveLine.total_debit - moveLine.total_credit || 0);
-                    }
-
-                }
-            }
-
-
-
-            self.state.move_line = move_line_list
-            for (const key of move_line_list) {
-                for (const line of self.state.data[key]) {
-                    if (line.debit !== undefined) {
-                        line.debit_display = this.formatNumberWithSeparators(line.debit || 0);
-                    }
-                    if (line.credit !== undefined) {
-                        line.credit_display = this.formatNumberWithSeparators(line.credit || 0);
-                    }
-                    if (line.balance !== undefined) {
-                        line.balance_display = this.formatNumberWithSeparators(line.balance || 0);
-                    }
-                }
-            }
-            self.state.total = move_lines_total
-            self.state.currency = currency
-            self.state.total_debit = totalDebitSum.toFixed(2)
-            self.state.total_debit_display = this.formatNumberWithSeparators(self.state.total_debit)
-            self.state.total_credit = totalCreditSum.toFixed(2)
-            self.state.total_credit_display = this.formatNumberWithSeparators(self.state.total_credit)
+            const data = await self.orm.call("bank.book.report", "view_report", []);
+            self._processAccountData(data);
+            // Build the full account picker list once, from the unfiltered initial load
+            // (applyFilter must NOT overwrite this or the picker would shrink to only
+            // the currently-matching accounts, making it impossible to broaden the filter again).
+            self.state.accounts = Object.entries(data['account_totals'] || {}).map(([name, acc]) => ({
+                id: acc.account_id, name: name, display_name: name,
+            }));
         }
         catch (el) {
-            window.location.href;
+            console.error('BankBook load_data error:', el);
+        }
+    }
+    _processAccountData(data) {
+        /**
+         * The backend (bank.book.report) returns {account_totals: {name: {...}}, accounts: [name, ...]}.
+         * Build state.account_data (keyed by account name, used by the template for
+         * both the row totals and the lazy-loaded expand/collapse detail lines) and
+         * state.move_line (the ordered list of account names to iterate over).
+         */
+        const account_totals = data['account_totals'] || {};
+        let totalDebitSum = 0;
+        let totalCreditSum = 0;
+        let currency = null;
+
+        Object.values(account_totals).forEach(acc => {
+            currency = acc.currency_id || currency;
+            totalDebitSum += acc.total_debit || 0;
+            totalCreditSum += acc.total_credit || 0;
+            acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
+            acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
+            acc.balance_display = ((acc.total_debit || 0) - (acc.total_credit || 0)).toFixed(2);
+            acc._lines_loaded = false;
+            acc._lines = [];
+        });
+
+        this.state.account_data = account_totals;
+        this.state.move_line = data['accounts'] || Object.keys(account_totals);
+        if (currency) { this.state.currency = currency; }
+        this.state.total_debit = totalDebitSum.toFixed(2);
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
+        this.state.total_credit = totalCreditSum.toFixed(2);
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
+    }
+    async expandAccount(ev, accountName) {
+        /** Lazy-load move lines for a single account when user expands it */
+        ev.preventDefault();
+        const acc = this.state.account_data[accountName];
+        if (!acc) return;
+
+        if (acc._lines_loaded) {
+            acc._expanded = !acc._expanded;
+            return;
+        }
+
+        acc._loading = true;
+        try {
+            const lines = await this.orm.call(
+                "bank.book.report", "get_account_lines",
+                [acc.account_id, this.state.selected_partner || [],
+                 this.state.date_range || null,
+                 this.state.selected_account_list || [],
+                 this.state.options || null]
+            );
+            acc._lines = lines;
+            acc._lines_loaded = true;
+            acc._expanded = true;
+        } catch (e) {
+            console.error('Failed to load lines for', accountName, e);
+        } finally {
+            acc._loading = false;
         }
     }
     gotoJournalEntry(ev) {
@@ -147,6 +162,16 @@ class BankBook extends owl.Component {
             'currency':this.state.currency,
         }
         var action_title = self.props.action.display_name;
+        // Lines are only lazy-loaded for a single account when its row is
+        // expanded (expandAccount/get_account_lines) - state.data/state.total
+        // were declared but never populated, so the PDF always had zero
+        // account totals AND zero transaction detail. The account_totals
+        // (small) and filters travel here; the server fetches the lines
+        // itself in IrActionsReportBankBook._get_report_values.
+        const account_totals = self.state.account_data || {};
+        const account_ids = Object.values(account_totals)
+            .map(acc => acc.account_id)
+            .filter(id => id != null);
         return self.action.doAction({
             'type': 'ir.actions.report',
             'report_type': 'qweb-pdf',
@@ -156,10 +181,15 @@ class BankBook extends owl.Component {
                 'move_lines': self.state.move_line,
                 'filters': this.filter(),
                 'grand_total': totals,
-                'data': self.state.data,
-                'total': self.state.total,
+                'account_totals': account_totals,
+                'account_ids': account_ids,
+                'total': account_totals,
                 'title': action_title,
-                'report_name': self.props.action.display_name
+                'report_name': self.props.action.display_name,
+                'partner_id': self.state.selected_partner || [],
+                'data_range': self.state.date_range || null,
+                'account_list': self.state.selected_account_list || [],
+                'options': self.state.options || null,
             },
             'display_name': self.props.action.display_name,
         });
@@ -240,13 +270,26 @@ class BankBook extends owl.Component {
             'total_credit_display':this.state.total_credit_display,
             'currency':this.state.currency,
         }
+        // Same issue as printPdf(): state.data/state.total were declared
+        // but never populated. The xlsx report now fetches lines itself
+        // server-side (get_xlsx_report -> get_export_lines) from just the
+        // account totals/ids and filters below.
+        const account_totals = self.state.account_data || {};
+        const account_ids = Object.values(account_totals)
+            .map(acc => acc.account_id)
+            .filter(id => id != null);
         var datas = {
             'move_lines': self.state.move_line,
-            'data': self.state.data,
-            'total': self.state.total,
+            'accounts': self.state.move_line,
+            'account_totals': account_totals,
+            'account_ids': account_ids,
             'title': action_title,
             'filters': this.filter(),
             'grand_total': totals,
+            'partner_id': self.state.selected_partner || [],
+            'data_range': self.state.date_range || null,
+            'account_list': self.state.selected_account_list || [],
+            'options': self.state.options || null,
         }
         var action = {
             'data': {
@@ -340,25 +383,7 @@ class BankBook extends owl.Component {
             }
         }
         let filtered_data = await this.orm.call("bank.book.report", "get_filter_values", [this.state.selected_partner, this.state.date_range, this.state.selected_account_list, this.state.options,]);
-        for (const index in filtered_data) {
-            const value = filtered_data[index];
-
-            if (index !== 'move_lines_total') {
-                move_line_list.push(index);
-            } else {
-                move_line_totals = value;
-
-                for (const moveLine of Object.values(move_line_totals)) {
-                    totalDebitSum += moveLine.total_debit || 0;
-                    totalCreditSum += moveLine.total_credit || 0;
-                }
-            }
-        }
-        this.state.move_line = move_line_list
-        this.state.data = filtered_data
-        this.state.total = move_line_totals
-        this.state.total_debit = totalDebitSum.toFixed(2)
-        this.state.total_credit = totalCreditSum.toFixed(2)
+        this._processAccountData(filtered_data);
         if (this.unfoldButton.el.classList.contains("selected-filter")) {
               this.unfoldButton.el.classList.remove("selected-filter");
         }
@@ -381,6 +406,10 @@ class BankBook extends owl.Component {
             }
             ev.target.classList.remove("selected-filter");
         }
+    }
+    deleteNote(ev) {
+        const id = parseInt(ev.target.getAttribute('id'), 10);
+        this.state.message_list = this.state.message_list.filter(m => m.id !== id);
     }
 }
 BankBook.defaultProps = {

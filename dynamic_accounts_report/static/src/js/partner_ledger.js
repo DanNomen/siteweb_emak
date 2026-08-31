@@ -425,6 +425,13 @@ class PartnerLedger extends owl.Component {
             'currency':this.state.currency,
         }
         var action_title = this.props.action.display_name;
+        // Lines are only lazy-loaded for a single partner when its row is
+        // expanded (expandPartner/get_partner_lines) - state.data was
+        // declared but never populated, so the PDF always had partner
+        // totals but zero transaction detail. The server fetches the lines
+        // itself in IrActionsReportPartnerLedger._get_report_values from
+        // just the totals (which already carry each partner_id) and the
+        // filters below.
         return this.action.doAction({
             'type': 'ir.actions.report',
             'report_type': 'qweb-pdf',
@@ -434,10 +441,13 @@ class PartnerLedger extends owl.Component {
                 'partners': this.state.partners,
                 'filters': this.filter(),
                 'grand_total': totals,
-                'data': this.state.data,
                 'total': this.state.total,
                 'title': action_title,
-                'report_name': this.props.action.display_name
+                'report_name': this.props.action.display_name,
+                'date_range': this.state.date_range || null,
+                'account': this.state.account || null,
+                'options': this.state.options || null,
+                'account_ids': this.state.selected_account_ids || null,
             },
             'display_name': this.props.action.display_name,
         });
@@ -511,13 +521,20 @@ class PartnerLedger extends owl.Component {
             'currency':this.state.currency,
         }
         var action_title = self.props.action.display_name;
+        // Same issue as printPdf(): state.data was declared but never
+        // populated. The xlsx report now fetches lines itself server-side
+        // (get_xlsx_report -> get_export_lines) from just the totals and
+        // filters below.
         var datas = {
             'partners': self.state.partners,
-            'data': self.state.data,
             'total': self.state.total,
             'title': action_title,
             'filters': this.filter(),
             'grand_total': totals,
+            'date_range': self.state.date_range || null,
+            'account': self.state.account || null,
+            'options': self.state.options || null,
+            'account_ids': self.state.selected_account_ids || null,
         }
         var action = {
             'data': {
@@ -715,6 +732,10 @@ class PartnerLedger extends owl.Component {
             }
             ev.target.classList.remove("selected-filter");
         }
+    }
+    deleteNote(ev) {
+        const id = parseInt(ev.target.getAttribute('id'), 10);
+        this.state.message_list = this.state.message_list.filter(m => m.id !== id);
     }
 }
 PartnerLedger.defaultProps = {

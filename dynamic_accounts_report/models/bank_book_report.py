@@ -105,10 +105,39 @@ class BankBookReport(models.TransientModel):
         """Lazy-load move lines for a single account when expanded."""
         domain = self._build_domain(partner_id, data_range, account_list, options)
         domain.append(('account_id', '=', account_id))
-        
+
         move_lines = self.env['account.move.line'].search(domain, order='date asc', limit=500)
         return move_lines.read(['date', 'journal_id', 'partner_id', 'move_name', 'debit',
                                 'move_id', 'credit', 'name', 'ref'])
+
+    @api.model
+    def get_export_lines(self, account_ids, partner_id, data_range, account_list, options):
+        """
+        Fetch move line details for MULTIPLE accounts in a single query,
+        grouped by account id.
+
+        On-screen, lines are only lazy-loaded for a single account when its
+        row is expanded (get_account_lines), so the export never had access
+        to any transaction detail - it looked empty/broken. This fetches
+        everything needed for the export in one go, keyed by account id
+        (not name, since two different accounts can share the same label).
+        """
+        if not account_ids:
+            return {}
+        domain = self._build_domain(partner_id, data_range, account_list, options)
+        domain.append(('account_id', 'in', account_ids))
+
+        move_lines = self.env['account.move.line'].search(domain, order='account_id, date asc')
+        lines = move_lines.read(['date', 'journal_id', 'partner_id', 'move_name', 'debit',
+                                 'move_id', 'credit', 'name', 'ref', 'account_id'])
+
+        result = {}
+        for line in lines:
+            acc = line['account_id']
+            if not acc:
+                continue
+            result.setdefault(acc[0], []).append(line)
+        return result
 
     @api.model
     def get_xlsx_report(self, data, response, report_name, report_action):
@@ -119,13 +148,13 @@ class BankBookReport(models.TransientModel):
         sheet = workbook.add_worksheet()
         head = workbook.add_format({'font_size': 15, 'align': 'center', 'bold': True})
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px', 'border': 1,
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1,
               'bg_color': '#D3D3D3', 'border_color': 'black'})
         filter_head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px', 'border': 1,
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1,
               'bg_color': '#D3D3D3', 'border_color': 'black'})
-        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '10px'})
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
@@ -144,17 +173,33 @@ class BankBookReport(models.TransientModel):
             return "{:,.2f}".format(float(v or 0))
 
         accounts = data.get('accounts', []) or []
+        account_totals = data.get('account_totals', {}) or {}
         sheet.write(7, col, 'Account', sub_heading)
         sheet.write(7, col + 1, 'Date', sub_heading)
         sheet.write(7, col + 2, 'Reference', sub_heading)
         sheet.write(7, col + 3, 'Debit', sub_heading)
         sheet.write(7, col + 4, 'Credit', sub_heading)
-        
+
+        # Move-line detail is fetched here, server-side, instead of relying
+        # on the client to have pre-loaded it (it never had - only the
+        # single account the user last expanded on-screen was ever loaded).
+        account_ids = data.get('account_ids') or [
+            acc.get('account_id') for acc in account_totals.values()
+            if acc.get('account_id')
+        ]
+        lines_by_account = self.get_export_lines(
+            account_ids,
+            data.get('partner_id'),
+            data.get('data_range'),
+            data.get('account_list'),
+            data.get('options'),
+        ) if account_ids else {}
+
         row = 7
         total_debit = total_credit = 0
         for account_name in accounts:
             row += 1
-            acc_data = data.get('account_totals', {}).get(account_name, {})
+            acc_data = account_totals.get(account_name, {})
             td = acc_data.get('total_debit', 0)
             tc = acc_data.get('total_credit', 0)
             total_debit += td
@@ -164,9 +209,8 @@ class BankBookReport(models.TransientModel):
             sheet.write(row, col + 2, '', sub_heading)
             sheet.write(row, col + 3, fmt(td), sub_heading)
             sheet.write(row, col + 4, fmt(tc), sub_heading)
-            
-            # lines if exported
-            for line in data.get('data', {}).get(account_name, []):
+
+            for line in lines_by_account.get(acc_data.get('account_id'), []):
                 row += 1
                 sheet.write(row, col, '', txt_name)
                 sheet.write(row, col + 1, str(line.get('date', '')), txt_name)
@@ -185,3 +229,36 @@ class BankBookReport(models.TransientModel):
         output.seek(0)
         response.data = output.read()
         output.close()
+
+
+class IrActionsReportBankBook(models.Model):
+    """Fetches Bank Book move-line detail server-side when the PDF is
+    rendered, instead of relying on the client having pre-loaded it (it
+    never had - only the single account last expanded on-screen was ever
+    loaded), which left the PDF with account totals but no transaction
+    detail at all.
+    """
+    _inherit = 'ir.actions.report'
+
+    def _get_report_values(self, docids, data=None):
+        if self.report_name == 'dynamic_accounts_report.bank_book':
+            data = data or {}
+            account_totals = data.get('account_totals') or {}
+            account_ids = data.get('account_ids') or [
+                acc.get('account_id') for acc in account_totals.values()
+                if acc.get('account_id')
+            ]
+            lines_by_account = self.env['bank.book.report'].get_export_lines(
+                account_ids,
+                data.get('partner_id'),
+                data.get('data_range'),
+                data.get('account_list'),
+                data.get('options'),
+            ) if account_ids else {}
+            # Re-key by account name to match what the template
+            # (move_lines/total) already indexes by.
+            data['data'] = {
+                name: lines_by_account.get(acc.get('account_id'), [])
+                for name, acc in account_totals.items()
+            }
+        return super()._get_report_values(docids, data=data)

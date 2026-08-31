@@ -17,8 +17,17 @@ class AccountPartnerLedger(models.TransientModel):
     def view_report(self, option, tag):
         """
         Returns only partner totals for initial page load (NO move line details).
+
+        `option`/`tag` are the wizard id and action display name sent by the
+        frontend (see partner_ledger.js: view_report([self.wizard_id, action_title])) -
+        they are NOT filter values. Real tag/category filtering only happens
+        later via applyFilter(), which calls get_filter_values() directly with
+        actual partner-tag ids. Forwarding `tag` (a string like "Partner Ledger")
+        as `tag_ids` here used to corrupt the very first RPC call on page load
+        (domain 'category_id' 'in' a string instead of a list of ids), which is
+        why the page got stuck.
         """
-        return self.get_filter_values(None, None, None, option, tag_ids=tag, account_ids=None)
+        return self.get_filter_values(None, None, None, None, tag_ids=None, account_ids=None)
 
     @api.model
     def get_filter_values(self, partner_id, data_range, account, options, tag_ids=None, account_ids=None):
@@ -261,6 +270,98 @@ class AccountPartnerLedger(models.TransientModel):
         return result
 
     @api.model
+    def get_export_lines(self, partner_ids, data_range, account, options, account_ids=None):
+        """
+        Fetch move line details for MULTIPLE partners in a single query,
+        grouped by partner id.
+
+        On-screen, lines are only lazy-loaded for a single partner when its
+        row is expanded (get_partner_lines), so the export never had access
+        to any transaction detail - it looked empty/broken. This fetches
+        everything needed for the export in one go, keyed by partner id
+        (not name, since two different partners can share the same name).
+        """
+        if not partner_ids:
+            return {}
+        if options == {}:
+            options = None
+        if account == {}:
+            account = None
+
+        account_type_domain = []
+        if options is None:
+            option_domain = ['posted']
+        elif 'draft' in options:
+            option_domain = ['posted', 'draft']
+        else:
+            option_domain = ['posted']
+
+        if account is None or ('Receivable' in account and 'Payable' in account):
+            account_type_domain = ['liability_payable', 'asset_receivable']
+        elif 'Receivable' in account:
+            account_type_domain = ['asset_receivable']
+        elif 'Payable' in account:
+            account_type_domain = ['liability_payable']
+
+        domain = [
+            ('partner_id', 'in', partner_ids),
+            ('parent_state', 'in', option_domain),
+            ('display_type', 'not in', ('line_section', 'line_note')),
+            ('account_type', 'in', account_type_domain)
+        ]
+        if account_ids:
+            domain.append(('account_id', 'in', account_ids))
+
+        today = fields.Date.today()
+        quarter_start, quarter_end = date_utils.get_quarter(today)
+        previous_quarter_start = quarter_start - relativedelta(months=3)
+        previous_quarter_end = quarter_start - relativedelta(days=1)
+
+        if data_range:
+            if data_range == 'month':
+                domain += [('date', '>=', today.replace(day=1)), ('date', '<=', today)]
+            elif data_range == 'year':
+                domain += [('date', '>=', today.replace(month=1, day=1)), ('date', '<=', today)]
+            elif data_range == 'quarter':
+                domain += [('date', '>=', quarter_start), ('date', '<=', quarter_end)]
+            elif data_range == 'last-month':
+                date_start = today.replace(day=1) - relativedelta(months=1)
+                last_month_end = date_start + relativedelta(day=calendar.monthrange(date_start.year, date_start.month)[1])
+                domain += [('date', '>=', date_start), ('date', '<=', last_month_end)]
+            elif data_range == 'last-year':
+                date_start = today.replace(month=1, day=1) - relativedelta(years=1)
+                last_year_end = date_start.replace(month=12, day=31)
+                domain += [('date', '>=', date_start), ('date', '<=', last_year_end)]
+            elif data_range == 'last-quarter':
+                domain += [('date', '>=', previous_quarter_start), ('date', '<=', previous_quarter_end)]
+            elif isinstance(data_range, dict):
+                if 'start_date' in data_range and data_range['start_date']:
+                    start_date = datetime.strptime(data_range['start_date'], '%Y-%m-%d').date()
+                    domain.append(('date', '>=', start_date))
+                if 'end_date' in data_range and data_range['end_date']:
+                    end_date = datetime.strptime(data_range['end_date'], '%Y-%m-%d').date()
+                    domain.append(('date', '<=', end_date))
+
+        move_lines = self.env['account.move.line'].search(domain, order='partner_id, date asc')
+
+        result = {}
+        for move_line in move_lines:
+            move_line_data = move_line.read([
+                'date', 'move_name', 'account_type', 'debit', 'credit',
+                'date_maturity', 'account_id', 'journal_id', 'move_id',
+                'matching_number', 'amount_currency', 'partner_id'
+            ])[0]
+            if move_line.account_id:
+                move_line_data['code'] = move_line.account_id.code
+            if move_line.journal_id:
+                move_line_data['jrnl'] = move_line.journal_id.code
+            partner = move_line_data['partner_id']
+            if not partner:
+                continue
+            result.setdefault(partner[0], []).append(move_line_data)
+        return result
+
+    @api.model
     def get_xlsx_report(self, data, response, report_name, report_action):
         """
         Generate an Excel report based on the provided data.
@@ -276,16 +377,16 @@ class AccountPartnerLedger(models.TransientModel):
         head = workbook.add_format({'font_size': 15, 'align': 'center', 'bold': True})
         head_highlight = workbook.add_format({'font_size': 10, 'align': 'center', 'bold': True})
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px', 'border': 1, 'bg_color': '#D3D3D3',
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
         filter_head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px', 'border': 1, 'bg_color': '#D3D3D3',
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
-        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '10px'})
+        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10})
         side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px', 'border': 1, 'border_color': 'black'})
+            {'align': 'left', 'bold': True, 'font_size': 10, 'border': 1, 'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
 
         sheet.set_column(0, 0, 30)
@@ -320,7 +421,12 @@ class AccountPartnerLedger(models.TransientModel):
                 return "0.00"
             return "{:,.2f}".format(float(value))
 
-        if data and report_action == 'dynamic_accounts_report.action_partner_ledger':
+        if data:
+            # No report_action string-match guard here: this method is only
+            # ever used for this report's own export, and gating content on
+            # an exact match of the client action's xml_id (which isn't
+            # always populated the same way) previously made the General
+            # Ledger export silently skip all its content - "no data".
             sheet.write(8, col, ' ', sub_heading)
             sheet.write(8, col + 1, 'JNRL', sub_heading)
             sheet.write(8, col + 2, 'Account', sub_heading)
@@ -332,10 +438,26 @@ class AccountPartnerLedger(models.TransientModel):
 
             row = 8
             partners = data.get('partners', []) or []
-            
+            totals = data.get('total') or {}
+            # Move-line detail is fetched here, server-side, instead of
+            # relying on the client to have pre-loaded it (it never had -
+            # only the single partner last expanded on-screen was ever
+            # loaded).
+            partner_ids = [
+                p.get('partner_id') for p in totals.values()
+                if p.get('partner_id')
+            ]
+            lines_by_partner = self.get_export_lines(
+                partner_ids,
+                data.get('date_range'),
+                data.get('account'),
+                data.get('options'),
+                data.get('account_ids'),
+            ) if partner_ids else {}
+
             for partner in partners:
                 row += 1
-                p_data = data['total'].get(partner, {})
+                p_data = totals.get(partner, {})
                 total_debit = p_data.get('total_debit', 0.0)
                 total_credit = p_data.get('total_credit', 0.0)
                 balance = total_debit - total_credit
@@ -365,8 +487,7 @@ class AccountPartnerLedger(models.TransientModel):
                     sheet.merge_range(row, col + 11, row, col + 12, format_number(initial_balance), txt_name)
 
                 # Lines
-                # Since we optimized, we fetch lines on demand for export, or fallback to totals-only
-                lines = data['data'].get(partner, []) if data.get('data') else []
+                lines = lines_by_partner.get(p_data.get('partner_id'), [])
                 for rec in lines:
                     move_data = rec[0] if isinstance(rec, list) else rec
                     row += 1
@@ -393,3 +514,36 @@ class AccountPartnerLedger(models.TransientModel):
         output.seek(0)
         response.data = output.read()
         output.close()
+
+
+class IrActionsReportPartnerLedger(models.Model):
+    """Fetches Partner Ledger move-line detail server-side when the PDF is
+    rendered, instead of relying on the client having pre-loaded it (it
+    never had - only the single partner last expanded on-screen was ever
+    loaded), which left the PDF with partner totals but no transaction
+    detail at all.
+    """
+    _inherit = 'ir.actions.report'
+
+    def _get_report_values(self, docids, data=None):
+        if self.report_name == 'dynamic_accounts_report.partner_ledger':
+            data = data or {}
+            totals = data.get('total') or {}
+            partner_ids = [
+                p.get('partner_id') for p in totals.values()
+                if p.get('partner_id')
+            ]
+            lines_by_partner = self.env['account.partner.ledger'].get_export_lines(
+                partner_ids,
+                data.get('date_range'),
+                data.get('account'),
+                data.get('options'),
+                data.get('account_ids'),
+            ) if partner_ids else {}
+            # Re-key by partner name to match what the template
+            # (partners/total) already indexes by.
+            data['data'] = {
+                name: lines_by_partner.get(p.get('partner_id'), [])
+                for name, p in totals.items()
+            }
+        return super()._get_report_values(docids, data=data)

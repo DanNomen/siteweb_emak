@@ -125,12 +125,15 @@ class ProfitLossReport(models.TransientModel):
                                                                      a: not financial_report_id.date_from or a.date >= financial_report_id.date_from)
                 account_move_lines = account_move_lines.filtered(lambda
                                                                      a: not financial_report_id.date_to or a.date <= financial_report_id.date_to)
+                totals_map = self._compute_account_totals_map(account_move_lines)
+                all_type_accounts = self.env['account.account'].search(
+                    [('account_type', 'in', list(account_types.values()))])
                 account_entries = {}
                 for account_type in account_types.values():
                     account_entries[account_type] = self._get_entries(
-                        account_move_lines, self.env['account.account'].search(
-                            [('account_type', '=', account_type)]),
-                        account_type)
+                        account_move_lines,
+                        all_type_accounts.filtered(lambda a, t=account_type: a.account_type == t),
+                        account_type, totals_map=totals_map)
                 total_income = sum(
                     float(entry['amount'].replace(',', '')) for account_type
                     in
@@ -222,11 +225,15 @@ class ProfitLossReport(models.TransientModel):
                                                                  a: not financial_report_id.date_from or a.date >= financial_report_id.date_from)
             account_move_lines = account_move_lines.filtered(lambda
                                                                  a: not financial_report_id.date_to or a.date <= financial_report_id.date_to)
+            totals_map = self._compute_account_totals_map(account_move_lines)
+            all_type_accounts = self.env['account.account'].search(
+                [('account_type', 'in', list(account_types.values()))])
             account_entries = {}
             for account_type in account_types.values():
                 account_entries[account_type] = self._get_entries(
-                    account_move_lines, self.env['account.account'].search(
-                        [('account_type', '=', account_type)]), account_type)
+                    account_move_lines,
+                    all_type_accounts.filtered(lambda a, t=account_type: a.account_type == t),
+                    account_type, totals_map=totals_map)
             total_income = sum(
                 float(entry['amount'].replace(',', '')) for account_type in
                 ['income', 'income_other'] for entry in
@@ -282,29 +289,54 @@ class ProfitLossReport(models.TransientModel):
         filters = self._get_filter_data()
         return data, filters, datas
 
-    def _get_entries(self, account_move_lines, account_ids, account_type):
+    def _compute_account_totals_map(self, account_move_lines):
+        """Pre-aggregate debit/credit totals per account_id from an already
+        filtered account.move.line recordset, in a single pass.
+
+        Used by _get_entries() to avoid re-scanning the whole recordset with
+        .filtered() once per account: the caller iterates this same
+        account_move_lines recordset across 16 account types, so without this
+        the cost was O(account_types x accounts x lines) - the reason Balance
+        Sheet / Profit and Loss got slow on real data (many accounts x many
+        lines). The aggregation itself (debit/credit per account) is
+        unchanged, just computed once instead of repeatedly.
+        """
+        totals = {}
+        for line in account_move_lines.read(['account_id', 'debit', 'credit']):
+            acc = line['account_id']
+            if not acc:
+                continue
+            t = totals.setdefault(acc[0], {'debit': 0.0, 'credit': 0.0})
+            t['debit'] += line['debit']
+            t['credit'] += line['credit']
+        return totals
+
+    def _get_entries(self, account_move_lines, account_ids, account_type, totals_map=None):
         """
             Get the entries for the specified account type.
             :param account_move_lines: The account move lines to filter.
             :param account_ids: The account IDs to filter.
             :param account_type: The account type.
+            :param totals_map: Optional pre-computed {account_id: {debit, credit}}
+                (see _compute_account_totals_map) - pass it when calling this
+                repeatedly for the same account_move_lines to avoid recomputing
+                it 16 times (once per account type).
             :return: A tuple containing the entries and the total amount.
             """
         entries = []
         total = 0
+        if totals_map is None:
+            totals_map = self._compute_account_totals_map(account_move_lines)
         for account in account_ids:
-            filtered_lines = account_move_lines.filtered(
-                lambda line: line.account_id == account)
-            if filtered_lines:
+            t = totals_map.get(account.id)
+            if t:
                 if account_type in ['income', 'income_other',
                                     'liability_payable', 'liability_current',
                                     'liability_non_current', 'equity',
                                     'equity_unaffected']:
-                    amount = -(sum(filtered_lines.mapped('debit')) - sum(
-                        filtered_lines.mapped('credit')))
+                    amount = -(t['debit'] - t['credit'])
                 else:
-                    amount = sum(filtered_lines.mapped('debit')) - sum(
-                        filtered_lines.mapped('credit'))
+                    amount = t['debit'] - t['credit']
                 entries.append({
                     'name': "{} - {}".format(account.code, account.name),
                     'amount': "{:,.2f}".format(amount),
@@ -462,17 +494,17 @@ class ProfitLossReport(models.TransientModel):
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet = workbook.add_worksheet()
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px',
+            {'align': 'left', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name_left = workbook.add_format(
-            {'align': 'left', 'font_size': '10px', 'border': 1})
+            {'align': 'left', 'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)

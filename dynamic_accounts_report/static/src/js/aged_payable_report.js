@@ -126,6 +126,13 @@ class AgedPayable extends owl.Component {
             'total_credit':this.state.total_credit,
             'currency':this.state.currency,
         }
+        // Aged lines are only lazy-loaded for a single partner when its row
+        // is expanded (expandPartner/get_partner_aged_lines) - state.data
+        // was declared but never populated, so the PDF always had partner
+        // totals but zero aged-line detail. The server fetches the lines
+        // itself in IrActionsReportAgedPayable._get_report_values from
+        // just the totals (which already carry each partner_id) and the
+        // date filter below.
         return self.action.doAction({
             'type': 'ir.actions.report',
             'report_type': 'qweb-pdf',
@@ -133,12 +140,12 @@ class AgedPayable extends owl.Component {
             'report_file': 'dynamic_accounts_report.aged_payable',
             'data': {
                 'move_lines': self.state.move_line,
-                'data': self.state.data,
                 'total': self.state.total,
                 'filters': this.filter(),
                 'grand_total': totals,
                 'title': action_title,
-                'report_name': self.props.action.display_name
+                'report_name': self.props.action.display_name,
+                'date': this.date_range.el.value || null,
             },
             'display_name': self.props.action.display_name,
         });
@@ -165,9 +172,12 @@ class AgedPayable extends owl.Component {
             'diff5_sum':this.state.diff5_sum,
             'total_credit':this.state.total_credit,
         }
+        // get_xlsx_report() reads the partner list from the 'partners' key
+        // (not 'move_lines') and only needs totals ('total') - it never
+        // reads 'data' (no per-partner line detail in this export), so
+        // that key doesn't need to be sent at all.
         var datas = {
-            'move_lines': self.state.move_line,
-            'data': self.state.data,
+            'partners': self.state.move_line,
             'total': self.state.total,
             'filters': this.filter(),
             'grand_total': totals,
@@ -201,15 +211,6 @@ class AgedPayable extends owl.Component {
           *
           * @returns {Promise<void>} - A Promise that resolves after fetching and processing the filtered data.
           */
-        let move_line_list = []
-        let move_lines_total = ''
-        let diff0Sum = 0;
-        let diff1Sum = 0;
-        let diff2Sum = 0;
-        let diff3Sum = 0;
-        let diff4Sum = 0;
-        let diff5Sum = 0;
-        let TotalCredit = 0;
         if (ev.target && ev.target.attributes["data-value"]) {
             if (ev.target.attributes["data-value"].value == 'today') {
                 this.date_range.el.value = today.toFormat('yyyy-MM-dd')
@@ -229,35 +230,31 @@ class AgedPayable extends owl.Component {
             this.state.selected_partner = this.state.selected_partner_rec.map((rec) => rec.id)
         }
         let filtered_data = await this.orm.call("age.payable.report", "get_filter_values", [this.date_range.el.value, this.state.selected_partner,]);
-        for (const index in filtered_data) {
-            const value = filtered_data[index];
-
-            if (index !== 'partner_totals') {
-                move_line_list.push(index);
-            } else {
-                move_lines_total = value;
-
-                for (const moveLine of Object.values(move_lines_total)) {
-                    diff0Sum += moveLine.diff0_sum || 0;
-                    diff1Sum += moveLine.diff1_sum || 0;
-                    diff2Sum += moveLine.diff2_sum || 0;
-                    diff3Sum += moveLine.diff3_sum || 0;
-                    diff4Sum += moveLine.diff4_sum || 0;
-                    diff5Sum += moveLine.diff5_sum || 0;
-                    TotalCredit += moveLine.credit_sum || 0;
-                }
-            }
-        }
-        this.state.data = filtered_data
-        this.state.move_line = move_line_list
-        this.state.total = move_lines_total
-        this.state.total_credit = TotalCredit
-        this.state.diff0_sum = diff0Sum
-        this.state.diff1_sum = diff1Sum
-        this.state.diff2_sum = diff2Sum
-        this.state.diff3_sum = diff3Sum
-        this.state.diff4_sum = diff4Sum
-        this.state.diff5_sum = diff5Sum
+        this._processData(filtered_data);
+    }
+    openPartner(ev) {
+        /** Opens the partner form view based on the selected event target. */
+        return this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: 'res.partner',
+            res_id: parseInt(ev.target.attributes["data-id"].value, 10),
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+    gotoJournalItem(ev) {
+        /** Opens the journal items list view for the selected partner's payable lines. */
+        return this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: 'account.move.line',
+            name: "Journal Items",
+            views: [[false, "list"]],
+            domain: [
+                ["partner_id", "=", parseInt(ev.target.attributes["data-id"].value, 10)],
+                ['account_type', '=', 'liability_payable'],
+            ],
+            target: "current",
+        });
     }
     getDomain() {
         return [];

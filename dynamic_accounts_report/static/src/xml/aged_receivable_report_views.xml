@@ -6,144 +6,107 @@
         filter view and table view,with respective classes for styling.-->
         <div class="o_action o_view_controller">
             <div class="o_content">
-                <div class="container">
-            <div class="fin_report">
-                <!--  Filter View  -->
-                <div class="filter_view_gl pt-3 pb-5">
-                    <div class="">
-                        <h1 class="text-uppercase" style="padding:10px">
+                <div class="fin_report">
+
+                    <!-- ===== TOP BAR: Title + Buttons + Filters ===== -->
+                    <div class="filter_view_gl" style="padding: 12px 20px 0 20px;">
+
+                        <!-- Title -->
+                        <h2 class="text-uppercase" style="padding: 6px 0 10px 0; font-size: 1.1rem; font-weight: 700;">
                             <t t-esc="props.action.name"/>
-                        </h1>
-                    </div>
-                    <div style="margin-right: 10px; margin-left: 10px;margin-bottom: 15px;display: flex;">
-                        <div class="sub_container_left" style="width:70%;">
-                            <div class="report_print">
-                                <!-- Print (PDF) Button -->
+                        </h2>
+
+                        <!-- Buttons LEFT + Filters RIGHT on same row -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6;">
+
+                            <!-- LEFT: Print + Export buttons -->
+                            <div class="report_print" style="display: flex; gap: 8px;">
                                 <button type="button"
                                         class="btn btn-primary btn-report-print"
-                                        t-on-click="printPdf"
-                                        style="margin-right: 8px;">
-                                    Print (PDF)
+                                        t-on-click="printPdf">
+                                    <i class="fa fa-print" style="margin-right: 4px;"/>
+                                    Imprimer (PDF)
                                 </button>
-                                <!-- Export (XLSX) Button -->
                                 <button type="button"
                                         class="btn btn-primary btn-report-print"
                                         t-on-click="print_xlsx">
-                                    Export (XLSX)
+                                    <i class="fa fa-download" style="margin-right: 4px;"/>
+                                    Exporter (XLSX)
                                 </button>
                             </div>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <!-- Time Range -->
-                            <div class="time_range" style="">
-                                <a type="button" class="dropdown-toggle"
-                                   data-bs-toggle="dropdown">
-                                    <!-- Date Range Dropdown -->
-                                    <span class="fa fa-calendar" title="Dates"
-                                          role="img"
-                                          aria-label="Dates"/>
-                                    Date Range
-                                </a>
-                                <div class="dropdown-menu" role="menu">
-                                    <!-- Date Range Options -->
-                                    <div class="list-group">
-                                        <!-- Today Button -->
-                                        <button class="report-filter-button"
-                                                t-att-data-value="'today'"
-                                                type="button"
-                                                t-on-click="applyFilter">
-                                            Today
-                                        </button>
-                                        <!-- Last Month Button -->
-                                        <button class="report-filter-button"
-                                                t-att-data-value="'last-month-end'"
-                                                type="button"
-                                                t-on-click="applyFilter">
-                                            End of Last Month
-                                        </button>
-                                        <!-- Last Quarter Button -->
-                                        <button class="report-filter-button"
-                                                t-att-data-value="'last-quarter-end'"
-                                                type="button"
-                                                t-on-click="applyFilter">
-                                            End of Last Quarter
-                                        </button>
-                                        <!-- Last Year Button -->
-                                        <button class="report-filter-button"
-                                                t-att-data-value="'last-year-end'"
-                                                type="button"
-                                                t-on-click="applyFilter">
-                                            End of Last year
-                                        </button>
-                                        <!-- Separator -->
-                                        <div role="separator"
-                                             class="dropdown-divider"/>
-                                        <label class="" for="date_to">Date
-                                            :
-                                        </label>
-                                        <div class="input-group date"
-                                             data-target-input="nearest">
-                                            <input type="date" id="end_date"
-                                                   t-ref="date_to"
-                                                   t-on-input="applyFilter"
-                                                   style="border:none;border-bottom: 1px solid #000;padding: 5px;outline: none;"
-                                                   name="end_date"/>
+
+                            <!-- RIGHT: Filters -->
+                            <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+
+                                <!-- Date -->
+                                <div class="dropdown" style="position: relative;">
+                                    <a type="button" class="dropdown-toggle btn btn-sm btn-light"
+                                       data-bs-toggle="dropdown"
+                                       style="display: flex; align-items: center; gap: 4px;">
+                                        <span class="fa fa-calendar" role="img" aria-label="Dates"/>
+                                        Plage de dates
+                                    </a>
+                                    <div class="dropdown-menu" role="menu" style="min-width: 220px; padding: 8px;">
+                                        <div class="list-group list-group-flush">
+                                            <button class="report-filter-button" t-att-data-value="'today'" type="button" t-on-click="applyFilter">Aujourd'hui</button>
+                                            <button class="report-filter-button" t-att-data-value="'last-month-end'" type="button" t-on-click="applyFilter">Fin du mois dernier</button>
+                                            <button class="report-filter-button" t-att-data-value="'last-quarter-end'" type="button" t-on-click="applyFilter">Fin du trimestre dernier</button>
+                                            <button class="report-filter-button" t-att-data-value="'last-year-end'" type="button" t-on-click="applyFilter">Fin de l'année dernière</button>
+                                            <div role="separator" class="dropdown-divider"/>
+                                            <label for="end_date" style="font-size:0.82em; margin-bottom:2px; display:block;">Date :</label>
+                                            <div class="input-group date" data-target-input="nearest">
+                                                <input type="date" id="end_date"
+                                                       t-ref="date_to"
+                                                       t-on-input="applyFilter"
+                                                       style="border:none;border-bottom: 1px solid #000;padding: 5px;outline: none; width:100%;"
+                                                       name="end_date"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <!-- Options Dropdown -->
-                            <div class="option" style="">
-                                <a type="button" class="dropdown-toggle"
-                                   data-bs-toggle="dropdown">
-                                    <span class="fa fa-glass" title="Accounts"
-                                          role="img"
-                                          aria-label="Dates"/>
-                                    Options
-                                </a>
-                                <div class="dropdown-menu" role="menu">
-                                    <div class="list-group">
-                                        <!-- Unfold All Button -->
-                                        <button class="report-filter-button"
-                                                type="button"
-                                                t-ref="unfoldButton"
-                                                t-on-click="unfoldAll">
-                                            Unfold All
-                                        </button>
+
+                                <!-- Options -->
+                                <div class="dropdown" style="position: relative;">
+                                    <a type="button" class="dropdown-toggle btn btn-sm btn-light"
+                                       data-bs-toggle="dropdown" style="display: flex; align-items: center; gap: 4px;">
+                                        <span class="fa fa-filter" role="img" aria-label="Options"/>
+                                        Options
+                                    </a>
+                                    <div class="dropdown-menu" role="menu" style="min-width: 200px; padding: 8px;">
+                                        <div class="list-group list-group-flush">
+                                            <button class="report-filter-button" type="button" t-ref="unfoldButton" t-on-click="unfoldAll">
+                                                Tout déplier
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <br/>
-            <div>
-                <div class="table_style" style="height: 650px; overflow-y: scroll;">
-                    <!-- Table View -->
-                    <div class="table_view_gl" style="right:20px;width:100%;"
-                         t-ref="table_view_gl">
-                        <div>
-                            <div class="table_main_view">
-                                <table cellspacing="0" width="100%">
-                                    <thead>
-                                        <tr class="o_heading">
-                                            <th colspan="6"/>
-                                            <th>Invoice Date</th>
-                                            <th>Amount Currency</th>
-                                            <th>Currency</th>
-                                            <th>Account</th>
-                                            <th>Expected Date</th>
-                                            <th>At Date</th>
-                                            <th>1-30</th>
-                                            <th>31-60</th>
-                                            <th>61-90</th>
-                                            <th>91-120</th>
-                                            <th>Older</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody t-ref="tbody">
+
+                    <!-- ===== TABLE ===== -->
+                    <div class="table_view_gl" t-ref="table_view_gl" style="padding: 0 20px 20px 20px;">
+                        <div class="table_main_view">
+                            <table cellspacing="0" width="100%" style="border-collapse: collapse;">
+                                <thead style="position: sticky; top: 0; z-index: 1; background: white;">
+                                    <tr class="o_heading" style="border-bottom: 2px solid #dee2e6;">
+                                        <th colspan="6"/>
+                                        <th style="padding: 8px 6px;">Date facture</th>
+                                        <th style="padding: 8px 6px;">Montant devise</th>
+                                        <th style="padding: 8px 6px;">Devise</th>
+                                        <th style="padding: 8px 6px;">Compte</th>
+                                        <th style="padding: 8px 6px;">Date échéance</th>
+                                        <th style="padding: 8px 6px;">À la date</th>
+                                        <th style="padding: 8px 6px;">1-30</th>
+                                        <th style="padding: 8px 6px;">31-60</th>
+                                        <th style="padding: 8px 6px;">61-90</th>
+                                        <th style="padding: 8px 6px;">91-120</th>
+                                        <th style="padding: 8px 6px;">Plus ancien</th>
+                                        <th style="padding: 8px 6px;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody t-ref="tbody">
                                         <t t-if="state.move_line">
                                             <t t-set="i" t-value="0"/>
                                             <t t-foreach="state.move_line"
@@ -168,19 +131,19 @@
                                                     <th colspan="5">
                                                         <!-- Open Partner Button -->
                                                         <button t-att-data-id="state.total[move_line]['partner_id']"
-                                                                class="btn bg-secondary"
-                                                                style="margin-left: 3px"
+                                                                class="btn btn-secondary btn-sm"
+                                                                style="margin-left: 3px; font-size: 0.8rem;"
                                                                 t-on-click="openPartner">
-                                                            <i class="fa fa-arrow-right"/>
-                                                            Open
+                                                            <i class="fa fa-arrow-right" style="margin-right: 3px;"/>
+                                                            Ouvrir
                                                         </button>
                                                         <!-- Journal Items Button -->
                                                         <button t-att-data-id="state.total[move_line]['partner_id']"
-                                                                class="btn bg-secondary"
-                                                                style="margin-left: 3px"
+                                                                class="btn btn-secondary btn-sm"
+                                                                style="margin-left: 3px; font-size: 0.8rem;"
                                                                 t-on-click="gotoJournalItem">
-                                                            <i class="fa fa-arrow-right"/>
-                                                            Journal Items
+                                                            <i class="fa fa-arrow-right" style="margin-right: 3px;"/>
+                                                            Éléments du journal
                                                         </button>
                                                     </th>
                                                     <th/>
@@ -273,9 +236,7 @@
                                                                             font-size: 16px;
                                                                             cursor: pointer;
                                                                             display: inline-block;">
-                                                                        View
-                                                                        Journal
-                                                                        Entry
+                                                                        Voir l'écriture
                                                                     </button>
                                                                 </div>
                                                             </span>
@@ -400,8 +361,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-                </div>
-        </div>
     </t>
 </templates>
+

@@ -44,6 +44,7 @@
         'report/financial_reports_views.xml',
         'report/balance_sheet_report_templates.xml',
         'report/bank_book_templates.xml',
+        'report/cash_book_templates.xml',
         'report/aged_payable_templates.xml',
         'report/aged_receivable_templates.xml',
         'report/tax_report_templates.xml',

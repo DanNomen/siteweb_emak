@@ -40,6 +40,14 @@
         <field name="report_name">dynamic_accounts_report.bank_book</field>
         <field name="report_file">dynamic_accounts_report.bank_book</field>
     </record>
+    <!--     Action record for Cash Book report -->
+    <record id="action_print_cash_book" model="ir.actions.report">
+        <field name="name">Cash Book</field>
+        <field name="model">cash.book.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">dynamic_accounts_report.cash_book</field>
+        <field name="report_file">dynamic_accounts_report.cash_book</field>
+    </record>
     <!-- Action record for Age Receivable report -->
     <record id="action_print_aged_receivable" model="ir.actions.report">
         <field name="name">Age Receivable</field>

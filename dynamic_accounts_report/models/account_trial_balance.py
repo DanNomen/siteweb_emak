@@ -43,26 +43,53 @@ class AccountTrialBalance(models.TransientModel):
         amounts for each account within the specified date range. Returns a list
         of dictionaries containing account details and transaction totals.
 
+        Uses 3 aggregated read_group queries total (regardless of the number
+        of accounts) instead of 2 separate search() calls PER account - the
+        previous version issued 2N queries for N accounts, which is what made
+        this page slow/unresponsive on real data (hundreds of accounts).
+
         :return: List of dictionaries representing the trial balance report.
         :rtype: list
         """
-        account_ids = self.env['account.move.line'].search([]).mapped(
-            'account_id')
         today = fields.Date.today()
+        month_start, month_end = get_month(today)
+
+        # Distinct accounts that have ever had a move line (same account set
+        # as the previous `search([]).mapped('account_id')`, but without
+        # loading every move line into memory just to dedupe them).
+        all_account_groups = self.env['account.move.line'].read_group(
+            domain=[], fields=['account_id'], groupby=['account_id'],
+        )
+        account_ids = [g['account_id'][0] for g in all_account_groups if g.get('account_id')]
+
+        initial_groups = self.env['account.move.line'].read_group(
+            domain=[('date', '<', month_start), ('account_id', 'in', account_ids),
+                    ('parent_state', '=', 'posted')],
+            fields=['account_id', 'debit:sum', 'credit:sum'],
+            groupby=['account_id'],
+        )
+        initial_map = {g['account_id'][0]: g for g in initial_groups if g.get('account_id')}
+
+        period_groups = self.env['account.move.line'].read_group(
+            domain=[('date', '>=', month_start), ('date', '<=', month_end),
+                    ('account_id', 'in', account_ids), ('parent_state', '=', 'posted')],
+            fields=['account_id', 'debit:sum', 'credit:sum'],
+            groupby=['account_id'],
+        )
+        period_map = {g['account_id'][0]: g for g in period_groups if g.get('account_id')}
+
+        journal_ids = self.env['account.journal'].search_read([], ['name'])
+        account_name_map = {
+            a['id']: a['display_name']
+            for a in self.env['account.account'].search_read([('id', 'in', account_ids)], ['display_name'])
+        }
+
         move_line_list = []
         for account_id in account_ids:
-            initial_move_line_ids = self.env['account.move.line'].search(
-                [('date', '<', get_month(today)[0]),
-                 ('account_id', '=', account_id.id),
-                 ('parent_state', '=', 'posted')])
+            ig = initial_map.get(account_id, {})
+            initial_total_debit_raw = round(ig.get('debit') or 0.0, 2)
+            initial_total_credit_raw = round(ig.get('credit') or 0.0, 2)
 
-            # Calculate raw totals
-            initial_total_debit_raw = round(
-                sum(initial_move_line_ids.mapped('debit')), 2)
-            initial_total_credit_raw = round(
-                sum(initial_move_line_ids.mapped('credit')), 2)
-
-            # Calculate NET initial balance
             initial_diff = initial_total_debit_raw - initial_total_credit_raw
             if initial_diff > 0:
                 initial_total_debit = initial_diff
@@ -71,13 +98,10 @@ class AccountTrialBalance(models.TransientModel):
                 initial_total_debit = 0.0
                 initial_total_credit = abs(initial_diff)
 
-            move_line_ids = self.env['account.move.line'].search(
-                [('date', '>=', get_month(today)[0]),
-                 ('account_id', '=', account_id.id),
-                 ('date', '<=', get_month(today)[1]),
-                 ('parent_state', '=', 'posted')])
-            total_debit = round(sum(move_line_ids.mapped('debit')), 2)
-            total_credit = round(sum(move_line_ids.mapped('credit')), 2)
+            pg = period_map.get(account_id, {})
+            total_debit = round(pg.get('debit') or 0.0, 2)
+            total_credit = round(pg.get('credit') or 0.0, 2)
+
             sum_debit = initial_total_debit + total_debit
             sum_credit = initial_total_credit + total_credit
             diff_credit_debit = sum_debit - sum_credit
@@ -87,10 +111,11 @@ class AccountTrialBalance(models.TransientModel):
             else:
                 end_total_debit = 0.0
                 end_total_credit = abs(diff_credit_debit)
+
             data = {
-                'account': account_id.display_name,
-                'account_id': account_id.id,
-                'journal_ids': self.env['account.journal'].search_read([], ['name']),
+                'account': account_name_map.get(account_id, ''),
+                'account_id': account_id,
+                'journal_ids': journal_ids,
                 'initial_total_debit': "{:,.2f}".format(initial_total_debit),
                 'initial_total_credit': "{:,.2f}".format(initial_total_credit),
                 'total_debit': total_debit,
@@ -99,10 +124,7 @@ class AccountTrialBalance(models.TransientModel):
                 'end_total_credit': "{:,.2f}".format(end_total_credit)
             }
             move_line_list.append(data)
-        journal = {
-            'journal_ids': self.env['account.journal'].search_read([], [
-                'name'])
-        }
+        journal = {'journal_ids': journal_ids}
         totals = self._calculate_totals(move_line_list, None)
         return move_line_list, journal, totals
 
@@ -426,21 +448,21 @@ class AccountTrialBalance(models.TransientModel):
             {'font_size': 15, 'align': 'center', 'bold': True})
         sheet = workbook.add_worksheet()
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
         filter_head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
         filter_body = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px'})
+            {'align': 'center', 'bold': True, 'font_size': 10})
         side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px',
+            {'align': 'left', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)

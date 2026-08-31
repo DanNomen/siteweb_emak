@@ -22,44 +22,53 @@
                             <thead class="filter_table"
                                    style="background:#808080;">
                                 <tr>
-                                    <th>Date Range</th>
+                                    <th>Plage de dates</th>
                                     <th>Journal</th>
-                                    <th>Analytic</th>
+                                    <th>Analytique</th>
                                     <th>Options</th>
                                 </tr>
                             </thead>
                             <tbody style="font-size:11px;font-weight:100;">
                                 <tr>
                                     <th>
-                                        <t t-if="filters['start_date']"
-                                           t-out="filters['start_date']"/>
-                                        <t t-if="filters['end_date']">
-                                            to
-                                            <t t-out="filters['end_date']"/>
+                                        <t t-if="filters['start_date'] or filters['end_date']">
+                                            <t t-if="filters['start_date']"
+                                               t-out="filters['start_date']"/>
+                                            <t t-if="filters['end_date']">
+                                                au
+                                                <t t-out="filters['end_date']"/>
+                                            </t>
                                         </t>
+                                        <t t-else="">Toutes les dates</t>
                                     </th>
                                     <th>
-                                        <t t-set="first_journal" t-value="True"/>
-                                        <t t-foreach="filters['journal']" t-as="selected_journal">
-                                            <t t-if="not first_journal">,</t>
-                                            <t t-out="selected_journal"/>
-                                            <t t-set="first_journal" t-value="False"/>
+                                        <t t-if="filters['journal']">
+                                            <t t-set="first_journal" t-value="True"/>
+                                            <t t-foreach="filters['journal']" t-as="selected_journal">
+                                                <t t-if="not first_journal">,</t>
+                                                <t t-out="selected_journal"/>
+                                                <t t-set="first_journal" t-value="False"/>
+                                            </t>
                                         </t>
+                                        <t t-else="">Tous les journaux</t>
                                     </th>
                                     <th>
-                                        <t t-set="first_account" t-value="True"/>
-                                        <t t-foreach="filters['analytic']" t-as="selected_analytic_account">
-                                            <t t-if="not first_account">,</t>
-                                            <t t-out="selected_analytic_account"/>
-                                            <t t-set="first_account" t-value="False"/>
+                                        <t t-if="filters['analytic']">
+                                            <t t-set="first_account" t-value="True"/>
+                                            <t t-foreach="filters['analytic']" t-as="selected_analytic_account">
+                                                <t t-if="not first_account">,</t>
+                                                <t t-out="selected_analytic_account"/>
+                                                <t t-set="first_account" t-value="False"/>
+                                            </t>
                                         </t>
+                                        <t t-else="">Tous</t>
                                     </th>
                                     <th>
                                         <t t-if="filters['options']">
-                                            Posted ,
+                                            Validées ,
                                         </t>
                                         <t t-else="">
-                                            Posted
+                                            Validées
                                         </t>
                                         <t t-set="first_option" t-value="True"/>
                                         <t t-foreach="filters['options']" t-as="selected_options">
@@ -86,10 +95,10 @@
                                         <th style="width:10%">Date</th>
                                         <th style="width:10%">Communication
                                         </th>
-                                        <th style="width:10%">Partner</th>
-                                        <th style="width:10%">Debit</th>
-                                        <th style="width:10%">Credit</th>
-                                        <th style="width:10%">Balance</th>
+                                        <th style="width:10%">Partenaire</th>
+                                        <th style="width:10%">Débit</th>
+                                        <th style="width:10%">Crédit</th>
+                                        <th style="width:10%">Solde</th>
                                     </tr>
                                 </thead>
                                 <tbody style="font-size:11px;font-weight:100;">
@@ -109,8 +118,8 @@
                                                         </strong>
                                                     </t>
                                                     <t t-else="">
-                                                        <span>Unknown
-                                                            Account
+                                                        <span>Compte
+                                                            inconnu
                                                         </span>
                                                     </t>
                                                 </span>
@@ -148,8 +157,9 @@
                                             </strong>
                                         </th>
                                     </tr>
-                                    <t t-if="account_data.get(account)">
-                                        <t t-foreach="account_data[account]"
+                                    <t t-set="account_id_val" t-value="total[account]['account_id']"/>
+                                    <t t-if="account_data.get(account_id_val)">
+                                        <t t-foreach="account_data[account_id_val]"
                                            t-as="valuelist"
                                            t-key="valuelist_index">
                                             <t t-set="move_data" t-value="valuelist[0] if isinstance(valuelist, list) else valuelist"/>

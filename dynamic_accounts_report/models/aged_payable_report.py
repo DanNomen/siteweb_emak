@@ -11,52 +11,64 @@ class AgePayableReport(models.TransientModel):
     _description = 'Aged Payable Report'
 
     def _compute_partner_totals(self, paid, currency_id):
-        """Compute per-partner aged totals using SQL read_group for performance."""
+        """Compute per-partner aged totals.
+
+        `paid` is already the result of a single search() call, so this reads
+        (date_maturity, credit, partner_id) once via a single read() batch call
+        and buckets everything in one Python pass — O(n) instead of the
+        previous O(partners x n) pattern (a fresh .filtered() re-scan of the
+        whole recordset for every partner).
+        """
         today = fields.Date.today()
         partner_total = {}
-        
-        # Use read_group to get per-partner credit totals
-        groups = self.env['account.move.line'].read_group(
-            domain=paid.domain if hasattr(paid, 'domain') else [('id', 'in', paid.ids)],
-            fields=['partner_id', 'credit'],
-            groupby=['partner_id'],
-            lazy=False
-        )
-        # Fallback: read per record since paid is already searched
-        for partner in paid.mapped('partner_id'):
-            lines = paid.filtered(lambda l: l.partner_id == partner)
-            today = fields.Date.today()
-            vals = []
-            d0 = d1 = d2 = d3 = d4 = d5 = credit_sum = 0.0
-            for line in lines:
-                if not line.date_maturity:
-                    continue
-                diff = (today - line.date_maturity).days
-                c = line.credit
-                credit_sum += c
-                if diff <= 0: d0 += c
-                elif diff <= 30: d1 += c
-                elif diff <= 60: d2 += c
-                elif diff <= 90: d3 += c
-                elif diff <= 120: d4 += c
-                else: d5 += c
+        if not paid:
+            return partner_total
 
-            if credit_sum > 0:
-                partner_total[partner.name] = {
-                    'credit_sum': round(credit_sum, 2),
-                    'diff0_sum': round(d0, 2),
-                    'diff1_sum': round(d1, 2),
-                    'diff2_sum': round(d2, 2),
-                    'diff3_sum': round(d3, 2),
-                    'diff4_sum': round(d4, 2),
-                    'diff5_sum': round(d5, 2),
-                    'currency_id': currency_id,
-                    'partner_id': partner.id,
-                    '_lines_loaded': False,
-                    '_lines': [],
-                    '_expanded': False,
-                    '_loading': False,
-                }
+        lines_data = paid.read(['partner_id', 'date_maturity', 'credit'])
+        buckets = {}
+        for line in lines_data:
+            partner = line['partner_id']
+            if not partner or not line['date_maturity']:
+                continue
+            partner_id, partner_name = partner
+            bucket = buckets.setdefault(partner_id, {
+                'name': partner_name, 'd0': 0.0, 'd1': 0.0, 'd2': 0.0,
+                'd3': 0.0, 'd4': 0.0, 'd5': 0.0, 'credit_sum': 0.0,
+            })
+            diff = (today - line['date_maturity']).days
+            c = line['credit']
+            bucket['credit_sum'] += c
+            if diff <= 0:
+                bucket['d0'] += c
+            elif diff <= 30:
+                bucket['d1'] += c
+            elif diff <= 60:
+                bucket['d2'] += c
+            elif diff <= 90:
+                bucket['d3'] += c
+            elif diff <= 120:
+                bucket['d4'] += c
+            else:
+                bucket['d5'] += c
+
+        for partner_id, b in buckets.items():
+            if b['credit_sum'] <= 0:
+                continue
+            partner_total[b['name']] = {
+                'credit_sum': round(b['credit_sum'], 2),
+                'diff0_sum': round(b['d0'], 2),
+                'diff1_sum': round(b['d1'], 2),
+                'diff2_sum': round(b['d2'], 2),
+                'diff3_sum': round(b['d3'], 2),
+                'diff4_sum': round(b['d4'], 2),
+                'diff5_sum': round(b['d5'], 2),
+                'currency_id': currency_id,
+                'partner_id': partner_id,
+                '_lines_loaded': False,
+                '_lines': [],
+                '_expanded': False,
+                '_loading': False,
+            }
         return partner_total
 
     @api.model
@@ -120,6 +132,49 @@ class AgePayableReport(models.TransientModel):
         return result
 
     @api.model
+    def get_export_lines(self, partner_ids, date):
+        """
+        Fetch aged detail lines for MULTIPLE partners in a single query,
+        grouped by partner id.
+
+        On-screen, lines are only lazy-loaded for a single partner when its
+        row is expanded (get_partner_aged_lines), so the PDF export - which
+        needs the per-partner detail, unlike the Excel export which is
+        summary-only - never had access to any of it. This fetches
+        everything needed in one go, keyed by partner id (not name, since
+        two different partners can share the same display name).
+        """
+        if not partner_ids:
+            return {}
+        domain = [
+            ('parent_state', '=', 'posted'),
+            ('account_type', '=', 'liability_payable'),
+            ('reconciled', '=', False),
+            ('partner_id', 'in', partner_ids),
+        ]
+        if date:
+            domain.append(('date', '<=', date))
+
+        lines = self.env['account.move.line'].search(domain, order='partner_id, date_maturity asc')
+        today = fields.Date.today()
+        result = {}
+        for line in lines:
+            partner = line.partner_id
+            if not partner:
+                continue
+            diff = (today - line.date_maturity).days if line.date_maturity else 0
+            data = line.read(['name', 'move_name', 'date', 'amount_currency',
+                              'account_id', 'date_maturity', 'currency_id', 'credit', 'move_id'])[0]
+            data['diff0'] = data['credit'] if diff <= 0 else 0.0
+            data['diff1'] = data['credit'] if 0 < diff <= 30 else 0.0
+            data['diff2'] = data['credit'] if 30 < diff <= 60 else 0.0
+            data['diff3'] = data['credit'] if 60 < diff <= 90 else 0.0
+            data['diff4'] = data['credit'] if 90 < diff <= 120 else 0.0
+            data['diff5'] = data['credit'] if diff > 120 else 0.0
+            result.setdefault(partner.id, []).append(data)
+        return result
+
+    @api.model
     def get_xlsx_report(self, data, response, report_name, report_action):
         """Generate an Excel report based on the provided data."""
         data = json.loads(data)
@@ -127,15 +182,15 @@ class AgePayableReport(models.TransientModel):
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         end_date = data['filters'].get('end_date', '')
         sheet = workbook.add_worksheet()
-        head = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '15px'})
+        head = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 15})
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black'})
         filter_head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black'})
-        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': '10px'})
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
@@ -152,7 +207,12 @@ class AgePayableReport(models.TransientModel):
         def fmt(v):
             return "{:,.2f}".format(float(v or 0))
 
-        if data and report_action == 'dynamic_accounts_report.action_aged_payable':
+        if data:
+            # No report_action string-match guard here: this method is only
+            # ever used for this report's own export, and gating content on
+            # an exact match of the client action's xml_id (which isn't
+            # always populated the same way) previously made the General
+            # Ledger export silently skip all its content - "no data".
             sheet.write(7, col, 'Partner', sub_heading)
             sheet.merge_range(7, col + 1, 7, col + 2, 'Not Due', sub_heading)
             sheet.merge_range(7, col + 3, 7, col + 4, '1-30 Days', sub_heading)
@@ -196,3 +256,32 @@ class AgePayableReport(models.TransientModel):
         output.seek(0)
         response.data = output.read()
         output.close()
+
+
+class IrActionsReportAgedPayable(models.Model):
+    """Fetches Aged Payable detail lines server-side when the PDF is
+    rendered, instead of relying on the client having pre-loaded them (it
+    never had - only the single partner last expanded on-screen was ever
+    loaded), which left the PDF with partner totals but no aged-line
+    detail at all.
+    """
+    _inherit = 'ir.actions.report'
+
+    def _get_report_values(self, docids, data=None):
+        if self.report_name == 'dynamic_accounts_report.aged_payable':
+            data = data or {}
+            totals = data.get('total') or {}
+            partner_ids = [
+                p.get('partner_id') for p in totals.values()
+                if p.get('partner_id')
+            ]
+            lines_by_partner = self.env['age.payable.report'].get_export_lines(
+                partner_ids, data.get('date'),
+            ) if partner_ids else {}
+            # Re-key by partner name to match what the template
+            # (move_lines/total) already indexes by.
+            data['data'] = {
+                name: lines_by_partner.get(p.get('partner_id'), [])
+                for name, p in totals.items()
+            }
+        return super()._get_report_values(docids, data=data)

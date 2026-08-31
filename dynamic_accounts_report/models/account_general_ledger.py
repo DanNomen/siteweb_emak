@@ -100,12 +100,11 @@ class AccountGeneralLedger(models.TransientModel):
         account_dict['account_totals'] = account_totals
         return account_dict
 
-    @api.model
-    def get_account_lines(self, account_id, journal_ids=None, date_range=None,
-                          options=None, analytic=None, method=None):
-        """
-        Lazy-load move line details for a single account.
-        Called when the user expands an account row in the UI.
+    def _build_lines_domain(self, journal_ids=None, date_range=None,
+                            options=None, analytic=None, method=None):
+        """Shared filter domain (everything except the account_id part) used
+        by both get_account_lines (single account, lazy-load on expand) and
+        get_export_lines (multiple accounts at once, for XLSX/PDF export).
         """
         today = fields.Date.today()
         quarter_start, quarter_end = date_utils.get_quarter(today)
@@ -120,7 +119,6 @@ class AccountGeneralLedger(models.TransientModel):
             option_domain = ['posted']
 
         domain = [
-            ('account_id', '=', account_id),
             ('parent_state', 'in', option_domain),
             ('display_type', 'not in', ('line_section', 'line_note')),
         ]
@@ -174,10 +172,60 @@ class AccountGeneralLedger(models.TransientModel):
                     end_date = datetime.strptime(date_range['end_date'], '%Y-%m-%d').date()
                     domain += [('date', '<=', end_date)]
 
+        return domain
+
+    @api.model
+    def get_account_lines(self, account_id, journal_ids=None, date_range=None,
+                          options=None, analytic=None, method=None):
+        """
+        Lazy-load move line details for a single account.
+        Called when the user expands an account row in the UI.
+        """
+        domain = self._build_lines_domain(journal_ids, date_range, options, analytic, method)
+        domain.append(('account_id', '=', account_id))
+
         move_lines = self.env['account.move.line'].search(domain, order='date asc', limit=500)
         result = move_lines.read(
             ['date', 'name', 'move_name', 'debit', 'credit',
              'partner_id', 'account_id', 'journal_id', 'move_id'])
+        return result
+
+    @api.model
+    def get_export_lines(self, account_ids, journal_ids=None, date_range=None,
+                         options=None, analytic=None, method=None):
+        """
+        Fetch move line details for MULTIPLE accounts in a single query,
+        grouped by account id.
+
+        Needed for XLSX/PDF export: the on-screen report only lazy-loads
+        lines for a single account when the user expands its row
+        (get_account_lines), so account_data/account_total never contain
+        every account's lines - exporting straight from that state produced
+        a file with account totals but NO transaction detail (looking
+        empty/broken to the user). This fetches everything needed for the
+        export in one go instead of looping get_account_lines per account.
+
+        Grouped by id, not by display name: two different accounts can
+        share the same name (e.g. same label, different account codes),
+        which would silently merge or drop their lines under a single
+        string key.
+        """
+        if not account_ids:
+            return {}
+        domain = self._build_lines_domain(journal_ids, date_range, options, analytic, method)
+        domain.append(('account_id', 'in', account_ids))
+
+        move_lines = self.env['account.move.line'].search(domain, order='account_id, date asc')
+        lines = move_lines.read(
+            ['date', 'name', 'move_name', 'debit', 'credit',
+             'partner_id', 'account_id', 'journal_id', 'move_id'])
+
+        result = {}
+        for line in lines:
+            acc = line['account_id']
+            if not acc:
+                continue
+            result.setdefault(acc[0], []).append(line)
         return result
 
     @api.model
@@ -301,112 +349,185 @@ class AccountGeneralLedger(models.TransientModel):
         end_date = data['filters']['end_date'] if \
             data['filters']['end_date'] else ''
         sheet = workbook.add_worksheet()
+        # font_size must be a plain point size (int/float), not a CSS-style
+        # '10px' string - xlsxwriter writes it verbatim into styles.xml as
+        # <sz val="10px"/>, which is invalid and made Excel discard the
+        # whole styles part on open ("repaired" / corrupted file).
         head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '15px'})
+            {'align': 'center', 'bold': True, 'font_size': 15})
         sub_heading = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
         filter_head = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px',
+            {'align': 'center', 'bold': True, 'font_size': 10,
              'border': 1, 'bg_color': '#D3D3D3',
              'border_color': 'black'})
         filter_body = workbook.add_format(
-            {'align': 'center', 'bold': True, 'font_size': '10px'})
+            {'align': 'center', 'bold': True, 'font_size': 10})
         side_heading_sub = workbook.add_format(
-            {'align': 'left', 'bold': True, 'font_size': '10px',
+            {'align': 'left', 'bold': True, 'font_size': 10,
              'border': 1,
              'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': '10px', 'border': 1})
+        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
+        account_heading = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'bold': True, 'bg_color': '#FFFF00'})
+        account_heading.set_indent(1)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 15)
         sheet.set_column(3, 3, 15)
         col = 0
         sheet.write('A1:b1', report_name, head)
-        sheet.write('B3:b4', 'Date Range', filter_head)
-        sheet.write('B4:b4', 'Journals', filter_head)
-        sheet.write('B5:b4', 'Analytic', filter_head)
+        sheet.write('B3:b4', 'Plage de dates', filter_head)
+        sheet.write('B4:b4', 'Journaux', filter_head)
+        sheet.write('B5:b4', 'Analytique', filter_head)
         sheet.write('B6:b4', 'Options', filter_head)
         if start_date or end_date:
             sheet.merge_range('C3:G3', f"{start_date} to {end_date}",
                               filter_body)
+        else:
+            sheet.merge_range('C3:G3', 'Toutes les dates', filter_body)
         if data['filters']['journal']:
             display_names = [journal for
                              journal in data['filters']['journal']]
             display_names_str = ', '.join(display_names)
             sheet.merge_range('C4:G4', display_names_str, filter_body)
+        else:
+            sheet.merge_range('C4:G4', 'Tous les journaux', filter_body)
         if data['filters']['analytic']:
             display_names = [analytic for
                              analytic in data['filters']['analytic']]
             account_keys_str = ', '.join(display_names)
             sheet.merge_range('C5:G5', account_keys_str, filter_body)
+        else:
+            sheet.merge_range('C5:G5', 'Tous', filter_body)
         if data['filters']['options']:
             option_keys = list(data['filters']['options'].keys())
             option_keys_str = ', '.join(option_keys)
             sheet.merge_range('C6:G6', option_keys_str, filter_body)
+        else:
+            sheet.merge_range('C6:G6', 'Écritures validées', filter_body)
         if data:
-            if report_action == 'dynamic_accounts_report.action_general_ledger':
-                sheet.write(8, col, ' ', sub_heading)
-                sheet.write(8, col + 1, 'Date', sub_heading)
-                sheet.merge_range('C9:E9', 'Communication', sub_heading)
-                sheet.merge_range('F9:G9', 'Partner', sub_heading)
-                sheet.merge_range('H9:I9', 'Debit', sub_heading)
-                sheet.merge_range('J9:K9', 'Credit', sub_heading)
-                sheet.merge_range('L9:M9', 'Balance', sub_heading)
-                row = 8
-                if data['account']:
-                    for account in data['account']:
+            sheet.write(8, col, ' ', sub_heading)
+            sheet.write(8, col + 1, 'Date', sub_heading)
+            sheet.merge_range('C9:E9', 'Communication', sub_heading)
+            sheet.merge_range('F9:G9', 'Partenaire', sub_heading)
+            sheet.merge_range('H9:I9', 'Débit', sub_heading)
+            sheet.merge_range('J9:K9', 'Crédit', sub_heading)
+            sheet.merge_range('L9:M9', 'Solde', sub_heading)
+            row = 8
+            # Defensive .get() with fallbacks throughout: a missing/None
+            # key here used to raise (KeyError/TypeError), which the
+            # controller's except-block turned into a JSON error response
+            # saved as a .xlsx file by the browser - i.e. a "corrupted"
+            # download instead of a clear failure. Now it degrades to an
+            # incomplete-but-valid spreadsheet instead.
+            account_list = data.get('account') or []
+            account_total = data.get('total') or {}
+            grand_total = data.get('grand_total') or {}
+            # Move-line detail is fetched here, server-side, instead of
+            # being pre-fetched in JS and shipped through the POST body:
+            # for a general ledger with many accounts/entries that body
+            # could exceed the web server's request size limit (413
+            # Request Entity Too Large). Only small filter values and
+            # account ids travel from the client now.
+            account_ids = data.get('account_ids') or [
+                acc.get('account_id') for acc in account_total.values()
+                if acc.get('account_id')
+            ]
+            account_data = self.get_export_lines(
+                account_ids,
+                data.get('journal_ids'),
+                data.get('date_range'),
+                data.get('options'),
+                data.get('analytic_ids'),
+                data.get('method'),
+            ) if account_ids else {}
+            if account_list:
+                for account in account_list:
+                    row += 1
+                    acc_totals = account_total.get(account) or {}
+                    sheet.write(row, col, account, account_heading)
+                    sheet.write(row, col + 1, ' ', account_heading)
+                    sheet.merge_range(row, col + 2, row, col + 4, ' ', account_heading)
+                    sheet.merge_range(row, col + 5, row, col + 6, ' ',
+                                      account_heading)
+                    sheet.merge_range(row, col + 7, row, col + 8,
+                                      acc_totals.get('total_debit_display', '0.00'),
+                                      account_heading)
+                    sheet.merge_range(row, col + 9, row, col + 10,
+                                      acc_totals.get('total_credit_display', '0.00'),
+                                      account_heading)
+                    sheet.merge_range(row, col + 11, row, col + 12,
+                                      acc_totals.get('balance_display', '0.00'),
+                                      account_heading)
+                    for rec in account_data.get(acc_totals.get('account_id'), []):
                         row += 1
-                        sheet.write(row, col, account, txt_name)
-                        sheet.write(row, col + 1, ' ', txt_name)
-                        sheet.merge_range(row, col + 2, row, col + 4, ' ', txt_name)
-                        sheet.merge_range(row, col + 5, row, col + 6, ' ',
+                        partner = rec.get('partner_id')
+                        name = partner[1] if partner else None
+                        # Handle both list of dicts (new) and list of lists (old) gracefully
+                        move_data = rec[0] if isinstance(rec, list) else rec
+                        sheet.write(row, col, move_data.get('move_name', ''), txt_name)
+                        sheet.write(row, col + 1, str(move_data.get('date', '')), txt_name)
+                        sheet.merge_range(row, col + 2, row, col + 4,
+                                          move_data.get('name', ''), txt_name)
+                        sheet.merge_range(row, col + 5, row, col + 6, name or ' ',
                                           txt_name)
                         sheet.merge_range(row, col + 7, row, col + 8,
-                                          data['total'][account]['total_debit_display'],
+                                          move_data.get('debit', 0.0),
                                           txt_name)
                         sheet.merge_range(row, col + 9, row, col + 10,
-                                          data['total'][account]['total_credit_display'],
+                                          move_data.get('credit', 0.0), txt_name)
+                        sheet.merge_range(row, col + 11, row, col + 12, ' ',
                                           txt_name)
-                        sheet.merge_range(row, col + 11, row, col + 12,
-                                          data['total'][account]['balance_display'],
-                                          txt_name)
-                        for rec in data['data'].get(account, []):
-                            row += 1
-                            partner = rec.get('partner_id')
-                            name = partner[1] if partner else None
-                            # Handle both list of dicts (new) and list of lists (old) gracefully
-                            move_data = rec[0] if isinstance(rec, list) else rec
-                            sheet.write(row, col, move_data.get('move_name', ''), txt_name)
-                            sheet.write(row, col + 1, str(move_data.get('date', '')), txt_name)
-                            sheet.merge_range(row, col + 2, row, col + 4,
-                                              move_data.get('name', ''), txt_name)
-                            sheet.merge_range(row, col + 5, row, col + 6, name or ' ',
-                                              txt_name)
-                            sheet.merge_range(row, col + 7, row, col + 8,
-                                              move_data.get('debit', 0.0),
-                                              txt_name)
-                            sheet.merge_range(row, col + 9, row, col + 10,
-                                              move_data.get('credit', 0.0), txt_name)
-                            sheet.merge_range(row, col + 11, row, col + 12, ' ',
-                                              txt_name)
-                    row += 1
-                    sheet.merge_range(row, col, row, col + 6, 'Total',
-                                      filter_head)
-                    sheet.merge_range(row, col + 7, row, col + 8,
-                                      data['grand_total']['total_debit_display'],
-                                      filter_head)
-                    sheet.merge_range(row, col + 9, row, col + 10,
-                                      data['grand_total']['total_credit_display'],
-                                      filter_head)
-                    sheet.merge_range(row, col + 11, row, col + 12,
-                                      float(data['grand_total']['total_debit']) -
-                                      float(data['grand_total']['total_credit']),
-                                      filter_head)
+                row += 1
+                sheet.merge_range(row, col, row, col + 6, 'Total',
+                                  filter_head)
+                sheet.merge_range(row, col + 7, row, col + 8,
+                                  grand_total.get('total_debit_display', '0.00'),
+                                  filter_head)
+                sheet.merge_range(row, col + 9, row, col + 10,
+                                  grand_total.get('total_credit_display', '0.00'),
+                                  filter_head)
+                sheet.merge_range(row, col + 11, row, col + 12,
+                                  float(grand_total.get('total_debit') or 0) -
+                                  float(grand_total.get('total_credit') or 0),
+                                  filter_head)
+            else:
+                sheet.write(row + 1, col, 'Aucune donnée pour les filtres sélectionnés', txt_name)
         workbook.close()
         output.seek(0)
         response.data = output.read()
         output.close()
+
+
+class IrActionsReportGeneralLedger(models.Model):
+    """Fetches General Ledger move-line detail server-side when the PDF is
+    rendered, instead of the client fetching it via RPC and shipping it back
+    through the report action's `data` payload. For a general ledger with
+    many accounts/entries that payload could exceed the web server's request
+    size limit (413 Request Entity Too Large). Only small filter values and
+    account ids travel from the client now.
+    """
+    _inherit = 'ir.actions.report'
+
+    def _get_report_values(self, docids, data=None):
+        if self.report_name == 'dynamic_accounts_report.general_ledger':
+            data = data or {}
+            account_total = data.get('total') or {}
+            account_ids = data.get('account_ids') or [
+                acc.get('account_id') for acc in account_total.values()
+                if acc.get('account_id')
+            ]
+            data['account_data'] = self.env['account.general.ledger'].get_export_lines(
+                account_ids,
+                data.get('journal_ids'),
+                data.get('date_range'),
+                data.get('options'),
+                data.get('analytic_ids'),
+                data.get('method'),
+            ) if account_ids else {}
+        return super()._get_report_values(docids, data=data)

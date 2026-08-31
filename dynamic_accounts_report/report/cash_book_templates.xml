@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--    Report Template for Bank Book.-->
-    <template id="bank_book">
+    <!--    Report Template for Cash Book.-->
+    <template id="cash_book">
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
                 <t t-set="data_report_margin_top" t-value="12"/>

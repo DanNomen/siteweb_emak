@@ -144,6 +144,16 @@ class GeneralLedger extends owl.Component {
             'currency':this.state.currency  || false,
         }
         var action_title = self.props.action.display_name;
+        // Move-line detail is fetched server-side (see IrActionsReportGeneralLedger
+        // ._get_report_values in account_general_ledger.py) instead of being
+        // fetched here and shipped through the report action's data payload -
+        // for a general ledger with many accounts/entries that payload could
+        // exceed the web server's request size limit (413 Request Entity Too
+        // Large). Only small filter values and account ids travel from here.
+        const account_totals = self.state.account_total || {};
+        const account_ids = Object.values(account_totals)
+            .map(acc => acc.account_id)
+            .filter(id => id != null);
         return self.action.doAction({
             'type': 'ir.actions.report',
             'report_type': 'qweb-pdf',
@@ -151,12 +161,17 @@ class GeneralLedger extends owl.Component {
             'report_file': 'dynamic_accounts_report.general_ledger',
             'data': {
                 'account': self.state.account,
-                'account_data': self.state.account_data,
+                'account_ids': account_ids,
                 'total': self.state.account_total,
                 'title': action_title,
                 'filters': this.filter(),
                 'grand_total': totals,
-                'report_name': self.props.action.display_name
+                'report_name': self.props.action.display_name,
+                'journal_ids': self.state.selected_journal_list || [],
+                'date_range': self.state.date_range || null,
+                'options': self.state.options || null,
+                'analytic_ids': self.state.selected_analytic_list || [],
+                'method': self.state.method || null,
             },
             'display_name': self.props.action.display_name,
         });
@@ -171,13 +186,31 @@ class GeneralLedger extends owl.Component {
             'currency':this.state.currency,
         }
         var action_title = self.props.action.display_name;
+        // The on-screen report only lazy-loads move lines for a single
+        // account when its row is expanded (expandAccount/get_account_lines),
+        // so account_data/account_total never hold every account's lines.
+        // Rather than fetching them here and shipping them back to the
+        // server in this POST body (which, for a general ledger with many
+        // accounts/entries, could exceed the web server's request size
+        // limit and produce a 413 Request Entity Too Large / corrupted
+        // download), get_xlsx_report() now fetches the lines itself
+        // server-side from just the account ids and filter values below.
+        const account_totals = self.state.account_total || {};
+        const account_ids = Object.values(account_totals)
+            .map(acc => acc.account_id)
+            .filter(id => id != null);
         var datas = {
             'account': self.state.account,
-            'data': self.state.account_data,
+            'account_ids': account_ids,
             'total': self.state.account_total,
             'title': action_title,
             'filters': this.filter(),
             'grand_total': totals,
+            'journal_ids': self.state.selected_journal_list || [],
+            'date_range': self.state.date_range || null,
+            'options': self.state.options || null,
+            'analytic_ids': self.state.selected_analytic_list || [],
+            'method': self.state.method || null,
         }
         var action = {
             'data': {
@@ -351,11 +384,16 @@ class GeneralLedger extends owl.Component {
         let currency = null;
         for (let index in filtered_data) {
             const value = filtered_data[index];
-            if (index !== 'account_totals' && index !== 'journal_ids' && index !== 'analytic_ids') {
-                account_list.push(index);
-            } else if (index === 'account_totals') {
-                // Only assign account_totals, not journal_ids or analytic_ids
+            if (index === 'account_totals') {
+                // get_filter_values() only ever returns 'account_totals',
+                // 'journal_ids' and 'analytic_ids' - there is no other key,
+                // so building account_list from "any other key" (as before)
+                // always left it empty after a filter, which in turn made
+                // the XLSX/PDF export's account loop see zero accounts
+                // ("no data") even though the on-screen table (which reads
+                // account_data.account_totals directly) still had rows.
                 account_totals = value;
+                account_list = Object.keys(account_totals);
                 Object.values(account_totals).forEach(acc => {
                     currency = acc.currency_id;
                     totalDebitSum += acc.total_debit || 0;
