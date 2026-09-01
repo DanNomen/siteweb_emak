@@ -243,22 +243,17 @@
                                                 <th style="padding: 6px 4px; text-align: right;">
                                                     <span>
                                                         <t t-if="state.account_data.account_totals[account]['total_debit']"
-                                                           t-esc="state.account_data.account_totals[account]['currency_id']"/>
-                                                        <t t-if="state.account_data.account_totals[account]['total_debit']"
                                                            t-esc="state.account_data.account_totals[account]['total_debit_display']"/>
                                                     </span>
                                                 </th>
                                                 <th style="padding: 6px 4px; text-align: right;">
                                                     <span>
                                                         <t t-if="state.account_data.account_totals[account]['total_credit']"
-                                                           t-esc="state.account_data.account_totals[account]['currency_id']"/>
-                                                        <t t-if="state.account_data.account_totals[account]['total_credit']"
                                                            t-esc="state.account_data.account_totals[account]['total_credit_display']"/>
                                                     </span>
                                                 </th>
                                                 <th style="padding: 6px 4px; text-align: right;">
                                                     <span class="fw-bolder">
-                                                        <t t-esc="state.account_data.account_totals[account]['currency_id']"/>
                                                         <t t-esc="state.account_data.account_totals[account]['balance_display']"/>
                                                     </span>
                                                 </th>
@@ -308,15 +303,11 @@
                                                         </th>
                                                         <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
                                                             <t t-if="line['debit']"
-                                                               t-esc="state.account_total[account]['currency_id']"/>
-                                                            <t t-if="line['debit']"
-                                                               t-esc="line['debit']"/>
+                                                               t-esc="this.formatNumberWithSeparators(line['debit'])"/>
                                                         </th>
                                                         <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
                                                             <t t-if="line['credit']"
-                                                               t-esc="state.account_total[account]['currency_id']"/>
-                                                            <t t-if="line['credit']"
-                                                               t-esc="line['credit']"/>
+                                                               t-esc="this.formatNumberWithSeparators(line['credit'])"/>
                                                         </th>
                                                         <th style="padding: 5px 6px;"/>
                                                     </tr>
@@ -333,16 +324,13 @@
                                             Total
                                         </th>
                                         <th class="o_heading" style="padding: 8px 6px; text-align: right; font-weight: 700;">
-                                            <t t-esc="state.currency"/>
                                             <t t-out="state.total_debit_display"/>
                                         </th>
                                         <th class="o_heading" style="padding: 8px 6px; text-align: right; font-weight: 700;">
-                                            <t t-esc="state.currency"/>
                                             <t t-out="state.total_credit_display"/>
                                         </th>
                                         <th class="o_heading" style="padding: 8px 6px; text-align: right; font-weight: 700;">
-                                            <t t-esc="state.currency"/>
-                                            <t t-out="(state.total_debit - state.total_credit).toFixed(2)"/>
+                                            <t t-out="this.formatNumberWithSeparators(state.total_debit - state.total_credit)"/>
                                         </th>
                                     </tr>
 

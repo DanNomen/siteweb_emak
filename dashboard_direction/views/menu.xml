@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dashboard_direction_root"
+              name="Direction"
+              sequence="1"
+              groups="dashboard_direction.group_dashboard_direction"/>
+
+    <menuitem id="menu_dashboard_direction_main"
+              name="Tableau de Bord"
+              parent="menu_dashboard_direction_root"
+              action="action_dashboard_direction"
+              sequence="1"/>
+</odoo>

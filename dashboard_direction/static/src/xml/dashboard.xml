@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="dashboard_direction.Dashboard" owl="1">
+    <div class="o_dashboard_direction p-4">
+        <h2 class="mb-4">Tableau de Bord Direction</h2>
+
+        <t t-if="state.loading">
+            <p>Chargement des indicateurs...</p>
+        </t>
+
+        <t t-else="">
+            <div class="row g-3">
+                <!-- Carte CA -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Chiffre d'affaires</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.revenue.value)"/>
+                        </div>
+                        <div t-att-class="evolutionClass(state.kpis.revenue.evolution_pct)">
+                            <t t-esc="state.kpis.revenue.evolution_pct"/>% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carte Marge -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Marge brute</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.gross_margin.value)"/>
+                        </div>
+                        <div t-att-class="evolutionClass(state.kpis.gross_margin.evolution_pct)">
+                            <t t-esc="state.kpis.gross_margin.evolution_pct"/>% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carte Créances -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Créances clients</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.receivables.value)"/>
+                        </div>
+                        <div t-att-class="evolutionClass(state.kpis.receivables.evolution_pct)">
+                            <t t-esc="state.kpis.receivables.evolution_pct"/>% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carte Trésorerie -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Trésorerie</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.treasury.value)"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carte Stock -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Valeur en stock</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.stock_value.value)"/>
+                        </div>
+                        <div t-att-class="evolutionClass(state.kpis.stock_value.evolution_pct)">
+                            <t t-esc="state.kpis.stock_value.evolution_pct"/>% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carte Achats -->
+                <div class="col-md-3">
+                    <div class="card p-3">
+                        <div class="text-muted">Achats du mois</div>
+                        <div class="fs-3 fw-bold">
+                            <t t-esc="formatMoney(state.kpis.purchases.value)"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top produits -->
+            <div class="mt-4">
+                <h4>Top 5 produits vendus</h4>
+                <table class="table table-sm">
+                    <thead><tr><th>Produit</th><th>Qté</th><th>Valeur</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="state.kpis.top_products" t-as="p" t-key="p.product">
+                            <td><t t-esc="p.product"/></td>
+                            <td><t t-esc="p.qty"/></td>
+                            <td><t t-esc="formatMoney(p.value)"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Créances par ancienneté -->
+            <div class="mt-4">
+                <h4>Créances par ancienneté</h4>
+                <div class="row g-3">
+                    <div class="col-md-3"><div class="card p-2">0-30j<br/>
+                        <t t-esc="formatMoney(state.kpis.receivables_aging['0_30'])"/></div></div>
+                    <div class="col-md-3"><div class="card p-2">31-60j<br/>
+                        <t t-esc="formatMoney(state.kpis.receivables_aging['31_60'])"/></div></div>
+                    <div class="col-md-3"><div class="card p-2">61-90j<br/>
+                        <t t-esc="formatMoney(state.kpis.receivables_aging['61_90'])"/></div></div>
+                    <div class="col-md-3"><div class="card p-2">90j+<br/>
+                        <t t-esc="formatMoney(state.kpis.receivables_aging['90_plus'])"/></div></div>
+                </div>
+            </div>
+
+            <!-- Stock et appro -->
+            <div class="mt-4">
+                <h4>Stock &amp; Appro</h4>
+                <p>En stock : <t t-esc="state.kpis.stock_status.in_stock_count"/> produits</p>
+                <p>Rupture : <t t-esc="state.kpis.stock_status.out_of_stock_count"/> produits</p>
+                <p>Péremption 0-3 mois : <t t-esc="state.kpis.stock_status.expiring['0_3m']"/> lots</p>
+                <p>Péremption 3-6 mois : <t t-esc="state.kpis.stock_status.expiring['3_6m']"/> lots</p>
+                <p>Péremption 6-12 mois : <t t-esc="state.kpis.stock_status.expiring['6_12m']"/> lots</p>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

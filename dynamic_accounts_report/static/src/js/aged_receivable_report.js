@@ -48,6 +48,16 @@ class AgedReceivable extends owl.Component {
         }
     }
 
+    formatNumberWithSeparators(number) {
+        const parsedNumber = parseFloat(number);
+        if (isNaN(parsedNumber)) {
+            return "0"; // Fallback to 0 if the input is invalid
+        }
+        // Whole numbers with a space as the thousands separator (e.g.
+        // "1 000 000"), no decimals and no currency symbol.
+        return Math.round(parsedNumber).toLocaleString('fr-FR');
+    }
+
     _processData(data) {
         /** Process partner totals from backend response */
         const partner_totals = data.partner_totals || {};
@@ -63,6 +73,16 @@ class AgedReceivable extends owl.Component {
             diff4 += p.diff4_sum || 0;
             diff5 += p.diff5_sum || 0;
             total += p.debit_sum || 0;
+            // The template reads these '_display' fields for every
+            // partner row - they were never computed, so the 1-30/31-60/.../
+            // Total columns always rendered blank for every partner.
+            p.diff0_sum_display = this.formatNumberWithSeparators(p.diff0_sum || 0);
+            p.diff1_sum_display = this.formatNumberWithSeparators(p.diff1_sum || 0);
+            p.diff2_sum_display = this.formatNumberWithSeparators(p.diff2_sum || 0);
+            p.diff3_sum_display = this.formatNumberWithSeparators(p.diff3_sum || 0);
+            p.diff4_sum_display = this.formatNumberWithSeparators(p.diff4_sum || 0);
+            p.diff5_sum_display = this.formatNumberWithSeparators(p.diff5_sum || 0);
+            p.debit_sum_display = this.formatNumberWithSeparators(p.debit_sum || 0);
             // Lazy loading state
             p._lines_loaded = false;
             p._lines = [];
@@ -74,12 +94,19 @@ class AgedReceivable extends owl.Component {
         this.state.total = partner_totals;
         this.state.currency = currency;
         this.state.total_debit = total;
+        this.state.total_debit_display = this.formatNumberWithSeparators(total);
         this.state.diff0_sum = diff0;
+        this.state.diff0_sum_display = this.formatNumberWithSeparators(diff0);
         this.state.diff1_sum = diff1;
+        this.state.diff1_sum_display = this.formatNumberWithSeparators(diff1);
         this.state.diff2_sum = diff2;
+        this.state.diff2_sum_display = this.formatNumberWithSeparators(diff2);
         this.state.diff3_sum = diff3;
+        this.state.diff3_sum_display = this.formatNumberWithSeparators(diff3);
         this.state.diff4_sum = diff4;
+        this.state.diff4_sum_display = this.formatNumberWithSeparators(diff4);
         this.state.diff5_sum = diff5;
+        this.state.diff5_sum_display = this.formatNumberWithSeparators(diff5);
     }
 
     async expandPartner(ev, partnerName) {

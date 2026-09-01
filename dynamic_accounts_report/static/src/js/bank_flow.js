@@ -41,12 +41,11 @@ class BankBook extends owl.Component {
     formatNumberWithSeparators(number) {
         const parsedNumber = parseFloat(number);
         if (isNaN(parsedNumber)) {
-            return "0.00"; // Fallback to 0.00 if the input is invalid
+            return "0"; // Fallback to 0 if the input is invalid
         }
-        return parsedNumber.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+        // Whole numbers with a space as the thousands separator (e.g.
+        // "1 000 000"), no decimals and no currency symbol.
+        return Math.round(parsedNumber).toLocaleString('fr-FR');
     }
     async load_data() {
         /**
@@ -85,7 +84,7 @@ class BankBook extends owl.Component {
             totalCreditSum += acc.total_credit || 0;
             acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
             acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
-            acc.balance_display = ((acc.total_debit || 0) - (acc.total_credit || 0)).toFixed(2);
+            acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
             acc._lines_loaded = false;
             acc._lines = [];
         });

@@ -45,12 +45,11 @@ class GeneralLedger extends owl.Component {
     formatNumberWithSeparators(number) {
         const parsedNumber = parseFloat(number);
         if (isNaN(parsedNumber)) {
-            return "0.00"; // Fallback to 0.00 if the input is invalid
+            return "0"; // Fallback to 0 if the input is invalid
         }
-        return parsedNumber.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+        // Whole numbers with a space as the thousands separator (e.g.
+        // "1 000 000"), no decimals and no currency symbol.
+        return Math.round(parsedNumber).toLocaleString('fr-FR');
     }
     async load_data() {
         var self = this;

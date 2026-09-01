@@ -54,7 +54,8 @@ class PartnerLedger extends owl.Component {
 
     async loadPartners() {
     /**
-     * Loads all available partners from the database
+     * Loads an initial batch of partners from the database, shown before
+     * the user types anything in the search box.
      */
     try {
         const partners = await this.orm.searchRead(
@@ -70,20 +71,34 @@ class PartnerLedger extends owl.Component {
     }
 }
 
-    searchPartners(ev) {
+    async searchPartners(ev) {
         /**
-         * Filters the partner list based on search input
+         * Searches partners matching the input, server-side. The dropdown
+         * only ever held the first 100 partners loaded on page open and
+         * filtered client-side among those - any partner outside that
+         * initial batch could never be found no matter what was typed.
          * @param {Event} ev - The input event
          */
-        const searchTerm = ev.target.value.toLowerCase();
+        const searchTerm = ev.target.value;
+        const requestId = (this._partnerSearchRequestId = (this._partnerSearchRequestId || 0) + 1);
 
         if (!searchTerm) {
             this.state.filtered_partners = this.state.all_partners;
-        } else {
-            this.state.filtered_partners = this.state.all_partners.filter(partner => {
-                const name = (partner.display_name || partner.name || '').toLowerCase();
-                return name.includes(searchTerm);
-            });
+            return;
+        }
+        try {
+            const partners = await this.orm.searchRead(
+                'res.partner',
+                [['name', 'ilike', searchTerm]],
+                ['id', 'name', 'display_name'],
+                { limit: 100 }
+            );
+            // Discard results from a stale (superseded) keystroke.
+            if (requestId === this._partnerSearchRequestId) {
+                this.state.filtered_partners = partners;
+            }
+        } catch (error) {
+            console.error('Error searching partners:', error);
         }
     }
 
@@ -314,12 +329,11 @@ class PartnerLedger extends owl.Component {
     formatNumberWithSeparators(number) {
         const parsedNumber = parseFloat(number);
         if (isNaN(parsedNumber)) {
-            return "0.00"; // Fallback to 0.00 if the input is invalid
+            return "0"; // Fallback to 0 if the input is invalid
         }
-        return parsedNumber.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+        // Whole numbers with a space as the thousands separator (e.g.
+        // "1 000 000"), no decimals and no currency symbol.
+        return Math.round(parsedNumber).toLocaleString('fr-FR');
     }
 
     async load_data(initial_render = true) {

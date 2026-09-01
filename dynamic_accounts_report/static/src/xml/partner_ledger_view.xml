@@ -416,16 +416,13 @@
                                                     <th/>
                                                     <th/>
                                                     <th class="text-end">
-                                                        <t t-esc="pdata['currency_id']"/>
                                                         <t t-esc="pdata['total_debit_display']"/>
                                                     </th>
                                                     <th class="text-end">
-                                                        <t t-esc="pdata['currency_id']"/>
                                                         <t t-esc="pdata['total_credit_display']"/>
                                                     </th>
                                                     <th/>
                                                     <th class="text-end fw-bolder">
-                                                        <t t-esc="pdata['currency_id']"/>
                                                         <t t-esc="pdata['balance_display']"/>
                                                     </th>
                                                 </tr>
@@ -491,20 +488,17 @@
                                                             </td>
                                                             <td class="text-end">
                                                                 <t t-if="line['debit']">
-                                                                    <t t-esc="pdata['currency_id']"/>
-                                                                    <t t-esc="line['debit'].toFixed(2)"/>
+                                                                    <t t-esc="this.formatNumberWithSeparators(line['debit'])"/>
                                                                 </t>
                                                             </td>
                                                             <td class="text-end">
                                                                 <t t-if="line['credit']">
-                                                                    <t t-esc="pdata['currency_id']"/>
-                                                                    <t t-esc="line['credit'].toFixed(2)"/>
+                                                                    <t t-esc="this.formatNumberWithSeparators(line['credit'])"/>
                                                                 </t>
                                                             </td>
                                                             <td class="text-end">
                                                                 <t t-if="line['amount_currency']">
-                                                                    <t t-esc="pdata['currency_id']"/>
-                                                                    <t t-esc="line['amount_currency'].toFixed(2)"/>
+                                                                    <t t-esc="this.formatNumberWithSeparators(line['amount_currency'])"/>
                                                                 </t>
                                                             </td>
                                                             <td/>
@@ -518,18 +512,15 @@
                                     <tr class="o_heading">
                                         <th colspan="11">Total</th>
                                         <th class="text-end">
-                                            <t t-esc="state.currency"/>
                                             <t t-out="state.total_debit_display"/>
                                         </th>
                                         <th class="text-end">
-                                            <t t-esc="state.currency"/>
                                             <t t-out="state.total_credit_display"/>
                                         </th>
                                         <th/>
                                         <th class="text-end">
-                                            <t t-esc="state.currency"/>
                                             <t t-if="state.total_debit and state.total_credit">
-                                                <t t-esc="(state.total_debit - state.total_credit).toFixed(2)"/>
+                                                <t t-esc="this.formatNumberWithSeparators(state.total_debit - state.total_credit)"/>
                                             </t>
                                         </th>
                                     </tr>

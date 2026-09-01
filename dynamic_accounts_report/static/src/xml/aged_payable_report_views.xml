@@ -107,12 +107,13 @@
                                     </tr>
                                 </thead>
                                 <tbody t-ref="tbody">
-                                        <t t-if="state.move_line">
+                                        <t t-if="state.move_line and state.total">
                                             <t t-set="i" t-value="0"/>
                                             <t t-foreach="state.move_line"
                                                t-as="move_line"
                                                t-key="move_line_index">
                                                 <t t-set="i" t-value="i + 1"/>
+                                                <t t-if="state.total[move_line]">
                                                 <tr class="border-bottom border-dark border-gainsboro">
                                                     <th>
                                                         <div data-bs-toggle="collapse"
@@ -154,57 +155,43 @@
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff0_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff0_sum']"
-                                                               t-esc="state.total[move_line]['diff0_sum']"/>
+                                                               t-esc="state.total[move_line]['diff0_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff1_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff1_sum']"
-                                                               t-esc="state.total[move_line]['diff1_sum']"/>
+                                                               t-esc="state.total[move_line]['diff1_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff2_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff2_sum']"
-                                                               t-esc="state.total[move_line]['diff2_sum']"/>
+                                                               t-esc="state.total[move_line]['diff2_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff3_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff3_sum']"
-                                                               t-esc="state.total[move_line]['diff3_sum']"/>
+                                                               t-esc="state.total[move_line]['diff3_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff4_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff4_sum']"
-                                                               t-esc="state.total[move_line]['diff4_sum']"/>
+                                                               t-esc="state.total[move_line]['diff4_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['diff5_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['diff5_sum']"
-                                                               t-esc="state.total[move_line]['diff5_sum']"/>
+                                                               t-esc="state.total[move_line]['diff5_sum_display']"/>
                                                         </span>
                                                     </th>
                                                     <th>
                                                         <span>
                                                             <t t-if="state.total[move_line]['credit_sum']"
-                                                               t-esc="state.total[move_line]['currency_id']"/>
-                                                            <t t-if="state.total[move_line]['credit_sum']"
-                                                               t-esc="state.total[move_line]['credit_sum']"/>
+                                                               t-esc="state.total[move_line]['credit_sum_display']"/>
                                                         </span>
                                                     </th>
                                                 </tr>
@@ -265,53 +252,42 @@
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff0']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff0']"
-                                                                   t-esc="valuelist['diff0']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff0'])"/>
                                                             </span>
                                                         </th>
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff1']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff1']"
-                                                                   t-esc="valuelist['diff1']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff1'])"/>
                                                             </span>
                                                         </th>
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff2']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff2']"
-                                                                   t-esc="valuelist['diff2']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff2'])"/>
                                                             </span>
                                                         </th>
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff3']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff3']"
-                                                                   t-esc="valuelist['diff3']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff3'])"/>
                                                             </span>
                                                         </th>
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff4']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff4']"
-                                                                   t-esc="valuelist['diff4']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff4'])"/>
                                                             </span>
                                                         </th>
                                                         <th>
                                                             <span>
                                                                 <t t-if="valuelist['diff5']"
-                                                                   t-esc="state.total[move_line]['currency_id']"/>
-                                                                <t t-if="valuelist['diff5']"
-                                                                   t-esc="valuelist['diff5']"/>
+                                                                   t-esc="this.formatNumberWithSeparators(valuelist['diff5'])"/>
                                                             </span>
                                                         </th>
                                                         <th/>
                                                     </tr>
+                                                </t>
                                                 </t>
                                             </t>
                                         </t>
@@ -321,32 +297,25 @@
                                                 Total
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff0_sum"/>
+                                                <t t-out="state.diff0_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff1_sum"/>
+                                                <t t-out="state.diff1_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff2_sum"/>
+                                                <t t-out="state.diff2_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff3_sum"/>
+                                                <t t-out="state.diff3_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff4_sum"/>
+                                                <t t-out="state.diff4_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.diff5_sum"/>
+                                                <t t-out="state.diff5_sum_display"/>
                                             </th>
                                             <th class="o_heading">
-                                                <t t-esc="state.currency"/>
-                                                <t t-out="state.total_credit"/>
+                                                <t t-out="state.total_credit_display"/>
                                             </th>
                                         </tr>
                                     </tbody>

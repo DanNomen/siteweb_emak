@@ -36,6 +36,15 @@ class CashBook extends owl.Component {
         this.load_data(self.initial_render = true);
 
         }
+        formatNumberWithSeparators(number) {
+            const parsedNumber = parseFloat(number);
+            if (isNaN(parsedNumber)) {
+                return "0"; // Fallback to 0 if the input is invalid
+            }
+            // Whole numbers with a space as the thousands separator (e.g.
+            // "1 000 000"), no decimals and no currency symbol.
+            return Math.round(parsedNumber).toLocaleString('fr-FR');
+        }
         async load_data() {
         /**
          * Loads the data for the cash book report.
@@ -71,7 +80,9 @@ class CashBook extends owl.Component {
             currency = acc.currency_id || currency;
             totalDebitSum += acc.total_debit || 0;
             totalCreditSum += acc.total_credit || 0;
-            acc.balance_display = ((acc.total_debit || 0) - (acc.total_credit || 0)).toFixed(2);
+            acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
+            acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
+            acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
             acc._lines_loaded = false;
             acc._lines = [];
         });
@@ -80,7 +91,9 @@ class CashBook extends owl.Component {
         this.state.move_line = data['accounts'] || Object.keys(account_totals);
         if (currency) { this.state.currency = currency; }
         this.state.total_debit = totalDebitSum.toFixed(2);
+        this.state.total_debit_display = this.formatNumberWithSeparators(totalDebitSum);
         this.state.total_credit = totalCreditSum.toFixed(2);
+        this.state.total_credit_display = this.formatNumberWithSeparators(totalCreditSum);
     }
     async expandAccount(ev, accountName) {
         /** Lazy-load move lines for a single account when user expands it */
