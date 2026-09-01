@@ -115,7 +115,10 @@ class PartnerLedger extends owl.Component {
             return;
         }
 
-        const partner = this.state.all_partners.find(p => p.id === partnerId);
+        // searchPartners() fetches matches server-side, so a clicked result
+        // is often outside the initial all_partners batch - look there first.
+        const partner = this.state.filtered_partners.find(p => p.id === partnerId)
+            || this.state.all_partners.find(p => p.id === partnerId);
 
         if (partner) {
             this.state.selected_partner.push(partnerId);
