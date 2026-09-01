@@ -120,6 +120,7 @@
                                                              t-attf-href="#move_line-{{i}}"
                                                              aria-expanded="false"
                                                              t-attf-aria-controls="move_line-{{i}}"
+                                                             t-on-click="(ev) => this.expandPartner(ev, move_line)"
                                                              class="ms-3 collapsed">
                                                             <a class="btn header o_heading">
                                                                 <span class="toggle-icon">
@@ -195,7 +196,7 @@
                                                         </span>
                                                     </th>
                                                 </tr>
-                                                <t t-foreach="state.data[move_line]"
+                                                <t t-foreach="state.total[move_line]['_lines']"
                                                    t-as="valuelist"
                                                    t-key="valuelist_index">
                                                     <tr class="border-bottom border-gainsboro collapse"
