@@ -192,7 +192,16 @@ class DashboardDirection(models.AbstractModel):
             ('snapshot_date', '<=', prev_end),
         ], order='snapshot_date desc', limit=1)
 
-        current = current_snap.total_value if current_snap else 0.0
+        if current_snap:
+            current = current_snap.total_value
+        else:
+            # Pas encore de snapshot ce mois-ci (cron pas encore passé) :
+            # on calcule la valeur en direct plutôt que d'afficher 0.
+            quants = self.env['stock.quant'].search([
+                ('company_id', '=', company_id),
+                ('location_id.usage', '=', 'internal'),
+            ])
+            current = sum(q.quantity * q.product_id.standard_price for q in quants)
         previous = previous_snap.total_value if previous_snap else 0.0
         return {
             'value': current,
@@ -256,17 +265,17 @@ class DashboardDirection(models.AbstractModel):
         return result
 
     # ---------------------------------------------------------------
-    # 8. Top 5 produits vendus (mois en cours, par valeur)
+    # 8. Top 5 produits vendus (30 derniers jours glissants, par valeur)
     # ---------------------------------------------------------------
     @api.model
     def _get_top_products(self, company_id):
         today = date.today()
-        cur_start, cur_end = _month_bounds(today)
+        window_start = today - timedelta(days=30)
         lines = self.env['sale.order.line'].search([
             ('order_id.state', '=', 'sale'),
             ('order_id.company_id', '=', company_id),
-            ('order_id.date_order', '>=', cur_start),
-            ('order_id.date_order', '<=', cur_end),
+            ('order_id.date_order', '>=', window_start),
+            ('order_id.date_order', '<=', today),
         ])
         grouped = {}
         for line in lines:
@@ -337,7 +346,7 @@ class DashboardDirection(models.AbstractModel):
         # produit réparti sur plusieurs lots/emplacements ne doit être
         # compté qu'une seule fois.
         domain_base = [
-            ('type', '=', 'product'),
+            ('is_storable', '=', True),
             ('company_id', 'in', (company_id, False)),
         ]
         in_stock = Product.search_count(domain_base + [('qty_available', '>', 0)])
