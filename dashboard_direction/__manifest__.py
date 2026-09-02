@@ -1,3 +1,4 @@
+
 {
     'name': "Tableau de Bord Direction",
     'version': '18.0.1.0.0',
@@ -26,6 +27,7 @@ KPI inclus :
         'sale_margin',
         'stock',
         'product_expiry',
+        'spreadsheet_dashboard',
     ],
     'data': [
         'security/dashboard_security.xml',

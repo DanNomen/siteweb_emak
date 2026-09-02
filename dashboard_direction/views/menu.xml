@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_dashboard_direction_root"
-              name="Direction"
-              sequence="1"
-              groups="dashboard_direction.group_dashboard_direction"/>
-
+    <!-- Rattaché à l'app native "Tableaux de bord" (spreadsheet_dashboard) au lieu
+         de créer une app racine séparée : apparaît comme un onglet "Direction"
+         à côté de "Tableaux de bord" / "Configuration", visible uniquement
+         par le groupe direction. -->
     <menuitem id="menu_dashboard_direction_main"
-              name="Tableau de Bord"
-              parent="menu_dashboard_direction_root"
+              name="Direction"
+              parent="spreadsheet_dashboard.spreadsheet_dashboard_menu_root"
               action="action_dashboard_direction"
-              sequence="1"/>
+              groups="dashboard_direction.group_dashboard_direction"
+              sequence="5"/>
 </odoo>

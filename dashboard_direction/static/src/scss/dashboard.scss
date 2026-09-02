@@ -1,6 +1,90 @@
 .o_dashboard_direction {
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    color: #4a4a4a;
+    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+
+    // Le framework applique la classe "o_action" (display:flex + height:100%
+    // + overflow:hidden) sur la racine de toute action client, avec une
+    // spécificité CSS plus forte que la nôtre : un simple "overflow-y: auto"
+    // ici ne suffit pas à le contrer. On reproduit donc le pattern natif de
+    // ".o_content" : la racine reste un conteneur flex borné, et c'est cet
+    // enfant qui scrolle.
+    .o_dashboard_direction_scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    // ------- Tuiles KPI (fond pastel, pas d'ombre, pas d'icône) -------
+    .o_kpi_tile {
+        border-radius: 6px;
+        padding: 14px 16px;
+        height: 100%;
+    }
+
+    .o_kpi_label {
+        color: #8a8a8a;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+    }
+
+    .o_kpi_value {
+        font-size: 1.75rem;
+        font-weight: 500;
+        color: #3c3c3c;
+    }
+
+    .o_kpi_evolution {
+        font-size: 0.8rem;
+        margin-top: 2px;
+
+        .o_kpi_compare {
+            color: #8a8a8a;
+        }
+    }
+
+    // ------- Sections (pas de card, juste un titre souligné) -------
+    .o_dashboard_section {
+        padding-top: 4px;
+    }
+
+    .o_dashboard_section_title {
+        color: #0b6e79;
+        font-weight: 700;
+        font-size: 1.05rem;
+        padding-bottom: 10px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e6e6e6;
+    }
+
+    .o_dashboard_chart_container {
+        position: relative;
+        height: 320px;
+    }
+
+    .o_dashboard_chart_container_sm {
+        height: 260px;
+    }
+
+    // ------- Tableaux (pas de bordures verticales, en-tête souligné) -------
+    .o_dashboard_table {
+        margin-bottom: 0;
+
+        th {
+            font-weight: 700;
+            border-top: none;
+            border-bottom: 2px solid #e6e6e6;
+        }
+
+        td, th {
+            border-left: none;
+            border-right: none;
+            padding: 0.5rem 0.25rem;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
     }
 }
