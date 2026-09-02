@@ -13,12 +13,12 @@ const MONTH_LABELS = [
 ];
 
 const KPI_CARDS = [
-    { key: "revenue", label: "Chiffre d'affaires" },
-    { key: "gross_margin", label: "Marge brute" },
-    { key: "receivables", label: "Créances clients" },
-    { key: "treasury", label: "Trésorerie" },
-    { key: "stock_value", label: "Valeur en stock" },
-    { key: "purchases", label: "Achats du mois" },
+    { key: "revenue", label: "Chiffre d'affaires", icon: "fa-line-chart" },
+    { key: "gross_margin", label: "Marge brute", icon: "fa-percent" },
+    { key: "receivables", label: "Créances clients", icon: "fa-users" },
+    { key: "treasury", label: "Trésorerie", icon: "fa-university" },
+    { key: "stock_value", label: "Valeur en stock", icon: "fa-cubes" },
+    { key: "purchases", label: "Achats du mois", icon: "fa-shopping-cart" },
 ];
 
 export class DashboardDirection extends Component {
@@ -26,6 +26,7 @@ export class DashboardDirection extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         this.state = useState({ kpis: null, loading: true });
         this.colorScheme = cookie.get("color_scheme");
         this.revenueChartRef = useRef("revenueChart");
@@ -33,12 +34,19 @@ export class DashboardDirection extends Component {
         this.revenueChart = null;
         this.agingChart = null;
 
-        const blueTint = hexToRGBA(getColor(0, this.colorScheme, "md"), 0.1);
-        const peachTint = hexToRGBA(getColor(6, this.colorScheme, "md"), 0.14);
+        const blueColor = getColor(0, this.colorScheme, "md");
+        const peachColor = getColor(6, this.colorScheme, "md");
+        const blueTint = hexToRGBA(blueColor, 0.1);
+        const peachTint = hexToRGBA(peachColor, 0.14);
         this.cards = KPI_CARDS.map((card, index) => ({
             ...card,
             bg: index % 4 < 2 ? blueTint : peachTint,
+            iconColor: index % 4 < 2 ? blueColor : peachColor,
         }));
+
+        const today = new Date();
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        this.compareLabel = `vs ${MONTH_LABELS[prevMonthDate.getMonth()].toLowerCase()} ${prevMonthDate.getFullYear()}`;
 
         onWillStart(async () => {
             await loadBundle("web.chartjs_lib");
@@ -106,8 +114,9 @@ export class DashboardDirection extends Component {
 
     renderAgingChart() {
         const buckets = this.state.kpis.receivables_aging;
+        const bucketKeys = ["0_30", "31_60", "61_90", "90_plus"];
         const labels = ["0-30j", "31-60j", "61-90j", "90j+"];
-        const values = [buckets["0_30"], buckets["31_60"], buckets["61_90"], buckets["90_plus"]];
+        const values = bucketKeys.map((k) => buckets[k]);
         const colors = [0, 6, 2, 5].map((i) => getColor(i, this.colorScheme, "md"));
         this.agingChart = new Chart(this.agingChartRef.el, {
             type: "doughnut",
@@ -125,6 +134,14 @@ export class DashboardDirection extends Component {
             options: {
                 maintainAspectRatio: false,
                 cutout: "65%",
+                onClick: (evt, elements) => {
+                    if (elements.length) {
+                        this.openAgingAction(bucketKeys[elements[0].index]);
+                    }
+                },
+                onHover: (evt, elements) => {
+                    evt.native.target.style.cursor = elements.length ? "pointer" : "default";
+                },
                 plugins: { legend: { position: "bottom", labels: { boxWidth: 10, color: "#8a8a8a" } } },
             },
         });
@@ -144,6 +161,46 @@ export class DashboardDirection extends Component {
     evolutionIcon(pct) {
         if (pct === undefined || pct === null) return "";
         return pct >= 0 ? "fa-long-arrow-up" : "fa-long-arrow-down";
+    }
+
+    /**
+     * Ouvre le détail (liste + fiches) correspondant à un KPI, à partir de
+     * la définition d'action renvoyée par le serveur (mêmes filtres que
+     * ceux utilisés pour calculer la valeur affichée).
+     */
+    openAction(actionDef) {
+        if (!actionDef) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: actionDef.res_model,
+            domain: actionDef.domain,
+            name: actionDef.name,
+            views: actionDef.view_mode.split(",").map((mode) => [false, mode]),
+            target: "current",
+        });
+    }
+
+    openKpiDetail(key) {
+        this.openAction(this.state.kpis[key]?.action);
+    }
+
+    openStockAction(key) {
+        this.openAction(this.state.kpis.stock_status.actions?.[key]);
+    }
+
+    openAgingAction(key) {
+        this.openAction(this.state.kpis.receivables_aging.actions?.[key]);
+    }
+
+    openProduct(productId) {
+        if (!productId) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "product.product",
+            res_id: productId,
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 }
 

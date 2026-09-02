@@ -16,11 +16,40 @@
         overflow-y: auto;
     }
 
-    // ------- Tuiles KPI (fond pastel, pas d'ombre, pas d'icône) -------
+    // ------- Éléments cliquables (drill-down vers le détail) -------
+    .o_dashboard_clickable {
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+        &:hover {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+    }
+
+    tr.o_dashboard_clickable:hover {
+        background-color: #f5f7f8;
+        box-shadow: none;
+        transform: none;
+    }
+
+    // ------- Tuiles KPI (fond pastel, pas d'ombre) -------
     .o_kpi_tile {
         border-radius: 6px;
         padding: 14px 16px;
         height: 100%;
+    }
+
+    .o_kpi_icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1rem;
+        margin-bottom: 10px;
     }
 
     .o_kpi_label {

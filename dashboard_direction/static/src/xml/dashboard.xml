@@ -13,14 +13,20 @@
         <t t-else="">
             <div class="o_dashboard_kpi_row row g-3 pb-3">
                 <div class="col-md-4 col-lg-2" t-foreach="cards" t-as="card" t-key="card.key">
-                    <div class="o_kpi_tile" t-attf-style="background-color: {{card.bg}};">
+                    <div class="o_kpi_tile o_dashboard_clickable"
+                         t-attf-style="background-color: {{card.bg}};"
+                         t-on-click="() => this.openKpiDetail(card.key)"
+                         title="Voir le détail">
+                        <div class="o_kpi_icon" t-attf-style="background-color: {{card.iconColor}};">
+                            <i t-attf-class="fa {{card.icon}}"/>
+                        </div>
                         <div class="o_kpi_label"><t t-esc="card.label"/></div>
                         <div class="o_kpi_value"><t t-esc="formatMoney(state.kpis[card.key].value)"/></div>
                         <div t-if="state.kpis[card.key].evolution_pct !== undefined"
                              t-att-class="'o_kpi_evolution ' + evolutionClass(state.kpis[card.key].evolution_pct)">
                             <i t-attf-class="fa {{evolutionIcon(state.kpis[card.key].evolution_pct)}}"/>
                             <t t-esc="state.kpis[card.key].evolution_pct"/>%
-                            <span class="o_kpi_compare">depuis la période précédente</span>
+                            <span class="o_kpi_compare" t-esc="compareLabel"/>
                         </div>
                     </div>
                 </div>
@@ -40,7 +46,10 @@
                         <table class="table o_dashboard_table">
                             <thead><tr><th>Produit</th><th>Qté</th><th>Valeur</th></tr></thead>
                             <tbody>
-                                <tr t-foreach="state.kpis.top_products" t-as="p" t-key="p.product">
+                                <tr t-foreach="state.kpis.top_products" t-as="p" t-key="p.product"
+                                    class="o_dashboard_clickable"
+                                    t-on-click="() => this.openProduct(p.product_id)"
+                                    title="Voir la fiche produit">
                                     <td><t t-esc="p.product"/></td>
                                     <td><t t-esc="p.qty"/></td>
                                     <td><t t-esc="formatMoney(p.value)"/></td>
@@ -63,19 +72,19 @@
             <div class="o_dashboard_section mt-1">
                 <h4 class="o_dashboard_section_title">Stock &amp; Approvisionnement</h4>
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-3 o_dashboard_clickable" t-on-click="() => this.openStockAction('in_stock')" title="Voir les produits disponibles">
                         <div class="o_kpi_label">Produits disponibles</div>
                         <div class="o_kpi_value"><t t-esc="state.kpis.stock_status.in_stock_count"/></div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 o_dashboard_clickable" t-on-click="() => this.openStockAction('out_of_stock')" title="Voir les ruptures de stock">
                         <div class="o_kpi_label">Ruptures de stock</div>
                         <div class="o_kpi_value"><t t-esc="state.kpis.stock_status.out_of_stock_count"/></div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 o_dashboard_clickable" t-on-click="() => this.openStockAction('expiring_0_3m')" title="Voir les lots concernés">
                         <div class="o_kpi_label">Péremption &lt; 3 mois</div>
                         <div class="o_kpi_value"><t t-esc="state.kpis.stock_status.expiring['0_3m']"/></div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 o_dashboard_clickable" t-on-click="() => this.openStockAction('expiring_3_12m')" title="Voir les lots concernés">
                         <div class="o_kpi_label">Péremption 3-12 mois</div>
                         <div class="o_kpi_value">
                             <t t-esc="state.kpis.stock_status.expiring['3_6m'] + state.kpis.stock_status.expiring['6_12m']"/>

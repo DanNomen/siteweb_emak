@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Rattaché à l'app native "Tableaux de bord" (spreadsheet_dashboard) au lieu
-         de créer une app racine séparée : apparaît comme un onglet "Direction"
-         à côté de "Tableaux de bord" / "Configuration", visible uniquement
-         par le groupe direction. -->
+    <!-- Menu racine (pas de "parent") : apparaît comme une app à part entière
+         sur l'écran d'accueil (grille des apps), visible uniquement par le
+         groupe direction. -->
     <menuitem id="menu_dashboard_direction_main"
-              name="Direction"
-              parent="spreadsheet_dashboard.spreadsheet_dashboard_menu_root"
+              name="Tableau de Bord Direction"
               action="action_dashboard_direction"
               groups="dashboard_direction.group_dashboard_direction"
+              web_icon="dashboard_direction,static/description/icon.png"
               sequence="5"/>
 </odoo>
