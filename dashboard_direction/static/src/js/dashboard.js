@@ -16,10 +16,25 @@ const KPI_CARDS = [
     { key: "revenue", label: "Chiffre d'affaires", icon: "fa-line-chart" },
     { key: "gross_margin", label: "Marge brute", icon: "fa-percent" },
     { key: "receivables", label: "Créances clients", icon: "fa-users" },
-    { key: "treasury", label: "Trésorerie", icon: "fa-university" },
+    { key: "treasury", label: "Recette mensuelle", icon: "fa-money" },
     { key: "stock_value", label: "Valeur en stock", icon: "fa-cubes" },
     { key: "purchases", label: "Achats du mois", icon: "fa-shopping-cart" },
 ];
+
+/** Liste déroulante : mois courant + 23 mois précédents. */
+function buildMonthOptions() {
+    const today = new Date();
+    const options = [];
+    for (let i = 0; i < 24; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        options.push({
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            label: `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`,
+        });
+    }
+    return options;
+}
 
 export class DashboardDirection extends Component {
     static template = "dashboard_direction.Dashboard";
@@ -27,7 +42,14 @@ export class DashboardDirection extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.state = useState({ kpis: null, loading: true });
+        const today = new Date();
+        this.monthOptions = buildMonthOptions();
+        this.state = useState({
+            kpis: null,
+            loading: true,
+            selectedYear: today.getFullYear(),
+            selectedMonth: today.getMonth() + 1,
+        });
         this.colorScheme = cookie.get("color_scheme");
         this.revenueChartRef = useRef("revenueChart");
         this.agingChartRef = useRef("agingChart");
@@ -44,18 +66,9 @@ export class DashboardDirection extends Component {
             iconColor: index % 4 < 2 ? blueColor : peachColor,
         }));
 
-        const today = new Date();
-        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        this.compareLabel = `vs ${MONTH_LABELS[prevMonthDate.getMonth()].toLowerCase()} ${prevMonthDate.getFullYear()}`;
-
         onWillStart(async () => {
             await loadBundle("web.chartjs_lib");
-            this.state.kpis = await this.orm.call(
-                "dashboard.direction",
-                "get_all_kpis",
-                []
-            );
-            this.state.loading = false;
+            await this.loadKpis();
         });
 
         useEffect(
@@ -71,6 +84,33 @@ export class DashboardDirection extends Component {
             },
             () => [this.state.loading]
         );
+    }
+
+    get compareLabel() {
+        const prevMonthDate = new Date(this.state.selectedYear, this.state.selectedMonth - 2, 1);
+        return `vs ${MONTH_LABELS[prevMonthDate.getMonth()].toLowerCase()} ${prevMonthDate.getFullYear()}`;
+    }
+
+    async loadKpis() {
+        this.state.loading = true;
+        this.state.kpis = await this.orm.call(
+            "dashboard.direction",
+            "get_all_kpis",
+            [],
+            { target_month: this.state.selectedMonth, target_year: this.state.selectedYear }
+        );
+        this.state.loading = false;
+    }
+
+    onMonthChange(ev) {
+        const [year, month] = ev.target.value.split("-").map(Number);
+        this.state.selectedYear = year;
+        this.state.selectedMonth = month;
+        this.loadKpis();
+    }
+
+    refresh() {
+        this.loadKpis();
     }
 
     renderRevenueChart() {

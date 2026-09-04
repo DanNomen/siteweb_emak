@@ -52,9 +52,8 @@ class DashboardDirection(models.AbstractModel):
     # 1. Chiffre d'affaires
     # ---------------------------------------------------------------
     @api.model
-    def _get_revenue(self, company_id):
-        today = date.today()
-        cur_start, cur_end = _month_bounds(today)
+    def _get_revenue(self, company_id, ref_date):
+        cur_start, cur_end = _month_bounds(ref_date)
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         Move = self.env['account.move']
@@ -83,9 +82,8 @@ class DashboardDirection(models.AbstractModel):
     # 2. Marge brute (nécessite le module sale_margin)
     # ---------------------------------------------------------------
     @api.model
-    def _get_gross_margin(self, company_id):
-        today = date.today()
-        cur_start, cur_end = _month_bounds(today)
+    def _get_gross_margin(self, company_id, ref_date):
+        cur_start, cur_end = _month_bounds(ref_date)
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         Order = self.env['sale.order']
@@ -114,9 +112,8 @@ class DashboardDirection(models.AbstractModel):
     # 3. Créances clients (factures du mois non soldées)
     # ---------------------------------------------------------------
     @api.model
-    def _get_receivables(self, company_id):
-        today = date.today()
-        cur_start, cur_end = _month_bounds(today)
+    def _get_receivables(self, company_id, ref_date):
+        cur_start, cur_end = _month_bounds(ref_date)
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         Move = self.env['account.move']
@@ -144,30 +141,52 @@ class DashboardDirection(models.AbstractModel):
         }
 
     # ---------------------------------------------------------------
-    # 4. Trésorerie (journaux espèces + banque)
+    # 4. Recette mensuelle (journaux d'encaissement client sélectionnés)
     # ---------------------------------------------------------------
+    # Noms des journaux (en minuscules) pris en compte pour la recette
+    # mensuelle. Comparaison insensible à la casse : la base contient des
+    # variantes ("Caisse principale" / "CAISSE PRINCIPALE").
+    RECETTE_JOURNAL_NAMES = (
+        'paiement par chèque du client',
+        'virement effectué par le client',
+        'paiement orange money',
+        'caisse principale',
+    )
+
     @api.model
-    def _get_treasury(self, company_id):
+    def _get_recette_journals(self, company_id):
         journals = self.env['account.journal'].search([
             ('type', 'in', ('cash', 'bank')),
             ('company_id', '=', company_id),
         ])
-        account_ids = journals.default_account_id.ids
-        total = 0.0
-        for journal in journals:
-            account = journal.default_account_id
-            if account:
-                lines = self.env['account.move.line'].search([
-                    ('account_id', '=', account.id),
-                    ('parent_state', '=', 'posted'),
-                ])
-                total += sum(lines.mapped('balance'))
+        return journals.filtered(
+            lambda j: (j.name or '').strip().lower() in self.RECETTE_JOURNAL_NAMES
+        )
+
+    @api.model
+    def _get_treasury(self, company_id, ref_date):
+        cur_start, cur_end = _month_bounds(ref_date)
+        prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
+
+        journals = self._get_recette_journals(company_id)
+        domain_base = [
+            ('journal_id', 'in', journals.ids),
+            ('parent_state', '=', 'posted'),
+        ]
+        current = sum(self.env['account.move.line'].search(
+            domain_base + [('date', '>=', cur_start), ('date', '<=', cur_end)]
+        ).mapped('balance'))
+        previous = sum(self.env['account.move.line'].search(
+            domain_base + [('date', '>=', prev_start), ('date', '<=', prev_end)]
+        ).mapped('balance'))
+
         return {
-            'value': total,
+            'value': current,
+            'evolution_pct': _pct_evolution(current, previous),
             'action': _action_def(
                 'account.move.line',
-                [('account_id', 'in', account_ids), ('parent_state', '=', 'posted')],
-                "Écritures trésorerie",
+                domain_base + [('date', '>=', cur_start.isoformat()), ('date', '<=', cur_end.isoformat())],
+                "Recette mensuelle - %s" % _month_label(cur_start),
                 view_mode='list',
             ),
         }
@@ -176,15 +195,16 @@ class DashboardDirection(models.AbstractModel):
     # 5. Valeur en stock (dernier snapshot vs mois précédent)
     # ---------------------------------------------------------------
     @api.model
-    def _get_stock_value(self, company_id):
+    def _get_stock_value(self, company_id, ref_date):
         History = self.env['dashboard.stock.value.history']
-        today = date.today()
-        cur_start, _ = _month_bounds(today)
+        cur_start, cur_end = _month_bounds(ref_date)
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
+        is_current_month = cur_start == _month_bounds(date.today())[0]
 
         current_snap = History.search([
             ('company_id', '=', company_id),
             ('snapshot_date', '>=', cur_start),
+            ('snapshot_date', '<=', cur_end),
         ], order='snapshot_date desc', limit=1)
         previous_snap = History.search([
             ('company_id', '=', company_id),
@@ -194,7 +214,7 @@ class DashboardDirection(models.AbstractModel):
 
         if current_snap:
             current = current_snap.total_value
-        else:
+        elif is_current_month:
             # Pas encore de snapshot ce mois-ci (cron pas encore passé) :
             # on calcule la valeur en direct plutôt que d'afficher 0.
             quants = self.env['stock.quant'].search([
@@ -202,6 +222,17 @@ class DashboardDirection(models.AbstractModel):
                 ('location_id.usage', '=', 'internal'),
             ])
             current = sum(q.quantity * q.product_id.standard_price for q in quants)
+        else:
+            # Mois passé sans snapshot enregistré : valeur non reconstituable
+            # (le stock n'est pas un historique, seul un snapshot en garde trace).
+            return {
+                'value': None,
+                'action': _action_def(
+                    'dashboard.stock.value.history',
+                    [('company_id', '=', company_id)],
+                    "Historique valeur du stock",
+                ),
+            }
         previous = previous_snap.total_value if previous_snap else 0.0
         return {
             'value': current,
@@ -217,9 +248,8 @@ class DashboardDirection(models.AbstractModel):
     # 6. Achats du mois
     # ---------------------------------------------------------------
     @api.model
-    def _get_purchases(self, company_id):
-        today = date.today()
-        cur_start, cur_end = _month_bounds(today)
+    def _get_purchases(self, company_id, ref_date):
+        cur_start, cur_end = _month_bounds(ref_date)
 
         Move = self.env['account.move']
         domain_base = [
@@ -393,15 +423,20 @@ class DashboardDirection(models.AbstractModel):
     # Point d'entrée unique : agrège tout en un seul appel RPC
     # ---------------------------------------------------------------
     @api.model
-    def get_all_kpis(self, company_id=None):
+    def get_all_kpis(self, company_id=None, target_month=None, target_year=None):
         company_id = company_id or self.env.company.id
+        today = date.today()
+        # ref_date pilote les 6 cartes KPI du haut (mois sélectionné dans le
+        # tableau de bord) ; les autres sections (graphique, top produits,
+        # ancienneté des créances, stock & appro) restent toujours "live".
+        ref_date = date(target_year or today.year, target_month or today.month, 1)
         return {
-            'revenue': self._get_revenue(company_id),
-            'gross_margin': self._get_gross_margin(company_id),
-            'receivables': self._get_receivables(company_id),
-            'treasury': self._get_treasury(company_id),
-            'stock_value': self._get_stock_value(company_id),
-            'purchases': self._get_purchases(company_id),
+            'revenue': self._get_revenue(company_id, ref_date),
+            'gross_margin': self._get_gross_margin(company_id, ref_date),
+            'receivables': self._get_receivables(company_id, ref_date),
+            'treasury': self._get_treasury(company_id, ref_date),
+            'stock_value': self._get_stock_value(company_id, ref_date),
+            'purchases': self._get_purchases(company_id, ref_date),
             'revenue_evolution': self._get_revenue_evolution(company_id),
             'top_products': self._get_top_products(company_id),
             'receivables_aging': self._get_receivables_aging(company_id),

@@ -4,7 +4,23 @@
 <t t-name="dashboard_direction.Dashboard" owl="1">
     <div class="o_dashboard_direction">
         <div class="o_dashboard_direction_scroll p-4">
-        <h2 class="mb-4">Tableau de Bord Direction</h2>
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+            <h2 class="mb-0">Tableau de Bord Direction</h2>
+            <div class="o_dashboard_month_picker d-flex align-items-center gap-2">
+                <select class="o_dashboard_month_select form-select form-select-sm"
+                        t-on-change="onMonthChange">
+                    <t t-foreach="monthOptions" t-as="opt" t-key="opt.year + '-' + opt.month">
+                        <option t-att-value="opt.year + '-' + opt.month"
+                                t-att-selected="opt.year === state.selectedYear and opt.month === state.selectedMonth">
+                            <t t-esc="opt.label"/>
+                        </option>
+                    </t>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" title="Actualiser" t-on-click="refresh">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+        </div>
 
         <t t-if="state.loading">
             <p>Chargement des indicateurs...</p>
