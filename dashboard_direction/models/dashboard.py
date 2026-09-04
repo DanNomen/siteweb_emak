@@ -29,6 +29,30 @@ def _month_label(d):
     return "%s %s" % (FR_MONTHS[d.month - 1], d.year)
 
 
+def _invoice_domain(company_id, move_types, date_from, date_to, extra=None):
+    """Domaine de base pour chercher des factures/avoirs postés sur une
+    période (move_types = ('out_invoice', 'out_refund') ou
+    ('in_invoice', 'in_refund'))."""
+    domain = [
+        ('move_type', 'in', move_types),
+        ('state', '=', 'posted'),
+        ('company_id', '=', company_id),
+        ('invoice_date', '>=', date_from),
+        ('invoice_date', '<=', date_to),
+    ]
+    return domain + (extra or [])
+
+
+def _net_amount(moves, invoice_type, amount_field):
+    """Somme nette factures - avoirs : un avoir (facture d'achat) vient
+    toujours en déduction du montant de la facture d'origine."""
+    total = 0.0
+    for move in moves:
+        amount = getattr(move, amount_field)
+        total += amount if move.move_type == invoice_type else -amount
+    return total
+
+
 def _action_def(res_model, domain, name, view_mode='list,form'):
     """Définition minimale d'un ir.actions.act_window, prête à être
     envoyée telle quelle au client (dates converties en chaînes ISO,
@@ -57,24 +81,23 @@ class DashboardDirection(models.AbstractModel):
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         Move = self.env['account.move']
-        domain_base = [
-            ('move_type', '=', 'out_invoice'),
-            ('state', '=', 'posted'),
-            ('company_id', '=', company_id),
-        ]
-        cur_domain = domain_base + [('invoice_date', '>=', cur_start), ('invoice_date', '<=', cur_end)]
-        current = sum(Move.search(cur_domain).mapped('amount_untaxed'))
-        previous = sum(Move.search(
-            domain_base + [('invoice_date', '>=', prev_start), ('invoice_date', '<=', prev_end)]
-        ).mapped('amount_untaxed'))
+        move_types = ('out_invoice', 'out_refund')
+        current = _net_amount(
+            Move.search(_invoice_domain(company_id, move_types, cur_start, cur_end)),
+            'out_invoice', 'amount_untaxed',
+        )
+        previous = _net_amount(
+            Move.search(_invoice_domain(company_id, move_types, prev_start, prev_end)),
+            'out_invoice', 'amount_untaxed',
+        )
 
         return {
             'value': current,
             'evolution_pct': _pct_evolution(current, previous),
             'action': _action_def(
                 'account.move',
-                domain_base + [('invoice_date', '>=', cur_start.isoformat()), ('invoice_date', '<=', cur_end.isoformat())],
-                "Factures clients - %s" % _month_label(cur_start),
+                _invoice_domain(company_id, move_types, cur_start.isoformat(), cur_end.isoformat()),
+                "Factures et avoirs clients - %s" % _month_label(cur_start),
             ),
         }
 
@@ -117,25 +140,23 @@ class DashboardDirection(models.AbstractModel):
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         Move = self.env['account.move']
-        domain_base = [
-            ('move_type', '=', 'out_invoice'),
-            ('state', '=', 'posted'),
-            ('payment_state', 'not in', ('paid', 'reversed')),
-            ('company_id', '=', company_id),
-        ]
-        current = sum(Move.search(
-            domain_base + [('invoice_date', '>=', cur_start), ('invoice_date', '<=', cur_end)]
-        ).mapped('amount_residual'))
-        previous = sum(Move.search(
-            domain_base + [('invoice_date', '>=', prev_start), ('invoice_date', '<=', prev_end)]
-        ).mapped('amount_residual'))
+        move_types = ('out_invoice', 'out_refund')
+        extra = [('payment_state', 'not in', ('paid', 'reversed'))]
+        current = _net_amount(
+            Move.search(_invoice_domain(company_id, move_types, cur_start, cur_end, extra)),
+            'out_invoice', 'amount_residual',
+        )
+        previous = _net_amount(
+            Move.search(_invoice_domain(company_id, move_types, prev_start, prev_end, extra)),
+            'out_invoice', 'amount_residual',
+        )
 
         return {
             'value': current,
             'evolution_pct': _pct_evolution(current, previous),
             'action': _action_def(
                 'account.move',
-                domain_base + [('invoice_date', '>=', cur_start.isoformat()), ('invoice_date', '<=', cur_end.isoformat())],
+                _invoice_domain(company_id, move_types, cur_start.isoformat(), cur_end.isoformat(), extra),
                 "Créances clients - %s" % _month_label(cur_start),
             ),
         }
@@ -201,38 +222,41 @@ class DashboardDirection(models.AbstractModel):
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
         is_current_month = cur_start == _month_bounds(date.today())[0]
 
-        current_snap = History.search([
-            ('company_id', '=', company_id),
-            ('snapshot_date', '>=', cur_start),
-            ('snapshot_date', '<=', cur_end),
-        ], order='snapshot_date desc', limit=1)
         previous_snap = History.search([
             ('company_id', '=', company_id),
             ('snapshot_date', '>=', prev_start),
             ('snapshot_date', '<=', prev_end),
         ], order='snapshot_date desc', limit=1)
 
-        if current_snap:
-            current = current_snap.total_value
-        elif is_current_month:
-            # Pas encore de snapshot ce mois-ci (cron pas encore passé) :
-            # on calcule la valeur en direct plutôt que d'afficher 0.
+        if is_current_month:
+            # Toujours calculée en direct (achat/vente/retour doivent se
+            # répercuter immédiatement) : on ignore le snapshot du cron du
+            # jour, qui ne sert qu'à figer l'historique une fois le mois clos.
             quants = self.env['stock.quant'].search([
                 ('company_id', '=', company_id),
                 ('location_id.usage', '=', 'internal'),
             ])
             current = sum(q.quantity * q.product_id.standard_price for q in quants)
         else:
-            # Mois passé sans snapshot enregistré : valeur non reconstituable
-            # (le stock n'est pas un historique, seul un snapshot en garde trace).
-            return {
-                'value': None,
-                'action': _action_def(
-                    'dashboard.stock.value.history',
-                    [('company_id', '=', company_id)],
-                    "Historique valeur du stock",
-                ),
-            }
+            current_snap = History.search([
+                ('company_id', '=', company_id),
+                ('snapshot_date', '>=', cur_start),
+                ('snapshot_date', '<=', cur_end),
+            ], order='snapshot_date desc', limit=1)
+            if not current_snap:
+                # Mois passé sans snapshot enregistré : valeur non
+                # reconstituable (le stock n'est pas un historique, seul un
+                # snapshot en garde trace).
+                return {
+                    'value': None,
+                    'action': _action_def(
+                        'dashboard.stock.value.history',
+                        [('company_id', '=', company_id)],
+                        "Historique valeur du stock",
+                    ),
+                }
+            current = current_snap.total_value
+
         previous = previous_snap.total_value if previous_snap else 0.0
         return {
             'value': current,
@@ -252,20 +276,17 @@ class DashboardDirection(models.AbstractModel):
         cur_start, cur_end = _month_bounds(ref_date)
 
         Move = self.env['account.move']
-        domain_base = [
-            ('move_type', '=', 'in_invoice'),
-            ('state', '=', 'posted'),
-            ('company_id', '=', company_id),
-        ]
-        total = sum(Move.search(
-            domain_base + [('invoice_date', '>=', cur_start), ('invoice_date', '<=', cur_end)]
-        ).mapped('amount_untaxed'))
+        move_types = ('in_invoice', 'in_refund')
+        total = _net_amount(
+            Move.search(_invoice_domain(company_id, move_types, cur_start, cur_end)),
+            'in_invoice', 'amount_untaxed',
+        )
         return {
             'value': total,
             'action': _action_def(
                 'account.move',
-                domain_base + [('invoice_date', '>=', cur_start.isoformat()), ('invoice_date', '<=', cur_end.isoformat())],
-                "Factures fournisseurs - %s" % _month_label(cur_start),
+                _invoice_domain(company_id, move_types, cur_start.isoformat(), cur_end.isoformat()),
+                "Factures et avoirs fournisseurs - %s" % _month_label(cur_start),
             ),
         }
 
@@ -328,7 +349,7 @@ class DashboardDirection(models.AbstractModel):
     def _get_receivables_aging(self, company_id):
         today = date.today()
         moves = self.env['account.move'].search([
-            ('move_type', '=', 'out_invoice'),
+            ('move_type', 'in', ('out_invoice', 'out_refund')),
             ('state', '=', 'posted'),
             ('payment_state', 'not in', ('paid', 'reversed')),
             ('company_id', '=', company_id),
@@ -340,7 +361,9 @@ class DashboardDirection(models.AbstractModel):
             if not due:
                 continue
             days_overdue = (today - due).days
-            amount = move.amount_residual
+            # Un avoir vient en déduction de la créance sur son propre panier
+            # d'ancienneté (comme dans le rapport Odoo "Balance âgée").
+            amount = move.amount_residual if move.move_type == 'out_invoice' else -move.amount_residual
             if days_overdue <= 30:
                 key = '0_30'
             elif days_overdue <= 60:
