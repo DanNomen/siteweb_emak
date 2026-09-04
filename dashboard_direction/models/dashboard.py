@@ -190,8 +190,13 @@ class DashboardDirection(models.AbstractModel):
         prev_start, prev_end = _month_bounds(cur_start - timedelta(days=1))
 
         journals = self._get_recette_journals(company_id)
+        # On récupère les montants comptabilisés sur le compte par défaut de
+        # chaque journal (ex. 51510000 pour Orange Money), pas seulement les
+        # écritures dont le journal_id correspond : certains encaissements
+        # sur ce compte passent par d'autres journaux (rapprochement, OD...).
+        account_ids = journals.mapped('default_account_id').ids
         domain_base = [
-            ('journal_id', 'in', journals.ids),
+            ('account_id', 'in', account_ids),
             ('parent_state', '=', 'posted'),
         ]
         current = sum(self.env['account.move.line'].search(
