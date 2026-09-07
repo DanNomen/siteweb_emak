@@ -310,13 +310,12 @@ class DashboardDirection(models.AbstractModel):
             if month_start > today:
                 result.append({'month': m, 'value': 0.0})
                 continue
-            total = sum(Move.search([
-                ('move_type', '=', 'out_invoice'),
-                ('state', '=', 'posted'),
-                ('company_id', '=', company_id),
-                ('invoice_date', '>=', month_start),
-                ('invoice_date', '<=', month_end),
-            ]).mapped('amount_untaxed'))
+            total = _net_amount(
+                Move.search(_invoice_domain(
+                    company_id, ('out_invoice', 'out_refund'), month_start, month_end,
+                )),
+                'out_invoice', 'amount_untaxed',
+            )
             result.append({'month': m, 'value': total})
         return result
 
