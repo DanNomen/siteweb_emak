@@ -5,11 +5,13 @@ import { useService } from "@web/core/utils/hooks";
 import { useRef, useState, useEffect } from "@odoo/owl";
 import { BlockUI } from "@web/core/ui/block_ui";
 import { download } from "@web/core/network/download";
+import { ReportSearchBar } from "@dynamic_accounts_report/js/report_search_bar";
 const actionRegistry = registry.category("actions");
 const today = luxon.DateTime.now();
 let monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 class TrialBalance extends owl.Component {
+    static components = { ReportSearchBar };
     async setup() {
         this.initial_render = true;
         this.orm = useService('orm');
@@ -31,6 +33,9 @@ class TrialBalance extends owl.Component {
             analytic_account: null,
             selected_journal_list: [],
             selected_analytic_account_rec: [],
+            account_search: '',
+            partner_search: '',
+            piece_search: '',
             date_range: 'month',
             date_type: 'month',
             apply_comparison: false,
@@ -285,13 +290,26 @@ class TrialBalance extends owl.Component {
                 this.state.comparison_number = this.period.el.value
             }
         }
-        this.state.data = await this.orm.call("account.trial.balance", "get_filter_values", [this.start_date.el.value, this.end_date.el.value, this.state.comparison_number, this.state.comparison_type, this.state.selected_journal_list, this.state.selected_analytic, this.state.options,this.state.method,]);
+        this.state.data = await this.orm.call("account.trial.balance", "get_filter_values", [this.start_date.el.value, this.end_date.el.value, this.state.comparison_number, this.state.comparison_type, this.state.selected_journal_list, this.state.selected_analytic, this.state.options,this.state.method, this.state.account_search, this.state.partner_search, this.state.piece_search]);
         this.state.totals = this.state.data[1];
         this.state.data = this.state.data[0];
         var date_viewed = []
         if (date_viewed.length !== 0) {
             this.state.date_viewed = date_viewed.reverse()
         }
+    }
+    /**
+     * Callback de <ReportSearchBar/> : reçoit les 3 critères courants
+     * (compte / contact / pièce) à chaque ajout/suppression de tag, puis
+     * relance la même recherche que les autres filtres (applyFilter, appelé
+     * sans val ni data-value ne fait que relancer l'appel RPC final avec
+     * l'état courant).
+     */
+    onReportSearch(payload) {
+        this.state.account_search = payload.account_search || '';
+        this.state.partner_search = payload.partner_search || '';
+        this.state.piece_search = payload.piece_search || '';
+        this.applyFilter(null, {});
     }
     onPeriodChange(ev) {
         /**

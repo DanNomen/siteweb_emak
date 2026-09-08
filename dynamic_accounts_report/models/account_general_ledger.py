@@ -27,6 +27,7 @@ import xlsxwriter
 from odoo import api, fields, models
 from datetime import datetime
 from odoo.tools import date_utils
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class AccountGeneralLedger(models.TransientModel):
@@ -82,6 +83,17 @@ class AccountGeneralLedger(models.TransientModel):
             [], ['name'])
         account_dict['analytic_ids'] = self.env[
             'account.analytic.account'].search_read([], ['name'])
+
+        # Comptes triés par code (plan comptable), pas dans l'ordre
+        # d'apparition du groupby (qui suit l'id interne du compte).
+        group_account_ids = [g['account_id'][0] for g in groups if g.get('account_id')]
+        account_code_map = {}
+        if group_account_ids:
+            account_recs = self.env['account.account'].search_read(
+                [('id', 'in', group_account_ids)], ['code'])
+            account_code_map = {a['id']: a['code'] or '' for a in account_recs}
+        groups.sort(key=lambda g: account_code_map.get(g['account_id'][0], '')
+                    if g.get('account_id') else '')
 
         for group in groups:
             if not group['account_id']:
@@ -230,10 +242,15 @@ class AccountGeneralLedger(models.TransientModel):
 
     @api.model
     def get_filter_values(self, journal_id, date_range, options, analytic,
-                          method):
+                          method, account_search=None, partner_search=None,
+                          piece_search=None):
         """
         Returns filtered account totals (NO move line details).
         Uses a single read_group SQL query for performance.
+
+        :param str account_search: Filtre texte sur le code/nom du compte.
+        :param str partner_search: Filtre texte sur le nom du contact.
+        :param str piece_search: Filtre texte sur la pièce (n° de pièce/réf).
         """
         account_dict = {}
         account_totals = {}
@@ -299,6 +316,23 @@ class AccountGeneralLedger(models.TransientModel):
                     end_date = datetime.strptime(date_range['end_date'], '%Y-%m-%d').date()
                     domain += [('date', '<=', end_date)]
 
+        # Barre de recherche : compte (code/nom), contact, pièce. Ces
+        # clauses réduisent directement le domaine des lignes d'écriture
+        # utilisé par le read_group ci-dessous, donc elles narrows à la
+        # fois les comptes affichés (account_search) et les totaux/comptes
+        # visibles (partner_search / piece_search).
+        if account_search:
+            domain += ['|',
+                       ('account_id.code', 'ilike', account_search),
+                       ('account_id.name', 'ilike', account_search)]
+        if partner_search:
+            domain.append(('partner_id.name', 'ilike', partner_search))
+        if piece_search:
+            domain += ['|', '|',
+                       ('move_id.name', 'ilike', piece_search),
+                       ('move_id.ref', 'ilike', piece_search),
+                       ('name', 'ilike', piece_search)]
+
         currency_id = self.env.company.currency_id.symbol
         groups = self.env['account.move.line'].read_group(
             domain=domain,
@@ -308,6 +342,17 @@ class AccountGeneralLedger(models.TransientModel):
         )
         account_dict['journal_ids'] = self.env['account.journal'].search_read([], ['name'])
         account_dict['analytic_ids'] = self.env['account.analytic.account'].search_read([], ['name'])
+
+        # Comptes triés par code (plan comptable), pas dans l'ordre
+        # d'apparition du groupby (qui suit l'id interne du compte).
+        group_account_ids = [g['account_id'][0] for g in groups if g.get('account_id')]
+        account_code_map = {}
+        if group_account_ids:
+            account_recs = self.env['account.account'].search_read(
+                [('id', 'in', group_account_ids)], ['code'])
+            account_code_map = {a['id']: a['code'] or '' for a in account_recs}
+        groups.sort(key=lambda g: account_code_map.get(g['account_id'][0], '')
+                    if g.get('account_id') else '')
 
         for group in groups:
             if not group['account_id']:
@@ -375,6 +420,20 @@ class AccountGeneralLedger(models.TransientModel):
         account_heading = workbook.add_format(
             {'font_size': 10, 'border': 1, 'bold': True, 'bg_color': '#FFFF00'})
         account_heading.set_indent(1)
+        # Cellules montant : vrai nombre (utilisable dans des formules
+        # Excel) avec un format d'affichage numérique, au lieu d'une
+        # chaîne pré-formatée ("1,234.56") qui apparaît figée/verrouillée.
+        txt_name_amount = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        txt_name_amount.set_indent(2)
+        account_heading_amount = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'bold': True, 'bg_color': '#FFFF00',
+             'num_format': AMOUNT_NUM_FORMAT})
+        account_heading_amount.set_indent(1)
+        filter_head_amount = workbook.add_format(
+            {'align': 'center', 'bold': True, 'font_size': 10,
+             'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black',
+             'num_format': AMOUNT_NUM_FORMAT})
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 15)
@@ -456,14 +515,15 @@ class AccountGeneralLedger(models.TransientModel):
                     sheet.merge_range(row, col + 5, row, col + 6, ' ',
                                       account_heading)
                     sheet.merge_range(row, col + 7, row, col + 8,
-                                      acc_totals.get('total_debit_display', '0.00'),
-                                      account_heading)
+                                      to_float(acc_totals.get('total_debit', 0)),
+                                      account_heading_amount)
                     sheet.merge_range(row, col + 9, row, col + 10,
-                                      acc_totals.get('total_credit_display', '0.00'),
-                                      account_heading)
+                                      to_float(acc_totals.get('total_credit', 0)),
+                                      account_heading_amount)
                     sheet.merge_range(row, col + 11, row, col + 12,
-                                      acc_totals.get('balance_display', '0.00'),
-                                      account_heading)
+                                      to_float(acc_totals.get('total_debit', 0)) -
+                                      to_float(acc_totals.get('total_credit', 0)),
+                                      account_heading_amount)
                     for rec in account_data.get(acc_totals.get('account_id'), []):
                         row += 1
                         partner = rec.get('partner_id')
@@ -477,25 +537,26 @@ class AccountGeneralLedger(models.TransientModel):
                         sheet.merge_range(row, col + 5, row, col + 6, name or ' ',
                                           txt_name)
                         sheet.merge_range(row, col + 7, row, col + 8,
-                                          move_data.get('debit', 0.0),
-                                          txt_name)
+                                          to_float(move_data.get('debit', 0.0)),
+                                          txt_name_amount)
                         sheet.merge_range(row, col + 9, row, col + 10,
-                                          move_data.get('credit', 0.0), txt_name)
+                                          to_float(move_data.get('credit', 0.0)),
+                                          txt_name_amount)
                         sheet.merge_range(row, col + 11, row, col + 12, ' ',
                                           txt_name)
                 row += 1
                 sheet.merge_range(row, col, row, col + 6, 'Total',
                                   filter_head)
                 sheet.merge_range(row, col + 7, row, col + 8,
-                                  grand_total.get('total_debit_display', '0.00'),
-                                  filter_head)
+                                  to_float(grand_total.get('total_debit', 0)),
+                                  filter_head_amount)
                 sheet.merge_range(row, col + 9, row, col + 10,
-                                  grand_total.get('total_credit_display', '0.00'),
-                                  filter_head)
+                                  to_float(grand_total.get('total_credit', 0)),
+                                  filter_head_amount)
                 sheet.merge_range(row, col + 11, row, col + 12,
-                                  float(grand_total.get('total_debit') or 0) -
-                                  float(grand_total.get('total_credit') or 0),
-                                  filter_head)
+                                  to_float(grand_total.get('total_debit', 0)) -
+                                  to_float(grand_total.get('total_credit', 0)),
+                                  filter_head_amount)
             else:
                 sheet.write(row + 1, col, 'Aucune donnée pour les filtres sélectionnés', txt_name)
         workbook.close()

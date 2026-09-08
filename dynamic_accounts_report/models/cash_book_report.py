@@ -7,6 +7,7 @@ import xlsxwriter
 from datetime import datetime
 from odoo.tools import date_utils
 from odoo import api, fields, models
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class CashBookReport(models.TransientModel):
@@ -14,7 +15,8 @@ class CashBookReport(models.TransientModel):
     _name = 'cash.book.report'
     _description = 'Account Cash Book Report'
 
-    def _build_domain(self, partner_id, data_range, account_list, options):
+    def _build_domain(self, partner_id, data_range, account_list, options,
+                       account_search=None, partner_search=None, piece_search=None):
         """Build search domain based on filters."""
         today = fields.Date.today()
         quarter_start, quarter_end = date_utils.get_quarter(today)
@@ -35,7 +37,17 @@ class CashBookReport(models.TransientModel):
             domain.append(('partner_id', 'in', partner_id))
         if account_list:
             domain.append(('account_id', 'in', account_list))
-        
+        if account_search:
+            domain += ['|', ('account_id.code', 'ilike', account_search),
+                        ('account_id.name', 'ilike', account_search)]
+        if partner_search:
+            domain.append(('partner_id.name', 'ilike', partner_search))
+        if piece_search:
+            domain += ['|', '|',
+                        ('move_id.name', 'ilike', piece_search),
+                        ('move_id.ref', 'ilike', piece_search),
+                        ('name', 'ilike', piece_search)]
+
         if data_range:
             if data_range == 'month':
                 domain += [('date', '>=', today.replace(day=1)), ('date', '<=', today)]
@@ -67,21 +79,23 @@ class CashBookReport(models.TransientModel):
         return self.get_filter_values(None, None, None, None)
 
     @api.model
-    def get_filter_values(self, partner_id, data_range, account_list, options):
+    def get_filter_values(self, partner_id, data_range, account_list, options,
+                           account_search=None, partner_search=None, piece_search=None):
         """Returns account-level totals via read_group (no line details)."""
-        domain = self._build_domain(partner_id, data_range, account_list, options)
-        
+        domain = self._build_domain(partner_id, data_range, account_list, options,
+                                     account_search, partner_search, piece_search)
+
         groups = self.env['account.move.line'].read_group(
             domain=domain,
             fields=['account_id', 'debit', 'credit'],
             groupby=['account_id'],
             lazy=False
         )
-        
+
         currency_id = self.env.company.currency_id.symbol
         account_totals = {}
         account_list_result = []
-        
+
         for group in groups:
             if not group.get('account_id'):
                 continue
@@ -94,16 +108,25 @@ class CashBookReport(models.TransientModel):
                 'currency_id': currency_id,
             }
             account_list_result.append(acc_name)
-        
+
+        # Trié par code de compte (plan comptable), pas dans l'ordre
+        # d'apparition du read_group (qui n'est pas garanti stable/lisible).
+        code_map = {a.id: a.code or '' for a in self.env['account.account'].browse(
+            [v['account_id'] for v in account_totals.values()])}
+        account_list_result.sort(
+            key=lambda name: (code_map.get(account_totals[name]['account_id'], ''), name))
+
         return {
             'account_totals': account_totals,
             'accounts': account_list_result,
         }
 
     @api.model
-    def get_account_lines(self, account_id, partner_id, data_range, account_list, options):
+    def get_account_lines(self, account_id, partner_id, data_range, account_list, options,
+                           account_search=None, partner_search=None, piece_search=None):
         """Lazy-load move lines for a single account when expanded."""
-        domain = self._build_domain(partner_id, data_range, account_list, options)
+        domain = self._build_domain(partner_id, data_range, account_list, options,
+                                     account_search, partner_search, piece_search)
         domain.append(('account_id', '=', account_id))
 
         move_lines = self.env['account.move.line'].search(domain, order='date asc', limit=500)
@@ -111,7 +134,8 @@ class CashBookReport(models.TransientModel):
                                 'move_id', 'credit', 'name', 'ref'])
 
     @api.model
-    def get_export_lines(self, account_ids, partner_id, data_range, account_list, options):
+    def get_export_lines(self, account_ids, partner_id, data_range, account_list, options,
+                          account_search=None, partner_search=None, piece_search=None):
         """
         Fetch move line details for MULTIPLE accounts in a single query,
         grouped by account id.
@@ -124,7 +148,8 @@ class CashBookReport(models.TransientModel):
         """
         if not account_ids:
             return {}
-        domain = self._build_domain(partner_id, data_range, account_list, options)
+        domain = self._build_domain(partner_id, data_range, account_list, options,
+                                     account_search, partner_search, piece_search)
         domain.append(('account_id', 'in', account_ids))
 
         move_lines = self.env['account.move.line'].search(domain, order='account_id, date asc')
@@ -156,6 +181,16 @@ class CashBookReport(models.TransientModel):
         filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10})
         txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
+        # Cellules montant : vrai nombre (utilisable dans des formules Excel)
+        # avec un format d'affichage identique au "{:,.2f}" utilisé avant.
+        amount_format = workbook.add_format({'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format.set_indent(2)
+        sub_heading_amount = workbook.add_format(
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1,
+              'bg_color': '#D3D3D3', 'border_color': 'black', 'num_format': AMOUNT_NUM_FORMAT})
+        filter_head_amount = workbook.add_format(
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1,
+              'bg_color': '#D3D3D3', 'border_color': 'black', 'num_format': AMOUNT_NUM_FORMAT})
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 30)
@@ -168,9 +203,6 @@ class CashBookReport(models.TransientModel):
         sheet.write('B3:B4', 'Date Range', filter_head)
         if start_date or end_date:
             sheet.merge_range('C3:G3', f"{start_date} to {end_date}", filter_body)
-
-        def fmt(v):
-            return "{:,.2f}".format(float(v or 0))
 
         accounts = data.get('accounts', []) or []
         account_totals = data.get('account_totals', {}) or {}
@@ -193,6 +225,9 @@ class CashBookReport(models.TransientModel):
             data.get('data_range'),
             data.get('account_list'),
             data.get('options'),
+            data.get('account_search'),
+            data.get('partner_search'),
+            data.get('piece_search'),
         ) if account_ids else {}
 
         row = 7
@@ -207,23 +242,23 @@ class CashBookReport(models.TransientModel):
             sheet.write(row, col, account_name, sub_heading)
             sheet.write(row, col + 1, '', sub_heading)
             sheet.write(row, col + 2, '', sub_heading)
-            sheet.write(row, col + 3, fmt(td), sub_heading)
-            sheet.write(row, col + 4, fmt(tc), sub_heading)
+            sheet.write_number(row, col + 3, to_float(td), sub_heading_amount)
+            sheet.write_number(row, col + 4, to_float(tc), sub_heading_amount)
 
             for line in lines_by_account.get(acc_data.get('account_id'), []):
                 row += 1
                 sheet.write(row, col, '', txt_name)
                 sheet.write(row, col + 1, str(line.get('date', '')), txt_name)
                 sheet.write(row, col + 2, line.get('move_name', ''), txt_name)
-                sheet.write(row, col + 3, fmt(line.get('debit', 0)), txt_name)
-                sheet.write(row, col + 4, fmt(line.get('credit', 0)), txt_name)
-        
+                sheet.write_number(row, col + 3, to_float(line.get('debit', 0)), amount_format)
+                sheet.write_number(row, col + 4, to_float(line.get('credit', 0)), amount_format)
+
         row += 1
         sheet.write(row, col, 'Total', filter_head)
         sheet.write(row, col + 1, '', filter_head)
         sheet.write(row, col + 2, '', filter_head)
-        sheet.write(row, col + 3, fmt(total_debit), filter_head)
-        sheet.write(row, col + 4, fmt(total_credit), filter_head)
+        sheet.write_number(row, col + 3, to_float(total_debit), filter_head_amount)
+        sheet.write_number(row, col + 4, to_float(total_credit), filter_head_amount)
 
         workbook.close()
         output.seek(0)
@@ -254,6 +289,9 @@ class IrActionsReportCashBook(models.Model):
                 data.get('data_range'),
                 data.get('account_list'),
                 data.get('options'),
+                data.get('account_search'),
+                data.get('partner_search'),
+                data.get('piece_search'),
             ) if account_ids else {}
             # Re-key by account name to match what the template
             # (move_lines/total) already indexes by.

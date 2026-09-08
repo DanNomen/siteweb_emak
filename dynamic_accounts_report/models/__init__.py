@@ -19,6 +19,7 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+from . import report_xlsx_utils
 from . import account_general_ledger
 from . import account_partner_ledger
 from . import account_trial_balance

@@ -28,6 +28,7 @@ import xlsxwriter
 from odoo import api, fields, models
 from odoo.tools.date_utils import get_month, get_fiscal_year, \
     get_quarter_number, subtract
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class AccountTrialBalance(models.TransientModel):
@@ -79,10 +80,13 @@ class AccountTrialBalance(models.TransientModel):
         period_map = {g['account_id'][0]: g for g in period_groups if g.get('account_id')}
 
         journal_ids = self.env['account.journal'].search_read([], ['name'])
-        account_name_map = {
-            a['id']: a['display_name']
-            for a in self.env['account.account'].search_read([('id', 'in', account_ids)], ['display_name'])
-        }
+        # Comptes triés par code (plan comptable), pas dans l'ordre
+        # d'apparition du groupby.
+        account_recs = self.env['account.account'].search_read(
+            [('id', 'in', account_ids)], ['display_name', 'code'])
+        account_recs.sort(key=lambda a: a['code'] or '')
+        account_ids = [a['id'] for a in account_recs]
+        account_name_map = {a['id']: a['display_name'] for a in account_recs}
 
         move_line_list = []
         for account_id in account_ids:
@@ -131,7 +135,8 @@ class AccountTrialBalance(models.TransientModel):
     @api.model
     def get_filter_values(self, start_date, end_date, comparison_number,
                           comparison_type, journal_list, analytic, options,
-                          method):
+                          method, account_search=None, partner_search=None,
+                          piece_search=None):
         """
         Retrieves and calculates filtered values for generating a financial
         report.
@@ -148,6 +153,9 @@ class AccountTrialBalance(models.TransientModel):
         :param list[int] analytic: List of selected analytic line IDs.
         :param dict options: Additional filtering options (e.g., 'draft').
         :param dict method: Find the method.
+        :param str account_search: Filtre texte sur le code/nom du compte.
+        :param str partner_search: Filtre texte sur le nom du contact.
+        :param str piece_search: Filtre texte sur la pièce (n° de pièce/réf).
         :return: List of dictionaries representing the financial report.
         :rtype: list
         """
@@ -163,8 +171,28 @@ class AccountTrialBalance(models.TransientModel):
         dynamic_total_debit = {}
         dynamic_date_num = {}
         dynamic_total_credit = {}
+        # Comptes triés par code (comme le plan comptable), pas dans l'ordre
+        # d'apparition des écritures.
         account_ids = self.env['account.move.line'].search([]).mapped(
-            'account_id')
+            'account_id').sorted(key=lambda a: a.code or '')
+        if account_search:
+            account_ids = account_ids.filtered(
+                lambda a: account_search.lower() in (a.code or '').lower()
+                or account_search.lower() in (a.name or '').lower())
+        # Filtre additionnel (contact / pièce) appliqué à chaque recherche de
+        # ligne d'écriture ci-dessous : narrows les totaux, pas seulement
+        # la liste des comptes affichés.
+        extra_domain = []
+        if partner_search:
+            extra_domain.append(
+                ('partner_id.name', 'ilike', partner_search))
+        if piece_search:
+            extra_domain += [
+                '|', '|',
+                ('move_id.name', 'ilike', piece_search),
+                ('move_id.ref', 'ilike', piece_search),
+                ('name', 'ilike', piece_search),
+            ]
         move_line_list = []
         start_date_first = \
             get_fiscal_year(datetime.strptime(start_date, "%Y-%m-%d").date())[
@@ -202,6 +230,8 @@ class AccountTrialBalance(models.TransientModel):
             if method is not None and 'cash' in method:
                 domain.append(('journal_id', 'in',
                                self.env.company.tax_cash_basis_journal_id.ids))
+            if extra_domain:
+                domain += extra_domain
 
             initial_move_line_ids = self.env['account.move.line'].search(domain)
 
@@ -237,6 +267,8 @@ class AccountTrialBalance(models.TransientModel):
                         if method is not None and 'cash' in method:
                             domain.append(('journal_id', 'in',
                                            self.env.company.tax_cash_basis_journal_id.ids))
+                        if extra_domain:
+                            domain += extra_domain
                         move_lines = self.env['account.move.line'].search(
                             domain)
                         dynamic_total_debit[
@@ -266,6 +298,8 @@ class AccountTrialBalance(models.TransientModel):
                         if method is not None and 'cash' in method:
                             domain.append(('journal_id', 'in',
                                            self.env.company.tax_cash_basis_journal_id.ids), )
+                        if extra_domain:
+                            domain += extra_domain
                         move_lines = self.env['account.move.line'].search(
                             domain)
                         dynamic_date_num[
@@ -299,6 +333,8 @@ class AccountTrialBalance(models.TransientModel):
                         if method is not None and 'cash' in method:
                             domain.append(('journal_id', 'in',
                                            self.env.company.tax_cash_basis_journal_id.ids))
+                        if extra_domain:
+                            domain += extra_domain
                         move_lines = self.env['account.move.line'].search(domain)
                         dynamic_date_num[
                             f"dynamic_date_num{i}"] = 'Q' + ' ' + str(
@@ -323,6 +359,8 @@ class AccountTrialBalance(models.TransientModel):
             if method is not None and 'cash' in method:
                 domain.append(('journal_id', 'in',
                                self.env.company.tax_cash_basis_journal_id.ids))
+            if extra_domain:
+                domain += extra_domain
             move_line_ids = self.env['account.move.line'].search(domain)
             total_debit = round(sum(move_line_ids.mapped('debit')), 2)
             total_credit = round(sum(move_line_ids.mapped('credit')), 2)
@@ -462,8 +500,11 @@ class AccountTrialBalance(models.TransientModel):
              'border': 1,
              'border_color': 'black'})
         side_heading_sub.set_indent(1)
-        txt_name = workbook.add_format({'font_size': 10, 'border': 1})
-        txt_name.set_indent(2)
+        # Cellules montant : vrai nombre (utilisable dans des formules Excel)
+        # avec un format d'affichage identique au "{:,.2f}" utilisé ailleurs.
+        amount_format = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format.set_indent(2)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 15)
@@ -523,27 +564,27 @@ class AccountTrialBalance(models.TransientModel):
                 for move_line in data['data']:
                     sheet.write(row, col, move_line['account'],
                                 side_heading_sub)
-                    sheet.write(row, col + 1, move_line['initial_total_debit'],
-                                txt_name)
-                    sheet.write(row, col + 2,
-                                move_line['initial_total_credit'], txt_name)
+                    sheet.write_number(row, col + 1, to_float(move_line['initial_total_debit']),
+                                amount_format)
+                    sheet.write_number(row, col + 2,
+                                to_float(move_line['initial_total_credit']), amount_format)
                     j = 3
                     if data['apply_comparison']:
                         number_of_periods = data['comparison_number_range']
                         for num in number_of_periods:
-                            sheet.write(row, col + j, move_line[
-                                'dynamic_total_debit_' + str(num)], txt_name)
-                            sheet.write(row, col + j + 1, move_line[
-                                'dynamic_total_credit_' + str(num)], txt_name)
+                            sheet.write_number(row, col + j, to_float(move_line[
+                                'dynamic_total_debit_' + str(num)]), amount_format)
+                            sheet.write_number(row, col + j + 1, to_float(move_line[
+                                'dynamic_total_credit_' + str(num)]), amount_format)
                             j += 2
-                    sheet.write(row, col + j, move_line['total_debit'],
-                                txt_name)
-                    sheet.write(row, col + j + 1, move_line['total_credit'],
-                                txt_name)
-                    sheet.write(row, col + j + 2, move_line['end_total_debit'],
-                                txt_name)
-                    sheet.write(row, col + j + 3,
-                                move_line['end_total_credit'], txt_name)
+                    sheet.write_number(row, col + j, to_float(move_line['total_debit']),
+                                amount_format)
+                    sheet.write_number(row, col + j + 1, to_float(move_line['total_credit']),
+                                amount_format)
+                    sheet.write_number(row, col + j + 2, to_float(move_line['end_total_debit']),
+                                amount_format)
+                    sheet.write_number(row, col + j + 3,
+                                to_float(move_line['end_total_credit']), amount_format)
                     row += 1
         workbook.close()
         output.seek(0)

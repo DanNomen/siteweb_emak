@@ -3,6 +3,7 @@ import io
 import json
 import xlsxwriter
 from odoo import api, fields, models
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class AgePayableReport(models.TransientModel):
@@ -81,10 +82,12 @@ class AgePayableReport(models.TransientModel):
         ])
         currency_id = self.env.company.currency_id.symbol
         partner_total = self._compute_partner_totals(paid, currency_id)
-        return {'partner_totals': partner_total, 'partners': list(partner_total.keys())}
+        partners = sorted(partner_total.keys(), key=lambda n: (n or '').lower())
+        return {'partner_totals': partner_total, 'partners': partners}
 
     @api.model
-    def get_filter_values(self, date, partner):
+    def get_filter_values(self, date, partner, account_search=None, partner_search=None,
+                           piece_search=None):
         """Retrieve filtered aged payable data (totals only, fast)."""
         domain = [
             ('parent_state', '=', 'posted'),
@@ -93,18 +96,36 @@ class AgePayableReport(models.TransientModel):
         ]
         if date:
             domain.append(('date', '<=', date))
+        if account_search:
+            domain += ['|', ('account_id.code', 'ilike', account_search),
+                        ('account_id.name', 'ilike', account_search)]
+        if piece_search:
+            domain += ['|', '|',
+                        ('move_id.name', 'ilike', piece_search),
+                        ('move_id.ref', 'ilike', piece_search),
+                        ('name', 'ilike', piece_search)]
         paid = self.env['account.move.line'].search(domain)
-        
+
         if partner:
             partner_ids = self.env['res.partner'].browse(partner)
             paid = paid.filtered(lambda l: l.partner_id.id in partner)
 
         currency_id = self.env.company.currency_id.symbol
         partner_total = self._compute_partner_totals(paid, currency_id)
-        return {'partner_totals': partner_total, 'partners': list(partner_total.keys())}
+        # "Contact" ne filtre pas les écritures mais restreint la liste des
+        # partenaires affichés (comme le fait "Compte" pour le Grand Livre).
+        if partner_search:
+            partner_total = {
+                name: v for name, v in partner_total.items()
+                if partner_search.lower() in (name or '').lower()
+            }
+        # Triés par nom de partenaire, pas dans l'ordre d'apparition des
+        # écritures.
+        partners = sorted(partner_total.keys(), key=lambda n: (n or '').lower())
+        return {'partner_totals': partner_total, 'partners': partners}
 
     @api.model
-    def get_partner_aged_lines(self, partner_id, date):
+    def get_partner_aged_lines(self, partner_id, date, account_search=None, piece_search=None):
         """Lazy-load aged payable detail lines for a single partner."""
         domain = [
             ('parent_state', '=', 'posted'),
@@ -114,7 +135,15 @@ class AgePayableReport(models.TransientModel):
         ]
         if date:
             domain.append(('date', '<=', date))
-        
+        if account_search:
+            domain += ['|', ('account_id.code', 'ilike', account_search),
+                        ('account_id.name', 'ilike', account_search)]
+        if piece_search:
+            domain += ['|', '|',
+                        ('move_id.name', 'ilike', piece_search),
+                        ('move_id.ref', 'ilike', piece_search),
+                        ('name', 'ilike', piece_search)]
+
         lines = self.env['account.move.line'].search(domain, order='date_maturity asc', limit=500)
         today = fields.Date.today()
         result = []
@@ -132,7 +161,7 @@ class AgePayableReport(models.TransientModel):
         return result
 
     @api.model
-    def get_export_lines(self, partner_ids, date):
+    def get_export_lines(self, partner_ids, date, account_search=None, piece_search=None):
         """
         Fetch aged detail lines for MULTIPLE partners in a single query,
         grouped by partner id.
@@ -154,6 +183,14 @@ class AgePayableReport(models.TransientModel):
         ]
         if date:
             domain.append(('date', '<=', date))
+        if account_search:
+            domain += ['|', ('account_id.code', 'ilike', account_search),
+                        ('account_id.name', 'ilike', account_search)]
+        if piece_search:
+            domain += ['|', '|',
+                        ('move_id.name', 'ilike', piece_search),
+                        ('move_id.ref', 'ilike', piece_search),
+                        ('name', 'ilike', piece_search)]
 
         lines = self.env['account.move.line'].search(domain, order='partner_id, date_maturity asc')
         today = fields.Date.today()
@@ -192,6 +229,13 @@ class AgePayableReport(models.TransientModel):
         filter_body = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10})
         txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
+        # Cellules montant : vrai nombre (utilisable dans des formules Excel)
+        # avec un format d'affichage identique au "{:,.2f}" utilisé avant.
+        amount_format = workbook.add_format({'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format.set_indent(2)
+        filter_head_amount = workbook.add_format(
+            {'align': 'center', 'bold': True, 'font_size': 10,
+             'border': 1, 'bg_color': '#D3D3D3', 'border_color': 'black', 'num_format': AMOUNT_NUM_FORMAT})
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         col = 0
@@ -203,9 +247,6 @@ class AgePayableReport(models.TransientModel):
         if data['filters'].get('partner'):
             partners_str = ', '.join([p.get('display_name', '') for p in data['filters']['partner']])
             sheet.merge_range('C4:G4', partners_str, filter_body)
-
-        def fmt(v):
-            return "{:,.2f}".format(float(v or 0))
 
         if data:
             # No report_action string-match guard here: this method is only
@@ -234,23 +275,23 @@ class AgePayableReport(models.TransientModel):
                 for i, v in enumerate(values):
                     total_vals[i] += v
                 sheet.write(row, col, partner, txt_name)
-                sheet.merge_range(row, col + 1, row, col + 2, fmt(values[0]), txt_name)
-                sheet.merge_range(row, col + 3, row, col + 4, fmt(values[1]), txt_name)
-                sheet.merge_range(row, col + 5, row, col + 6, fmt(values[2]), txt_name)
-                sheet.merge_range(row, col + 7, row, col + 8, fmt(values[3]), txt_name)
-                sheet.merge_range(row, col + 9, row, col + 10, fmt(values[4]), txt_name)
-                sheet.merge_range(row, col + 11, row, col + 12, fmt(values[5]), txt_name)
-                sheet.merge_range(row, col + 13, row, col + 14, fmt(values[6]), txt_name)
+                sheet.merge_range(row, col + 1, row, col + 2, to_float(values[0]), amount_format)
+                sheet.merge_range(row, col + 3, row, col + 4, to_float(values[1]), amount_format)
+                sheet.merge_range(row, col + 5, row, col + 6, to_float(values[2]), amount_format)
+                sheet.merge_range(row, col + 7, row, col + 8, to_float(values[3]), amount_format)
+                sheet.merge_range(row, col + 9, row, col + 10, to_float(values[4]), amount_format)
+                sheet.merge_range(row, col + 11, row, col + 12, to_float(values[5]), amount_format)
+                sheet.merge_range(row, col + 13, row, col + 14, to_float(values[6]), amount_format)
 
             row += 1
             sheet.write(row, col, 'Total', filter_head)
-            sheet.merge_range(row, col + 1, row, col + 2, fmt(total_vals[0]), filter_head)
-            sheet.merge_range(row, col + 3, row, col + 4, fmt(total_vals[1]), filter_head)
-            sheet.merge_range(row, col + 5, row, col + 6, fmt(total_vals[2]), filter_head)
-            sheet.merge_range(row, col + 7, row, col + 8, fmt(total_vals[3]), filter_head)
-            sheet.merge_range(row, col + 9, row, col + 10, fmt(total_vals[4]), filter_head)
-            sheet.merge_range(row, col + 11, row, col + 12, fmt(total_vals[5]), filter_head)
-            sheet.merge_range(row, col + 13, row, col + 14, fmt(total_vals[6]), filter_head)
+            sheet.merge_range(row, col + 1, row, col + 2, to_float(total_vals[0]), filter_head_amount)
+            sheet.merge_range(row, col + 3, row, col + 4, to_float(total_vals[1]), filter_head_amount)
+            sheet.merge_range(row, col + 5, row, col + 6, to_float(total_vals[2]), filter_head_amount)
+            sheet.merge_range(row, col + 7, row, col + 8, to_float(total_vals[3]), filter_head_amount)
+            sheet.merge_range(row, col + 9, row, col + 10, to_float(total_vals[4]), filter_head_amount)
+            sheet.merge_range(row, col + 11, row, col + 12, to_float(total_vals[5]), filter_head_amount)
+            sheet.merge_range(row, col + 13, row, col + 14, to_float(total_vals[6]), filter_head_amount)
 
         workbook.close()
         output.seek(0)
@@ -277,6 +318,7 @@ class IrActionsReportAgedPayable(models.Model):
             ]
             lines_by_partner = self.env['age.payable.report'].get_export_lines(
                 partner_ids, data.get('date'),
+                data.get('account_search'), data.get('piece_search'),
             ) if partner_ids else {}
             # Re-key by partner name to match what the template
             # (move_lines/total) already indexes by.

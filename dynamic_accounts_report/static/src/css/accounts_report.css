@@ -7,5 +7,100 @@
 	margin-right: 2px;
 }
 
+/* ===== Barre de recherche unique (façon barre de recherche native Odoo) ===== */
+.o_report_search_bar {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border: 1px solid #ced4da;
+	border-radius: 4px;
+	padding: 4px 10px;
+	background: #fff;
+	min-width: 260px;
+	flex: 1 1 260px;
+}
+
+.o_report_search_icon {
+	color: #6c757d;
+	font-size: 0.85em;
+}
+
+.o_report_search_facets {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px;
+	flex: 1 1 auto;
+}
+
+.o_report_search_facet {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	background: #eef0fa;
+	border: 1px solid #c2c8f0;
+	border-radius: 3px;
+	padding: 1px 6px;
+	font-size: 0.8em;
+}
+
+.o_report_search_facet_label {
+	font-weight: 700;
+	color: #4a4a8a;
+}
+
+.o_report_search_facet_value {
+	color: #333;
+}
+
+.o_report_search_facet_remove {
+	cursor: pointer;
+	color: #6c757d;
+	margin-left: 2px;
+}
+
+.o_report_search_facet_remove:hover {
+	color: #000;
+}
+
+.o_report_search_input {
+	border: none;
+	outline: none;
+	flex: 1 1 100px;
+	min-width: 100px;
+	font-size: 0.85em;
+	padding: 2px 0;
+}
+
+.o_report_search_dropdown {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	z-index: 1000;
+	background: #fff;
+	border: 1px solid #ced4da;
+	border-top: none;
+	border-radius: 0 0 4px 4px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.o_report_search_dropdown_item {
+	padding: 6px 10px;
+	font-size: 0.85em;
+	cursor: pointer;
+	color: #333;
+}
+
+.o_report_search_dropdown_item em {
+	font-style: normal;
+	color: #714b67;
+}
+
+.o_report_search_dropdown_item:hover {
+	background: #f0f0fa;
+}
+
 
 

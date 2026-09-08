@@ -5,9 +5,11 @@ import { useService } from "@web/core/utils/hooks";
 import { useRef, useState } from "@odoo/owl";
 import { BlockUI } from "@web/core/ui/block_ui";
 import { download } from "@web/core/network/download";
+import { ReportSearchBar } from "@dynamic_accounts_report/js/report_search_bar";
 const actionRegistry = registry.category("actions");
 
 class GeneralLedger extends owl.Component {
+    static components = { ReportSearchBar };
     setup() {
         super.setup(...arguments);
         this.initial_render = true;
@@ -36,6 +38,9 @@ class GeneralLedger extends owl.Component {
             date_range: null,
             date_label: null,
             options: null,
+            account_search: '',
+            partner_search: '',
+            piece_search: '',
             method: {
                         'accural': true
                     },
@@ -250,6 +255,19 @@ class GeneralLedger extends owl.Component {
     getDomain() {
         return [];
     }
+    /**
+     * Callback de <ReportSearchBar/> : reçoit les 3 critères courants
+     * (compte / contact / pièce) à chaque ajout/suppression de tag, puis
+     * relance la même recherche que les autres filtres (applyFilter, appelé
+     * sans val ni data-value ne fait que relancer l'appel RPC final avec
+     * l'état courant).
+     */
+    onReportSearch(payload) {
+        this.state.account_search = payload.account_search || '';
+        this.state.partner_search = payload.partner_search || '';
+        this.state.piece_search = payload.piece_search || '';
+        this.applyFilter(null, {});
+    }
     async applyFilter(val, ev, is_delete = false) {
         let account_list = []
         let account_totals = ''
@@ -375,7 +393,7 @@ class GeneralLedger extends owl.Component {
                 }
             }
         }
-        let filtered_data = await this.orm.call("account.general.ledger", "get_filter_values", [this.state.selected_journal_list, this.state.date_range, this.state.options, this.state.selected_analytic_list,this.state.method]);
+        let filtered_data = await this.orm.call("account.general.ledger", "get_filter_values", [this.state.selected_journal_list, this.state.date_range, this.state.options, this.state.selected_analytic_list,this.state.method, this.state.account_search, this.state.partner_search, this.state.piece_search]);
         // Ensure account_totals always exists even if no data returned
         if (!filtered_data['account_totals']) {
             filtered_data['account_totals'] = {};

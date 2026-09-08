@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+    <t t-name="dynamic_accounts_report.ReportSearchBar" owl="1">
+        <div class="o_report_search_bar">
+            <span class="fa fa-search o_report_search_icon" role="img" aria-label="Recherche"/>
+            <div class="o_report_search_facets">
+                <t t-foreach="tags" t-as="tag" t-key="tag.type">
+                    <div class="o_report_search_facet">
+                        <span class="o_report_search_facet_label" t-esc="tag.label"/>
+                        <span class="o_report_search_facet_value" t-esc="tag.value"/>
+                        <span class="fa fa-times o_report_search_facet_remove"
+                              role="img" aria-label="Retirer"
+                              t-on-click="() => this.removeTag(tag.type)"/>
+                    </div>
+                </t>
+                <input type="text"
+                       class="o_report_search_input"
+                       placeholder="Rechercher un compte, un contact, une pièce..."
+                       t-model="state.query"
+                       t-on-input="onInput"
+                       t-on-keydown="onKeydown"
+                       t-on-focus="onFocus"
+                       t-on-blur="onBlur"/>
+            </div>
+            <div class="o_report_search_dropdown" t-if="state.showDropdown and state.query.trim()">
+                <t t-foreach="tagDefs" t-as="def" t-key="def.type">
+                    <div class="o_report_search_dropdown_item" t-on-mousedown="() => this.commit(def.type)">
+                        <span class="fa fa-search" role="img"/>
+                        Rechercher <b t-esc="def.label"/> pour :
+                        <em t-esc="state.query"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

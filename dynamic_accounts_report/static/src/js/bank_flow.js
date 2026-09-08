@@ -5,9 +5,11 @@ import { useService } from "@web/core/utils/hooks";
 import { useRef, useState } from "@odoo/owl";
 import { BlockUI } from "@web/core/ui/block_ui";
 import { download } from "@web/core/network/download";
+import { ReportSearchBar } from "@dynamic_accounts_report/js/report_search_bar";
 const actionRegistry = registry.category("actions");
 
 class BankBook extends owl.Component {
+    static components = { ReportSearchBar };
     async setup() {
         super.setup(...arguments);
         this.initial_render = true;
@@ -34,6 +36,9 @@ class BankBook extends owl.Component {
             total_credit_display: null,
             currency: null,
             message_list : [],
+            account_search: '',
+            partner_search: '',
+            piece_search: '',
         });
         this.load_data(self.initial_render = true);
 
@@ -144,6 +149,19 @@ class BankBook extends owl.Component {
     getDomain() {
         return [];
     }
+    /**
+     * Callback de <ReportSearchBar/> : reçoit les 3 critères courants
+     * (compte / contact / pièce) à chaque ajout/suppression de tag, puis
+     * relance la même recherche que les autres filtres (applyFilter,
+     * appelé sans val ni data-value ne fait que relancer l'appel RPC
+     * final avec l'état courant).
+     */
+    onReportSearch(payload) {
+        this.state.account_search = payload.account_search || '';
+        this.state.partner_search = payload.partner_search || '';
+        this.state.piece_search = payload.piece_search || '';
+        this.applyFilter(null, {});
+    }
     async printPdf(ev) {
         /**
          * Generates and displays a PDF report for the bank book.
@@ -189,6 +207,9 @@ class BankBook extends owl.Component {
                 'data_range': self.state.date_range || null,
                 'account_list': self.state.selected_account_list || [],
                 'options': self.state.options || null,
+                'account_search': self.state.account_search || null,
+                'partner_search': self.state.partner_search || null,
+                'piece_search': self.state.piece_search || null,
             },
             'display_name': self.props.action.display_name,
         });
@@ -289,6 +310,9 @@ class BankBook extends owl.Component {
             'data_range': self.state.date_range || null,
             'account_list': self.state.selected_account_list || [],
             'options': self.state.options || null,
+            'account_search': self.state.account_search || null,
+            'partner_search': self.state.partner_search || null,
+            'piece_search': self.state.piece_search || null,
         }
         var action = {
             'data': {
@@ -381,7 +405,7 @@ class BankBook extends owl.Component {
                 }
             }
         }
-        let filtered_data = await this.orm.call("bank.book.report", "get_filter_values", [this.state.selected_partner, this.state.date_range, this.state.selected_account_list, this.state.options,]);
+        let filtered_data = await this.orm.call("bank.book.report", "get_filter_values", [this.state.selected_partner, this.state.date_range, this.state.selected_account_list, this.state.options, this.state.account_search, this.state.partner_search, this.state.piece_search]);
         this._processAccountData(filtered_data);
         if (this.unfoldButton.el.classList.contains("selected-filter")) {
               this.unfoldButton.el.classList.remove("selected-filter");

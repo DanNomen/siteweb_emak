@@ -6,10 +6,12 @@ import { useRef, useState } from "@odoo/owl";
 import { BlockUI } from "@web/core/ui/block_ui";
 import { download } from "@web/core/network/download";
 import { formatFloat } from "@web/core/utils/numbers";
+import { ReportSearchBar } from "@dynamic_accounts_report/js/report_search_bar";
 const actionRegistry = registry.category("actions");
 const today = luxon.DateTime.now();
 
 class AgedReceivable extends owl.Component {
+    static components = { ReportSearchBar };
     async setup() {
         super.setup(...arguments);
         this.initial_render = true;
@@ -32,6 +34,9 @@ class AgedReceivable extends owl.Component {
             diff5_sum: null,
             selected_partner: [],
             selected_partner_rec: [],
+            account_search: '',
+            partner_search: '',
+            piece_search: '',
         });
         this.load_data(self.initial_render = true);
     }
@@ -134,6 +139,20 @@ class AgedReceivable extends owl.Component {
         }
     }
 
+    /**
+     * Callback de <ReportSearchBar/> : reçoit les 3 critères courants
+     * (compte / contact / pièce) à chaque ajout/suppression de tag, puis
+     * relance la même recherche que les autres filtres (applyFilter,
+     * appelé sans data-value ne fait que relancer l'appel RPC final avec
+     * l'état courant). Note l'ordre des arguments propre à ce rapport :
+     * applyFilter(ev, e, is_delete) et non applyFilter(val, ev, is_delete).
+     */
+    onReportSearch(payload) {
+        this.state.account_search = payload.account_search || '';
+        this.state.partner_search = payload.partner_search || '';
+        this.state.piece_search = payload.piece_search || '';
+        this.applyFilter({}, null);
+    }
     async printPdf(ev) {
         /**
          * Generates and displays a PDF report for the partner ledger.
@@ -181,6 +200,8 @@ class AgedReceivable extends owl.Component {
                 'title': action_title,
                 'report_name': self.props.action.display_name,
                 'date': this.date_range.el.value || null,
+                'account_search': this.state.account_search || null,
+                'piece_search': this.state.piece_search || null,
             },
             'display_name': self.props.action.display_name,
         });
@@ -254,7 +275,7 @@ class AgedReceivable extends owl.Component {
             this.state.selected_partner_rec.splice(index, 1)
             this.state.selected_partner = this.state.selected_partner_rec.map((rec) => rec.id)
         }
-        let filtered_data = await this.orm.call("age.receivable.report", "get_filter_values", [this.date_range.el.value, this.state.selected_partner,]);
+        let filtered_data = await this.orm.call("age.receivable.report", "get_filter_values", [this.date_range.el.value, this.state.selected_partner, this.state.account_search, this.state.partner_search, this.state.piece_search]);
         this._processData(filtered_data);
     }
     openPartner(ev) {

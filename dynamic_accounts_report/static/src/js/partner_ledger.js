@@ -5,8 +5,10 @@ import { useService } from "@web/core/utils/hooks";
 import { useRef, useState } from "@odoo/owl";
 import { BlockUI } from "@web/core/ui/block_ui";
 import { download } from "@web/core/network/download";
+import { ReportSearchBar } from "@dynamic_accounts_report/js/report_search_bar";
 const actionRegistry = registry.category("actions");
 class PartnerLedger extends owl.Component {
+    static components = { ReportSearchBar };
     setup() {
         super.setup(...arguments);
         this.initial_render = true;
@@ -44,6 +46,9 @@ class PartnerLedger extends owl.Component {
             selected_account_ids: [],
             all_accounts: [],
             filtered_accounts: [],
+            account_search: '',
+            partner_search: '',
+            piece_search: '',
 
         });
         this.load_data(self.initial_render = true);
@@ -717,7 +722,10 @@ class PartnerLedger extends owl.Component {
                     this.state.account || null,
                     this.state.options || null,
                     this.state.selected_tag_ids || null,
-                    this.state.selected_account_ids || null
+                    this.state.selected_account_ids || null,
+                    this.state.account_search || null,
+                    this.state.partner_search || null,
+                    this.state.piece_search || null
                 ]
             );
             this._processPartnerData(data, this.props.action.display_name);
@@ -725,8 +733,17 @@ class PartnerLedger extends owl.Component {
             console.error('Error applying filters:', error);
         }
     }
-
-
+    /**
+     * Callback de <ReportSearchBar/> : reçoit les 3 critères courants
+     * (compte / contact / pièce) à chaque ajout/suppression de tag, puis
+     * relance la même recherche que les autres filtres.
+     */
+    onReportSearch(payload) {
+        this.state.account_search = payload.account_search || '';
+        this.state.partner_search = payload.partner_search || '';
+        this.state.piece_search = payload.piece_search || '';
+        this.applyAllFilters();
+    }
 
     getDomain() {
         return [];

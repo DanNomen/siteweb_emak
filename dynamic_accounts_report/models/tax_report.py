@@ -27,6 +27,7 @@ import xlsxwriter
 from odoo import models, fields, api
 from odoo.tools.date_utils import get_month, get_fiscal_year, \
     get_quarter_number, subtract
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class TaxReport(models.TransientModel):
@@ -110,8 +111,10 @@ class TaxReport(models.TransientModel):
             option_domain = ['posted']
         elif 'draft' in options:
             option_domain = ['posted', 'draft']
+        # Taxes triées par séquence (comme account.tax), pas dans l'ordre
+        # d'apparition dans les écritures.
         tax_ids = self.env['account.move.line'].search([]).mapped(
-            'tax_ids')
+            'tax_ids').sorted(key=lambda t: (t.sequence, t.id))
         start_date_first = \
             get_fiscal_year(datetime.strptime(start_date, "%Y-%m-%d").date())[
                 0] if comparison_type == 'year' else datetime.strptime(
@@ -123,8 +126,10 @@ class TaxReport(models.TransientModel):
         if report_type is not None and 'account' in report_type:
             start_date = start_date_first
             end_date = end_date_first
+            # Comptes triés par code (plan comptable), pas dans l'ordre
+            # d'apparition dans les écritures.
             account_ids = self.env['account.move.line'].search([]).mapped(
-                'account_id')
+                'account_id').sorted(key=lambda a: a.code or '')
             for account in account_ids:
                 tax_ids = self.env['account.move.line'].search(
                     [('account_id', '=', account.id)]).mapped('tax_ids')
@@ -297,8 +302,11 @@ class TaxReport(models.TransientModel):
             start_date = start_date_first
             end_date = end_date_first
             for tax in tax_ids:
+                # Comptes triés par code (plan comptable), pas dans l'ordre
+                # d'apparition dans les écritures.
                 account_ids = self.env['account.move.line'].search(
-                    [('tax_ids', '=', tax.id)]).mapped('account_id')
+                    [('tax_ids', '=', tax.id)]).mapped(
+                    'account_id').sorted(key=lambda a: a.code or '')
                 for account in account_ids:
                     dynamic_total_tax_sum = {}
                     dynamic_total_net_sum = {}
@@ -644,6 +652,15 @@ class TaxReport(models.TransientModel):
         side_heading_sub.set_indent(1)
         txt_name = workbook.add_format({'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
+        # Cellules montant : vrai nombre (utilisable dans des formules Excel)
+        # avec un format d'affichage identique au "{:,.2f}" utilisé pour
+        # l'affichage à l'écran.
+        amount_format = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format.set_indent(2)
+        total_amount_format = workbook.add_format(
+            {'align': 'center', 'bold': True, 'font_size': 10, 'border': 1,
+             'border_color': 'black', 'num_format': AMOUNT_NUM_FORMAT})
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 15)
@@ -666,7 +683,8 @@ class TaxReport(models.TransientModel):
             j += 1
         sheet.write(7, col, 'Sales', sub_heading)
         sheet.write(7, col + 1, ' ', sub_heading)
-        sheet.write(7, col + 2, data['sale_total'], sub_heading)
+        sheet.write_number(7, col + 2, to_float(data['sale_total']),
+                           total_amount_format)
         row = 8
         for sale in data['data']['sale']:
             if data['report_type']:
@@ -690,29 +708,36 @@ class TaxReport(models.TransientModel):
                         for num in periods:
                             if sale['dynamic net'][
                                 'dynamic_total_net_sum' + str(num)]:
-                                sheet.write(row, col + j, sale['dynamic net'][
-                                    'dynamic_total_net_sum' + str(num)],
-                                            txt_name)
+                                sheet.write_number(row, col + j, to_float(
+                                    sale['dynamic net'][
+                                    'dynamic_total_net_sum' + str(num)]),
+                                            amount_format)
                             if sale['dynamic tax'][
                                 'dynamic_total_tax_sum' + str(num)]:
-                                sheet.write(row, col, sale['dynamic tax'][
-                                    'dynamic_total_tax_sum' + str(num)],
-                                            txt_name)
+                                sheet.write_number(row, col, to_float(
+                                    sale['dynamic tax'][
+                                    'dynamic_total_tax_sum' + str(num)]),
+                                            amount_format)
                             j += 1
                 j = 0
                 sheet.write(row, col + j, sale['name'], txt_name)
-                sheet.write(row, col + j + 1, sale['net'], txt_name)
-                sheet.write(row, col + j + 2, sale['tax'], txt_name)
+                sheet.write_number(row, col + j + 1, to_float(sale['net']),
+                                   amount_format)
+                sheet.write_number(row, col + j + 2, to_float(sale['tax']),
+                                   amount_format)
             else:
                 j = 0
                 sheet.write(row, col + j, sale['name'], txt_name)
-                sheet.write(row, col + j + 1, sale['net'], txt_name)
-                sheet.write(row, col + j + 2, sale['tax'], txt_name)
+                sheet.write_number(row, col + j + 1, to_float(sale['net']),
+                                   amount_format)
+                sheet.write_number(row, col + j + 2, to_float(sale['tax']),
+                                   amount_format)
                 row += 1
         row += 1
         sheet.write(row, col, 'Purchase', sub_heading)
         sheet.write(row, col + 1, ' ', sub_heading)
-        sheet.write(row, col + 2, data['purchase_total'], sub_heading)
+        sheet.write_number(row, col + 2, to_float(data['purchase_total']),
+                           total_amount_format)
         row += 1
         for purchase in data['data']['purchase']:
             if data['report_type']:
@@ -736,31 +761,37 @@ class TaxReport(models.TransientModel):
                         for num in periods:
                             if purchase['dynamic net'][
                                 'dynamic_total_net_sum' + str(num)]:
-                                sheet.write(row, col + j,
+                                sheet.write_number(row, col + j, to_float(
                                             purchase['dynamic net'][
                                                 'dynamic_total_net_sum' + str(
-                                                    num)],
-                                            txt_name)
+                                                    num)]),
+                                            amount_format)
                             if purchase['dynamic tax'][
                                 'dynamic_total_tax_sum' + str(num)]:
-                                sheet.write(row, col, purchase['dynamic tax'][
-                                    'dynamic_total_tax_sum' + str(num)],
-                                            txt_name)
+                                sheet.write_number(row, col, to_float(
+                                    purchase['dynamic tax'][
+                                    'dynamic_total_tax_sum' + str(num)]),
+                                            amount_format)
                             j += 1
                 j = 0
                 sheet.write(row, col + j, purchase['name'], txt_name)
-                sheet.write(row, col + j + 1, purchase['net'], txt_name)
-                sheet.write(row, col + j + 2, purchase['tax'], txt_name)
+                sheet.write_number(row, col + j + 1, to_float(purchase['net']),
+                                   amount_format)
+                sheet.write_number(row, col + j + 2, to_float(purchase['tax']),
+                                   amount_format)
             else:
                 j = 0
                 sheet.write(row, col + j, purchase['name'], txt_name)
-                sheet.write(row, col + j + 1, purchase['net'], txt_name)
-                sheet.write(row, col + j + 2, purchase['tax'], txt_name)
+                sheet.write_number(row, col + j + 1, to_float(purchase['net']),
+                                   amount_format)
+                sheet.write_number(row, col + j + 2, to_float(purchase['tax']),
+                                   amount_format)
                 row += 1
         row += 1
         sheet.write(row, col, 'Purchase', sub_heading)
         sheet.write(row, col + 1, ' ', sub_heading)
-        sheet.write(row, col + 2, data['purchase_total'], sub_heading)
+        sheet.write_number(row, col + 2, to_float(data['purchase_total']),
+                           total_amount_format)
         row += 1
         workbook.close()
         output.seek(0)

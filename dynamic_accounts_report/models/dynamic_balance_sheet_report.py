@@ -27,6 +27,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 from odoo.tools.date_utils import get_month, get_fiscal_year, get_quarter, \
     subtract
+from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
 
 class ProfitLossReport(models.TransientModel):
@@ -506,6 +507,16 @@ class ProfitLossReport(models.TransientModel):
         txt_name_left = workbook.add_format(
             {'align': 'left', 'font_size': 10, 'border': 1})
         txt_name.set_indent(2)
+        # Cellules montant : vrai nombre (utilisable dans des formules Excel)
+        # avec un format d'affichage identique au "{:,.2f}" utilisé pour
+        # l'affichage à l'écran.
+        amount_format = workbook.add_format(
+            {'font_size': 10, 'border': 1, 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format.set_indent(2)
+        amount_format_bold = workbook.add_format(
+            {'align': 'left', 'bold': True, 'font_size': 10, 'border': 1,
+             'border_color': 'black', 'num_format': AMOUNT_NUM_FORMAT})
+        amount_format_bold.set_indent(1)
         sheet.set_column(0, 0, 30)
         sheet.set_column(1, 1, 20)
         sheet.set_column(2, 2, 15)
@@ -522,14 +533,16 @@ class ProfitLossReport(models.TransientModel):
             if report_action == 'dynamic_accounts_report.action_dynamic_profit_and_loss':
                 sheet.write(6, col, 'Net Profit', sub_heading)
                 for datas in data['datas']:
-                    sheet.write(6, col + 1, datas['total'], side_heading_sub)
+                    sheet.write_number(6, col + 1, to_float(datas['total']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 sheet.write(7, col, 'Income', side_heading_sub)
                 sheet.write(7, col + 1, ' ', side_heading_sub)
                 sheet.write(8, col, 'Operating Income', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(8, col + 1, datas['income'][1], txt_name)
+                    sheet.write_number(8, col + 1, to_float(datas['income'][1]),
+                                amount_format)
                     col += 1
                 row = 8
                 index = 0
@@ -551,17 +564,16 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['income'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Cost of Revenue', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['expense_direct_cost'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['expense_direct_cost'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -583,17 +595,16 @@ class ProfitLossReport(models.TransientModel):
                                     for account in \
                                             datas['expense_direct_cost'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Other Income', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['income_other'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['income_other'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -614,17 +625,16 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['income_other'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Total Income', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_income'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_income']),
+                                amount_format_bold)
                     col += 1
                 row += 1
                 col = 0
@@ -634,7 +644,8 @@ class ProfitLossReport(models.TransientModel):
                 col = 0
                 sheet.write(row, col, 'Expense', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['expense'][1], txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['expense'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -655,17 +666,16 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['expense'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Depreciation', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['expense_depreciation'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['expense_depreciation'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -689,17 +699,16 @@ class ProfitLossReport(models.TransientModel):
                                             datas['expense_depreciation'][
                                                 0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Total Expenses', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_expense'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_expense']),
+                                amount_format_bold)
                     col += 1
             else:
                 sheet.write(6, col, 'ASSETS', sub_heading)
@@ -708,7 +717,8 @@ class ProfitLossReport(models.TransientModel):
                 sheet.write(7, col + 1, ' ', side_heading_sub)
                 sheet.write(8, col, 'Bank and Cash Accounts', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(8, col + 1, datas['asset_cash'][1], txt_name)
+                    sheet.write_number(8, col + 1, to_float(datas['asset_cash'][1]),
+                                amount_format)
                     col += 1
                 row = 8
                 index = 0
@@ -730,17 +740,16 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['asset_cash'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Receivables', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['asset_receivable'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['asset_receivable'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -762,17 +771,16 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['asset_receivable'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Current Assets', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['asset_current'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['asset_current'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -793,17 +801,16 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['asset_current'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Prepayments', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['asset_prepayments'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['asset_prepayments'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -825,24 +832,23 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['asset_prepayments'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Total Current Assets', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_current_asset'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_current_asset']),
+                                amount_format_bold)
                     col += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Plus Fixed Assets', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['asset_fixed'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['asset_fixed'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -864,17 +870,16 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['asset_fixed'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Plus Non-current Assets', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['asset_non_current'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['asset_non_current'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -896,17 +901,16 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['asset_non_current'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Total Assets', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_assets'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_assets']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 row += 1
@@ -918,8 +922,8 @@ class ProfitLossReport(models.TransientModel):
                 row += 1
                 sheet.write(row, col, 'Current Liabilities', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['liability_current'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['liability_current'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -941,17 +945,16 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['liability_current'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Payables', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['liability_payable'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['liability_payable'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -973,9 +976,8 @@ class ProfitLossReport(models.TransientModel):
                                     for account in datas['liability_payable'][
                                         0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
@@ -983,17 +985,16 @@ class ProfitLossReport(models.TransientModel):
                 sheet.write(row, col, 'Total Current Liabilities',
                             side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_current_liability'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_current_liability']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 row += 1
                 sheet.write(row, col, 'Plus Non-current Liabilities',
                             txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1,
-                                datas['liability_non_current'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['liability_non_current'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -1017,9 +1018,8 @@ class ProfitLossReport(models.TransientModel):
                                             datas['liability_non_current'][
                                                 0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
@@ -1027,8 +1027,8 @@ class ProfitLossReport(models.TransientModel):
                 sheet.write(row, col, 'Total Liabilities',
                             side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_liability'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_liability']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 row += 1
@@ -1040,16 +1040,16 @@ class ProfitLossReport(models.TransientModel):
                 row += 1
                 sheet.write(row, col, 'Current Earnings', txt_name)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_earnings'],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['total_earnings']),
+                                amount_format)
                     col += 1
                 col = 0
                 row += 1
                 sheet.write(row, col, 'Current Allocated Earnings',
                             txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['equity_unaffected'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['equity_unaffected'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -1073,9 +1073,8 @@ class ProfitLossReport(models.TransientModel):
                                             datas['equity_unaffected'][
                                                 0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
@@ -1083,16 +1082,15 @@ class ProfitLossReport(models.TransientModel):
                 sheet.write(row, col, 'Total Unallocated Earnings',
                             side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1,
-                                datas['total_unallocated_earning'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_unallocated_earning']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 row += 1
                 sheet.write(row, col, 'Retained Earnings', txt_name_left)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['equity'][1],
-                                txt_name)
+                    sheet.write_number(row, col + 1, to_float(datas['equity'][1]),
+                                amount_format)
                     col += 1
                 index = 0
                 for datas in data['datas']:
@@ -1114,24 +1112,23 @@ class ProfitLossReport(models.TransientModel):
                                 for datas in data['datas']:
                                     for account in datas['equity'][0]:
                                         if account_name == account['name']:
-                                            sheet.write(row, col + 1,
-                                                        account['amount'],
-                                                        txt_name)
+                                            sheet.write_number(row, col + 1, to_float(account['amount']),
+                                amount_format)
                                             col += 1
                     index += 1
                 row += 1
                 col = 0
                 sheet.write(row, col, 'Total EQUITY', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_equity'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_equity']),
+                                amount_format_bold)
                     col += 1
                 col = 0
                 row += 1
                 sheet.write(row, col, 'LIABILITIES + EQUITY', side_heading_sub)
                 for datas in data['datas']:
-                    sheet.write(row, col + 1, datas['total_balance'],
-                                side_heading_sub)
+                    sheet.write_number(row, col + 1, to_float(datas['total_balance']),
+                                amount_format_bold)
                     col += 1
         workbook.close()
         output.seek(0)

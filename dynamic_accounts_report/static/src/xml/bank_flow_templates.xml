@@ -129,6 +129,9 @@
                                     </div>
                                 </div>
 
+                                <!-- Recherche : compte / contact / pièce -->
+                                <ReportSearchBar onSearch.bind="onReportSearch"/>
+
                             </div>
                         </div>
                     </div>

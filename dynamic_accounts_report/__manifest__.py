@@ -51,6 +51,8 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'dynamic_accounts_report/static/src/xml/report_search_bar.xml',
+            'dynamic_accounts_report/static/src/js/report_search_bar.js',
             'dynamic_accounts_report/static/src/xml/general_ledger_view.xml',
             'dynamic_accounts_report/static/src/xml/trial_balance_view.xml',
             'dynamic_accounts_report/static/src/xml/cash_flow_templates.xml',
