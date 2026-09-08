@@ -368,13 +368,19 @@ class PartnerLedger extends owl.Component {
             currency = partner.currency_id || currency;
             totalDebitSum += partner.total_debit || 0;
             totalCreditSum += partner.total_credit || 0;
-            partner.total_debit_display = this.formatNumberWithSeparators(partner.total_debit || 0);
-            partner.total_credit_display = this.formatNumberWithSeparators(partner.total_credit || 0);
+            // Ligne récapitulative du partenaire : solde initial +
+            // mouvements de la période (le serveur renvoie déjà
+            // combined_debit/combined_credit/balance ; on retombe sur le
+            // calcul local si jamais ces clés manquent).
+            const combinedDebit = partner.combined_debit ?? ((partner.initial_debit || 0) + (partner.total_debit || 0));
+            const combinedCredit = partner.combined_credit ?? ((partner.initial_credit || 0) + (partner.total_credit || 0));
+            partner.total_debit_display = this.formatNumberWithSeparators(combinedDebit);
+            partner.total_credit_display = this.formatNumberWithSeparators(combinedCredit);
             partner.initial_balance_display = this.formatNumberWithSeparators(partner.initial_balance || 0);
             partner.initial_debit_display = this.formatNumberWithSeparators(partner.initial_debit || 0);
             partner.initial_credit_display = this.formatNumberWithSeparators(partner.initial_credit || 0);
-            partner.balance_display = this.formatNumberWithSeparators((partner.total_debit || 0) - (partner.total_credit || 0));
-            
+            partner.balance_display = this.formatNumberWithSeparators(partner.balance ?? (combinedDebit - combinedCredit));
+
             // Lazy loading state
             partner._lines_loaded = false;
             partner._lines = [];

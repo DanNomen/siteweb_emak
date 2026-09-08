@@ -217,7 +217,14 @@ class AccountPartnerLedger(models.TransientModel):
             name = partner_name_map.get(pid, 'Unknown Partner')
             init_data = initial_dict.get(pid, {'debit': 0.0, 'credit': 0.0, 'balance': 0.0})
             period_data = group_map.get(pid, {'debit': 0.0, 'credit': 0.0})
-            
+
+            # combined_debit/credit = solde initial + mouvements de la
+            # période : c'est ce qui doit être affiché sur la ligne
+            # récapitulative du partenaire (pas seulement les mouvements de
+            # la période, qui ignoraient le solde initial). 'balance' est le
+            # solde de clôture correspondant.
+            combined_debit = init_data['debit'] + period_data['debit']
+            combined_credit = init_data['credit'] + period_data['credit']
             partner_totals[name] = {
                 'partner_id': pid,
                 'currency_id': currency_id,
@@ -226,11 +233,65 @@ class AccountPartnerLedger(models.TransientModel):
                 'initial_balance': init_data['balance'],
                 'total_debit': period_data['debit'],
                 'total_credit': period_data['credit'],
+                'combined_debit': combined_debit,
+                'combined_credit': combined_credit,
+                'balance': combined_debit - combined_credit,
             }
 
         return {
             'partner_totals': partner_totals,
             'partners': list(partner_totals.keys())
+        }
+
+    @api.model
+    def _compute_date_start(self, data_range):
+        """Réplique la logique de détermination de la date de début du
+        solde initial utilisée dans get_filter_values, pour les endpoints
+        qui ont besoin du solde initial mais ne le calculaient pas encore
+        (get_partner_lines, get_export_lines)."""
+        today = fields.Date.today()
+        quarter_start, quarter_end = date_utils.get_quarter(today)
+        previous_quarter_start = quarter_start - relativedelta(months=3)
+        date_start = None
+        if data_range:
+            if data_range == 'month':
+                date_start = today.replace(day=1)
+            elif data_range == 'year':
+                date_start = today.replace(month=1, day=1)
+            elif data_range == 'quarter':
+                date_start = quarter_start
+            elif data_range == 'last-month':
+                date_start = today.replace(day=1) - relativedelta(months=1)
+            elif data_range == 'last-year':
+                date_start = today.replace(month=1, day=1) - relativedelta(years=1)
+            elif data_range == 'last-quarter':
+                date_start = previous_quarter_start
+            elif isinstance(data_range, dict) and data_range.get('start_date'):
+                date_start = datetime.strptime(data_range['start_date'], '%Y-%m-%d').date()
+        if not date_start:
+            fiscal_year = self.env['res.company'].search([]).mapped('account_opening_date')[0].strftime('%Y-%m-%d')
+            date_start = datetime.strptime(fiscal_year, '%Y-%m-%d').date()
+        return date_start
+
+    @api.model
+    def _compute_initial_balances(self, partner_ids, account_type_domain, option_domain, account_ids, date_start):
+        """Solde initial (débit - crédit des écritures antérieures à
+        date_start) par partenaire, point de départ du solde progressif."""
+        initial_domain = [
+            ('parent_state', 'in', option_domain),
+            ('display_type', 'not in', ('line_section', 'line_note')),
+            ('account_type', 'in', account_type_domain),
+            ('date', '<', date_start),
+            ('partner_id', 'in', partner_ids),
+        ]
+        if account_ids:
+            initial_domain.append(('account_id', 'in', account_ids))
+        groups = self.env['account.move.line'].read_group(
+            domain=initial_domain, fields=['partner_id', 'debit', 'credit'],
+            groupby=['partner_id'], lazy=False)
+        return {
+            g['partner_id'][0]: g.get('debit', 0.0) - g.get('credit', 0.0)
+            for g in groups if g.get('partner_id')
         }
 
     @api.model
@@ -298,7 +359,14 @@ class AccountPartnerLedger(models.TransientModel):
                     domain.append(('date', '<=', end_date))
 
         move_lines = self.env['account.move.line'].search(domain, order='date asc', limit=500)
-        
+
+        # Solde progressif : solde initial + (débit - crédit) cumulés ligne
+        # après ligne, dans l'ordre chronologique déjà utilisé ci-dessus.
+        date_start = self._compute_date_start(data_range)
+        initial_balances = self._compute_initial_balances(
+            [partner_id], account_type_domain, option_domain, account_ids, date_start)
+        running_balance = initial_balances.get(partner_id, 0.0)
+
         result = []
         for move_line in move_lines:
             move_line_data = move_line.read([
@@ -310,8 +378,10 @@ class AccountPartnerLedger(models.TransientModel):
                 move_line_data['code'] = move_line.account_id.code
             if move_line.journal_id:
                 move_line_data['jrnl'] = move_line.journal_id.code
+            running_balance += move_line_data.get('debit', 0.0) - move_line_data.get('credit', 0.0)
+            move_line_data['balance'] = running_balance
             result.append(move_line_data)
-            
+
         return result
 
     @api.model
@@ -389,6 +459,15 @@ class AccountPartnerLedger(models.TransientModel):
 
         move_lines = self.env['account.move.line'].search(domain, order='partner_id, date asc')
 
+        # Solde progressif par partenaire : parti du solde initial de
+        # chacun, puis cumulé ligne après ligne dans l'ordre chronologique
+        # (lines are ordered partner_id, date asc above, so per-partner
+        # blocks are processed in date order even though we key by pid
+        # rather than relying on that contiguity).
+        date_start = self._compute_date_start(data_range)
+        running_balance = self._compute_initial_balances(
+            partner_ids, account_type_domain, option_domain, account_ids, date_start)
+
         result = {}
         for move_line in move_lines:
             move_line_data = move_line.read([
@@ -403,7 +482,11 @@ class AccountPartnerLedger(models.TransientModel):
             partner = move_line_data['partner_id']
             if not partner:
                 continue
-            result.setdefault(partner[0], []).append(move_line_data)
+            pid = partner[0]
+            running_balance[pid] = running_balance.get(pid, 0.0) + \
+                move_line_data.get('debit', 0.0) - move_line_data.get('credit', 0.0)
+            move_line_data['balance'] = running_balance[pid]
+            result.setdefault(pid, []).append(move_line_data)
         return result
 
     @api.model
@@ -508,24 +591,29 @@ class AccountPartnerLedger(models.TransientModel):
             for partner in partners:
                 row += 1
                 p_data = totals.get(partner, {})
+                # Ligne récapitulative du partenaire : solde initial +
+                # mouvements de la période (pas seulement les mouvements),
+                # comme les lignes de détail qui suivent le montrent déjà.
+                initial_debit = p_data.get('initial_debit', 0.0)
+                initial_credit = p_data.get('initial_credit', 0.0)
                 total_debit = p_data.get('total_debit', 0.0)
                 total_credit = p_data.get('total_credit', 0.0)
-                balance = total_debit - total_credit
+                combined_debit = p_data.get('combined_debit', initial_debit + total_debit)
+                combined_credit = p_data.get('combined_credit', initial_credit + total_credit)
+                balance = p_data.get('balance', combined_debit - combined_credit)
 
                 sheet.write(row, col, partner, txt_name)
                 sheet.write(row, col + 1, ' ', txt_name)
                 sheet.write(row, col + 2, ' ', txt_name)
                 sheet.merge_range(row, col + 3, row, col + 4, ' ', txt_name)
                 sheet.merge_range(row, col + 5, row, col + 6, ' ', txt_name)
-                sheet.merge_range(row, col + 7, row, col + 8, to_float(total_debit), txt_name_amount)
-                sheet.merge_range(row, col + 9, row, col + 10, to_float(total_credit), txt_name_amount)
+                sheet.merge_range(row, col + 7, row, col + 8, to_float(combined_debit), txt_name_amount)
+                sheet.merge_range(row, col + 9, row, col + 10, to_float(combined_credit), txt_name_amount)
                 sheet.merge_range(row, col + 11, row, col + 12, to_float(balance), txt_name_amount)
 
                 initial_balance = p_data.get('initial_balance', 0.0)
                 if initial_balance != 0:
                     row += 1
-                    initial_debit = p_data.get('initial_debit', 0.0)
-                    initial_credit = p_data.get('initial_credit', 0.0)
 
                     sheet.write(row, col, '', txt_name)
                     sheet.write(row, col + 1, ' ', txt_name)
@@ -548,7 +636,7 @@ class AccountPartnerLedger(models.TransientModel):
                     sheet.merge_range(row, col + 5, row, col + 6, str(move_data.get('date_maturity', '')), txt_name)
                     sheet.merge_range(row, col + 7, row, col + 8, to_float(move_data.get('debit', 0.0)), txt_name_amount)
                     sheet.merge_range(row, col + 9, row, col + 10, to_float(move_data.get('credit', 0.0)), txt_name_amount)
-                    sheet.merge_range(row, col + 11, row, col + 12, ' ', txt_name)
+                    sheet.merge_range(row, col + 11, row, col + 12, to_float(move_data.get('balance', 0.0)), txt_name_amount)
 
             row += 1
             grand_total_debit = data.get('grand_total', {}).get('total_debit', 0.0)

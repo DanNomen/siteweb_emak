@@ -115,20 +115,23 @@
                                         <th style="width:10% border:0px solid transparent;">
                                             <strong>
                                                 <span>
-                                                    <t t-if="total[partner]['total_debit']"
+                                                    <!-- Solde initial + mouvements de la période (pas
+                                                         seulement les mouvements) : même formule que le
+                                                         solde progressif détaillé plus bas. -->
+                                                    <t t-if="total[partner]['combined_debit']"
                                                        t-esc="total[partner]['currency_id']"/>
-                                                    <t t-if="total[partner]['total_debit']"
-                                                       t-esc="total[partner]['total_debit_display']"/>
+                                                    <t t-if="total[partner]['combined_debit']"
+                                                       t-esc="total[partner]['combined_debit']"/>
                                                 </span>
                                             </strong>
                                         </th>
                                         <th style="width:10% border:0px solid transparent;">
                                             <strong>
                                                 <span>
-                                                    <t t-if="total[partner]['total_credit']"
+                                                    <t t-if="total[partner]['combined_credit']"
                                                        t-esc="total[partner]['currency_id']"/>
-                                                    <t t-if="total[partner]['total_credit']"
-                                                       t-esc="total[partner]['total_credit_display']"/>
+                                                    <t t-if="total[partner]['combined_credit']"
+                                                       t-esc="total[partner]['combined_credit']"/>
                                                 </span>
                                             </strong>
                                         </th>
@@ -137,7 +140,7 @@
                                             <strong>
                                                 <span class="fw-bolder">
                                                     <t t-esc="total[partner]['currency_id']"/>
-                                                    <t t-esc="total[partner]['total_debit'] - total[partner]['total_credit']"/>
+                                                    <t t-esc="total[partner]['balance']"/>
                                                 </span>
                                             </strong>
                                         </th>
@@ -247,7 +250,15 @@
                                                        t-esc="valuelist[0]['amount_currency_display']"/>
                                                 </span>
                                             </th>
-                                            <th style="width:10%"/>
+                                            <!-- Solde progressif : solde initial + débit - crédit cumulés
+                                                 ligne après ligne (calculé côté serveur dans
+                                                 get_export_lines). -->
+                                            <th style="width:10%">
+                                                <span class="fw-bolder">
+                                                    <t t-esc="total[partner]['currency_id']"/>
+                                                    <t t-esc="valuelist[0]['balance']"/>
+                                                </span>
+                                            </th>
                                         </tr>
                                     </t>
                                 </tbody>
