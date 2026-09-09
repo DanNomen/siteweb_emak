@@ -312,7 +312,9 @@
                                                             <t t-if="line['credit']"
                                                                t-esc="this.formatNumberWithSeparators(line['credit'])"/>
                                                         </th>
-                                                        <th style="padding: 5px 6px;"/>
+                                                        <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem; font-weight: 700;">
+                                                            <t t-esc="this.formatNumberWithSeparators(line['balance'] || 0)"/>
+                                                        </th>
                                                     </tr>
                                                 </t>
                                             </t>

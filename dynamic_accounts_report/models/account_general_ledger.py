@@ -112,6 +112,53 @@ class AccountGeneralLedger(models.TransientModel):
         account_dict['account_totals'] = account_totals
         return account_dict
 
+    @api.model
+    def _compute_date_start(self, date_range):
+        """Détermine la date à partir de laquelle les écritures antérieures
+        constituent le solde initial d'un compte - même logique que le
+        filtre de dates ci-dessous, mais retournant juste la borne de
+        début (ou la date d'ouverture de l'exercice si aucun filtre de
+        date n'a de borne de début)."""
+        today = fields.Date.today()
+        quarter_start, quarter_end = date_utils.get_quarter(today)
+        previous_quarter_start = quarter_start - relativedelta(months=3)
+        date_start = None
+        if date_range:
+            if date_range == 'month':
+                date_start = today.replace(day=1)
+            elif date_range == 'year':
+                date_start = today.replace(month=1, day=1)
+            elif date_range == 'quarter':
+                date_start = quarter_start
+            elif date_range == 'last-month':
+                date_start = today.replace(day=1) - relativedelta(months=1)
+            elif date_range == 'last-year':
+                date_start = today.replace(month=1, day=1) - relativedelta(years=1)
+            elif date_range == 'last-quarter':
+                date_start = previous_quarter_start
+            elif isinstance(date_range, dict) and date_range.get('start_date'):
+                date_start = datetime.strptime(date_range['start_date'], '%Y-%m-%d').date()
+        if not date_start:
+            fiscal_year = self.env['res.company'].search([]).mapped('account_opening_date')[0].strftime('%Y-%m-%d')
+            date_start = datetime.strptime(fiscal_year, '%Y-%m-%d').date()
+        return date_start
+
+    @api.model
+    def _compute_initial_balances(self, account_ids, journal_ids, options, analytic, method, date_start):
+        """Solde initial (débit - crédit des écritures antérieures à
+        date_start) par compte, point de départ du solde progressif -
+        mêmes filtres (journal/options/analytique/méthode de caisse) que
+        la période elle-même, sauf la date."""
+        domain = self._build_lines_domain(journal_ids, None, options, analytic, method)
+        domain += [('date', '<', date_start), ('account_id', 'in', account_ids)]
+        groups = self.env['account.move.line'].read_group(
+            domain=domain, fields=['account_id', 'debit', 'credit'],
+            groupby=['account_id'], lazy=False)
+        return {
+            g['account_id'][0]: g.get('debit', 0.0) - g.get('credit', 0.0)
+            for g in groups if g.get('account_id')
+        }
+
     def _build_lines_domain(self, journal_ids=None, date_range=None,
                             options=None, analytic=None, method=None):
         """Shared filter domain (everything except the account_id part) used
@@ -200,6 +247,17 @@ class AccountGeneralLedger(models.TransientModel):
         result = move_lines.read(
             ['date', 'name', 'move_name', 'debit', 'credit',
              'partner_id', 'account_id', 'journal_id', 'move_id'])
+
+        # Solde progressif : solde initial (écritures antérieures au
+        # filtre de dates) + (débit - crédit) cumulés ligne après ligne.
+        date_start = self._compute_date_start(date_range)
+        initial_balances = self._compute_initial_balances(
+            [account_id], journal_ids, options, analytic, method, date_start)
+        running_balance = initial_balances.get(account_id, 0.0)
+        for move_line_data in result:
+            running_balance += move_line_data.get('debit', 0.0) - move_line_data.get('credit', 0.0)
+            move_line_data['balance'] = running_balance
+
         return result
 
     @api.model
@@ -232,12 +290,23 @@ class AccountGeneralLedger(models.TransientModel):
             ['date', 'name', 'move_name', 'debit', 'credit',
              'partner_id', 'account_id', 'journal_id', 'move_id'])
 
+        # Solde progressif par compte : parti du solde initial de chacun,
+        # puis cumulé ligne après ligne dans l'ordre chronologique (lines
+        # is ordered account_id, date asc above).
+        date_start = self._compute_date_start(date_range)
+        running_balance = self._compute_initial_balances(
+            account_ids, journal_ids, options, analytic, method, date_start)
+
         result = {}
         for line in lines:
             acc = line['account_id']
             if not acc:
                 continue
-            result.setdefault(acc[0], []).append(line)
+            acc_id = acc[0]
+            running_balance[acc_id] = running_balance.get(acc_id, 0.0) + \
+                line.get('debit', 0.0) - line.get('credit', 0.0)
+            line['balance'] = running_balance[acc_id]
+            result.setdefault(acc_id, []).append(line)
         return result
 
     @api.model
@@ -354,18 +423,44 @@ class AccountGeneralLedger(models.TransientModel):
         groups.sort(key=lambda g: account_code_map.get(g['account_id'][0], '')
                     if g.get('account_id') else '')
 
+        # Solde initial : uniquement pertinent quand un filtre de dates est
+        # actif (sinon la période couvre déjà tout l'historique, donc
+        # total_debit/total_credit sont déjà le solde complet - pas besoin
+        # de solde initial séparé). C'est ça qui manquait pour que le solde
+        # de fin de janvier redevienne le solde de départ de février.
+        initial_balances = {}
+        if date_range and group_account_ids:
+            date_start = self._compute_date_start(date_range)
+            initial_balances = self._compute_initial_balances(
+                group_account_ids, journal_id, options, analytic, method, date_start)
+
         for group in groups:
             if not group['account_id']:
                 continue
             account_id, account_name = group['account_id']
             total_debit = round(group['debit'] or 0, 2)
             total_credit = round(group['credit'] or 0, 2)
+            # Un solde s'affiche du côté débit OU crédit, jamais les deux
+            # (convention comptable), comme pour le reste du module.
+            initial_balance = initial_balances.get(account_id, 0.0)
+            if initial_balance > 0:
+                initial_debit, initial_credit = initial_balance, 0.0
+            else:
+                initial_debit, initial_credit = 0.0, -initial_balance
+            combined_debit = total_debit + initial_debit
+            combined_credit = total_credit + initial_credit
             account_totals[account_name] = {
                 'total_debit': total_debit,
                 'total_credit': total_credit,
                 'currency_id': currency_id,
                 'account_id': account_id,
                 'line_count': group['account_id_count'],
+                'initial_debit': initial_debit,
+                'initial_credit': initial_credit,
+                'initial_balance': initial_balance,
+                'combined_debit': combined_debit,
+                'combined_credit': combined_credit,
+                'balance': combined_debit - combined_credit,
             }
 
         account_dict['account_totals'] = account_totals
@@ -509,21 +604,47 @@ class AccountGeneralLedger(models.TransientModel):
                 for account in account_list:
                     row += 1
                     acc_totals = account_total.get(account) or {}
+                    # Ligne récapitulative du compte : solde initial +
+                    # mouvements de la période (pas seulement les
+                    # mouvements), pour que le solde de fin de mois se
+                    # retrouve bien comme solde de départ le mois suivant.
+                    initial_debit = acc_totals.get('initial_debit', 0.0)
+                    initial_credit = acc_totals.get('initial_credit', 0.0)
+                    total_debit = acc_totals.get('total_debit', 0.0)
+                    total_credit = acc_totals.get('total_credit', 0.0)
+                    combined_debit = acc_totals.get('combined_debit', initial_debit + total_debit)
+                    combined_credit = acc_totals.get('combined_credit', initial_credit + total_credit)
+                    balance = acc_totals.get('balance', combined_debit - combined_credit)
+
                     sheet.write(row, col, account, account_heading)
                     sheet.write(row, col + 1, ' ', account_heading)
                     sheet.merge_range(row, col + 2, row, col + 4, ' ', account_heading)
                     sheet.merge_range(row, col + 5, row, col + 6, ' ',
                                       account_heading)
                     sheet.merge_range(row, col + 7, row, col + 8,
-                                      to_float(acc_totals.get('total_debit', 0)),
+                                      to_float(combined_debit),
                                       account_heading_amount)
                     sheet.merge_range(row, col + 9, row, col + 10,
-                                      to_float(acc_totals.get('total_credit', 0)),
+                                      to_float(combined_credit),
                                       account_heading_amount)
                     sheet.merge_range(row, col + 11, row, col + 12,
-                                      to_float(acc_totals.get('total_debit', 0)) -
-                                      to_float(acc_totals.get('total_credit', 0)),
+                                      to_float(balance),
                                       account_heading_amount)
+
+                    initial_balance = acc_totals.get('initial_balance', 0.0)
+                    if initial_balance:
+                        row += 1
+                        sheet.write(row, col, '', txt_name)
+                        sheet.write(row, col + 1, ' ', txt_name)
+                        sheet.merge_range(row, col + 2, row, col + 4, 'Solde initial', account_heading)
+                        sheet.merge_range(row, col + 5, row, col + 6, ' ', txt_name)
+                        sheet.merge_range(row, col + 7, row, col + 8,
+                                          to_float(initial_debit), txt_name_amount)
+                        sheet.merge_range(row, col + 9, row, col + 10,
+                                          to_float(initial_credit), txt_name_amount)
+                        sheet.merge_range(row, col + 11, row, col + 12,
+                                          to_float(initial_balance), txt_name_amount)
+
                     for rec in account_data.get(acc_totals.get('account_id'), []):
                         row += 1
                         partner = rec.get('partner_id')
@@ -542,8 +663,9 @@ class AccountGeneralLedger(models.TransientModel):
                         sheet.merge_range(row, col + 9, row, col + 10,
                                           to_float(move_data.get('credit', 0.0)),
                                           txt_name_amount)
-                        sheet.merge_range(row, col + 11, row, col + 12, ' ',
-                                          txt_name)
+                        sheet.merge_range(row, col + 11, row, col + 12,
+                                          to_float(move_data.get('balance', 0.0)),
+                                          txt_name_amount)
                 row += 1
                 sheet.merge_range(row, col, row, col + 6, 'Total',
                                   filter_head)

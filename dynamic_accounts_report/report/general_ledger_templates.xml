@@ -131,20 +131,23 @@
                                         <th style="width:10% border:0px solid transparent;">
                                             <strong>
                                                 <span>
-                                                    <t t-if="total[account]['total_debit']"
+                                                    <!-- Solde initial + mouvements de la période (pas
+                                                         seulement les mouvements) : même formule que le
+                                                         solde progressif détaillé plus bas. -->
+                                                    <t t-if="total[account]['combined_debit']"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['total_debit']"
-                                                       t-esc="total[account]['total_debit_display']"/>
+                                                    <t t-if="total[account]['combined_debit']"
+                                                       t-esc="total[account]['combined_debit']"/>
                                                 </span>
                                             </strong>
                                         </th>
                                         <th style="width:10% border:0px solid transparent;">
                                             <strong>
                                                 <span>
-                                                    <t t-if="total[account]['total_credit']"
+                                                    <t t-if="total[account]['combined_credit']"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['total_credit']"
-                                                       t-esc="total[account]['total_credit_display']"/>
+                                                    <t t-if="total[account]['combined_credit']"
+                                                       t-esc="total[account]['combined_credit']"/>
                                                 </span>
                                             </strong>
                                         </th>
@@ -152,11 +155,43 @@
                                             <strong>
                                                 <span class="fw-bolder">
                                                     <t t-esc="total[account]['currency_id']"/>
-                                                    <t t-esc="total[account]['total_debit'] - total[account]['total_credit']"/>
+                                                    <t t-esc="total[account]['balance']"/>
                                                 </span>
                                             </strong>
                                         </th>
                                     </tr>
+                                    <t t-if="total[account]['initial_balance']">
+                                        <tr class="border-bottom" style="background:#f9f9f9;">
+                                            <th colspan="6" style="width:10%;font-style:italic;color:#888;">
+                                                Solde initial
+                                            </th>
+                                            <th style="width:10%"/>
+                                            <th style="width:10%"/>
+                                            <th style="width:10%"/>
+                                            <th style="width:10%">
+                                                <span>
+                                                    <t t-if="total[account]['initial_debit']"
+                                                       t-esc="total[account]['currency_id']"/>
+                                                    <t t-if="total[account]['initial_debit']"
+                                                       t-esc="total[account]['initial_debit']"/>
+                                                </span>
+                                            </th>
+                                            <th style="width:10%">
+                                                <span>
+                                                    <t t-if="total[account]['initial_credit']"
+                                                       t-esc="total[account]['currency_id']"/>
+                                                    <t t-if="total[account]['initial_credit']"
+                                                       t-esc="total[account]['initial_credit']"/>
+                                                </span>
+                                            </th>
+                                            <th style="width:10%">
+                                                <span class="fw-bolder">
+                                                    <t t-esc="total[account]['currency_id']"/>
+                                                    <t t-esc="total[account]['initial_balance']"/>
+                                                </span>
+                                            </th>
+                                        </tr>
+                                    </t>
                                     <t t-set="account_id_val" t-value="total[account]['account_id']"/>
                                     <t t-if="account_data.get(account_id_val)">
                                         <t t-foreach="account_data[account_id_val]"
@@ -197,7 +232,11 @@
                                                            t-esc="move_data['credit']"/>
                                                     </span>
                                                 </th>
-                                                <th style="width:10% border:0px solid transparent;"/>
+                                                <th style="width:10%">
+                                                    <span class="fw-bolder">
+                                                        <t t-esc="move_data.get('balance', 0)"/>
+                                                    </span>
+                                                </th>
                                             </tr>
                                         </t>
                                     </t>

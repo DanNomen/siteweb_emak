@@ -188,66 +188,76 @@
                                             </th>
                                         </t>
                                     </t>
-                                    <!-- Iterate over partner's value list -->
+                                    <!-- Iterate over partner's value list.
+                                         Chaque élément de data[partner] est déjà
+                                         un dict simple (get_export_lines renvoie
+                                         une liste de dicts, pas une liste de
+                                         listes) : indexer avec [0] plantait le
+                                         rendu du PDF dès qu'un partenaire avait
+                                         des lignes. Les champs "_display" n'ont
+                                         jamais été renseignés par
+                                         get_export_lines : on affiche les
+                                         valeurs numériques brutes, comme le fait
+                                         déjà l'export Excel. -->
                                     <t t-foreach="data[partner]"
                                        t-as="valuelist"
                                        t-key="valuelist_index">
                                         <tr class="border-bottom">
                                             <th colspan="6" style="width:10%">
                                                 <span>
-                                                    <t t-esc="valuelist[0]['date']"/>
+                                                    <t t-esc="valuelist['date']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-esc="valuelist[0]['jrnl']"/>
+                                                    <t t-esc="valuelist['jrnl']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-esc="valuelist[0]['code']"/>
+                                                    <t t-esc="valuelist['code']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['move_name']"
-                                                       t-esc="valuelist[0]['move_name']"/>
+                                                    <t t-if="valuelist['move_name']"
+                                                       t-esc="valuelist['move_name']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['date_maturity']"
-                                                       t-esc="valuelist[0]['date_maturity']"/>
+                                                    <t t-if="valuelist['date_maturity']"
+                                                       t-esc="valuelist['date_maturity']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['matching_number']"
-                                                       t-esc="valuelist[0]['matching_number']"/>
+                                                    <t t-if="valuelist['matching_number']"
+                                                       t-esc="valuelist['matching_number']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['debit']"
+                                                    <t t-if="valuelist['debit']"
                                                        t-esc="total[partner]['currency_id']"/>
-                                                    <t t-if="valuelist[0]['debit']"
-                                                       t-esc="valuelist[0]['debit_display']"/>
+                                                    <t t-if="valuelist['debit']"
+                                                       t-esc="valuelist['debit']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['credit']"
+                                                    <t t-if="valuelist['credit']"
                                                        t-esc="total[partner]['currency_id']"/>
-                                                    <t t-if="valuelist[0]['credit']"
-                                                       t-esc="valuelist[0]['credit_display']"/>
+                                                    <t t-if="valuelist['credit']"
+                                                       t-esc="valuelist['credit']"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="valuelist[0]['amount_currency']"
+                                                    <t t-if="valuelist['amount_currency']"
                                                        t-esc="total[partner]['currency_id']"/>
-                                                    <t t-if="valuelist[0]['amount_currency']"
-                                                       t-esc="valuelist[0]['amount_currency_display']"/>
+                                                    <t t-if="valuelist['amount_currency']"
+                                                       t-esc="valuelist['amount_currency']"/>
                                                 </span>
                                             </th>
                                             <!-- Solde progressif : solde initial + débit - crédit cumulés
@@ -256,7 +266,7 @@
                                             <th style="width:10%">
                                                 <span class="fw-bolder">
                                                     <t t-esc="total[partner]['currency_id']"/>
-                                                    <t t-esc="valuelist[0]['balance']"/>
+                                                    <t t-esc="valuelist['balance']"/>
                                                 </span>
                                             </th>
                                         </tr>

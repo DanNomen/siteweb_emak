@@ -81,10 +81,17 @@ class GeneralLedger extends owl.Component {
         Object.values(account_totals).forEach(acc => {
             currency = acc.currency_id || currency;
             totalDebitSum += acc.total_debit || 0;
-            acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
             totalCreditSum += acc.total_credit || 0;
-            acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
-            acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
+            // Ligne récapitulative du compte : solde initial + mouvements
+            // de la période (le serveur renvoie déjà
+            // combined_debit/combined_credit/balance ; on retombe sur le
+            // calcul local si jamais ces clés manquent, ex. view_report
+            // sans filtre de dates où il n'y a pas de solde initial).
+            const combinedDebit = acc.combined_debit ?? (acc.total_debit || 0);
+            const combinedCredit = acc.combined_credit ?? (acc.total_credit || 0);
+            acc.total_debit_display = this.formatNumberWithSeparators(combinedDebit);
+            acc.total_credit_display = this.formatNumberWithSeparators(combinedCredit);
+            acc.balance_display = this.formatNumberWithSeparators(acc.balance ?? (combinedDebit - combinedCredit));
             acc._lines_loaded = false; // lazy load flag
             acc._lines = [];          // will be populated on expand
         });
@@ -414,10 +421,16 @@ class GeneralLedger extends owl.Component {
                 Object.values(account_totals).forEach(acc => {
                     currency = acc.currency_id;
                     totalDebitSum += acc.total_debit || 0;
-                    acc.total_debit_display = this.formatNumberWithSeparators(acc.total_debit || 0);
                     totalCreditSum += acc.total_credit || 0;
-                    acc.total_credit_display = this.formatNumberWithSeparators(acc.total_credit || 0);
-                    acc.balance_display = this.formatNumberWithSeparators((acc.total_debit || 0) - (acc.total_credit || 0));
+                    // Solde initial + mouvements de la période, cf.
+                    // _processAccountData ci-dessus (même correctif,
+                    // dupliqué ici car applyFilter a sa propre copie de
+                    // cette logique plutôt que de réutiliser _processAccountData).
+                    const combinedDebit = acc.combined_debit ?? (acc.total_debit || 0);
+                    const combinedCredit = acc.combined_credit ?? (acc.total_credit || 0);
+                    acc.total_debit_display = this.formatNumberWithSeparators(combinedDebit);
+                    acc.total_credit_display = this.formatNumberWithSeparators(combinedCredit);
+                    acc.balance_display = this.formatNumberWithSeparators(acc.balance ?? (combinedDebit - combinedCredit));
                 });
             } else if (index === 'journal_ids') {
                 this.state.journals = value;
