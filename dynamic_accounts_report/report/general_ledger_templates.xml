@@ -134,20 +134,20 @@
                                                     <!-- Solde initial + mouvements de la période (pas
                                                          seulement les mouvements) : même formule que le
                                                          solde progressif détaillé plus bas. -->
-                                                    <t t-if="total[account]['combined_debit']"
+                                                    <t t-if="total[account].get('combined_debit')"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['combined_debit']"
-                                                       t-esc="total[account]['combined_debit']"/>
+                                                    <t t-if="total[account].get('combined_debit')"
+                                                       t-esc="total[account].get('combined_debit')"/>
                                                 </span>
                                             </strong>
                                         </th>
                                         <th style="width:10% border:0px solid transparent;">
                                             <strong>
                                                 <span>
-                                                    <t t-if="total[account]['combined_credit']"
+                                                    <t t-if="total[account].get('combined_credit')"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['combined_credit']"
-                                                       t-esc="total[account]['combined_credit']"/>
+                                                    <t t-if="total[account].get('combined_credit')"
+                                                       t-esc="total[account].get('combined_credit')"/>
                                                 </span>
                                             </strong>
                                         </th>
@@ -155,12 +155,12 @@
                                             <strong>
                                                 <span class="fw-bolder">
                                                     <t t-esc="total[account]['currency_id']"/>
-                                                    <t t-esc="total[account]['balance']"/>
+                                                    <t t-esc="total[account].get('balance')"/>
                                                 </span>
                                             </strong>
                                         </th>
                                     </tr>
-                                    <t t-if="total[account]['initial_balance']">
+                                    <t t-if="total[account].get('initial_balance')">
                                         <tr class="border-bottom" style="background:#f9f9f9;">
                                             <th colspan="6" style="width:10%;font-style:italic;color:#888;">
                                                 Solde initial
@@ -170,24 +170,24 @@
                                             <th style="width:10%"/>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="total[account]['initial_debit']"
+                                                    <t t-if="total[account].get('initial_debit')"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['initial_debit']"
-                                                       t-esc="total[account]['initial_debit']"/>
+                                                    <t t-if="total[account].get('initial_debit')"
+                                                       t-esc="total[account].get('initial_debit')"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span>
-                                                    <t t-if="total[account]['initial_credit']"
+                                                    <t t-if="total[account].get('initial_credit')"
                                                        t-esc="total[account]['currency_id']"/>
-                                                    <t t-if="total[account]['initial_credit']"
-                                                       t-esc="total[account]['initial_credit']"/>
+                                                    <t t-if="total[account].get('initial_credit')"
+                                                       t-esc="total[account].get('initial_credit')"/>
                                                 </span>
                                             </th>
                                             <th style="width:10%">
                                                 <span class="fw-bolder">
                                                     <t t-esc="total[account]['currency_id']"/>
-                                                    <t t-esc="total[account]['initial_balance']"/>
+                                                    <t t-esc="total[account].get('initial_balance')"/>
                                                 </span>
                                             </th>
                                         </tr>

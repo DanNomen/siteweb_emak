@@ -101,12 +101,25 @@ class AccountGeneralLedger(models.TransientModel):
             account_id, account_name = group['account_id']
             total_debit = round(group['debit'] or 0, 2)
             total_credit = round(group['credit'] or 0, 2)
+            # Pas de filtre de dates ici (tout l'historique est déjà
+            # inclus) : pas de solde initial séparé à calculer, mais on
+            # renvoie quand même combined_debit/combined_credit/balance
+            # (identiques à total_debit/total_credit ici) pour que l'écran,
+            # l'export et le PDF - qui lisent ces clés sans .get() - ne
+            # plantent pas quand on imprime avant d'avoir appliqué un
+            # filtre (KeyError: 'combined_debit').
             account_totals[account_name] = {
                 'total_debit': total_debit,
                 'total_credit': total_credit,
                 'currency_id': currency_id,
                 'account_id': account_id,
                 'line_count': group['account_id_count'],
+                'initial_debit': 0.0,
+                'initial_credit': 0.0,
+                'initial_balance': 0.0,
+                'combined_debit': total_debit,
+                'combined_credit': total_credit,
+                'balance': total_debit - total_credit,
             }
 
         account_dict['account_totals'] = account_totals
