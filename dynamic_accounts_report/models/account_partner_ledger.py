@@ -666,7 +666,27 @@ class IrActionsReportPartnerLedger(models.Model):
     def _get_report_values(self, docids, data=None):
         if self.report_name == 'dynamic_accounts_report.partner_ledger':
             data = data or {}
+            # Le template qweb fait des accès directs total[partner][...],
+            # filters['...'], grand_total['...'] (pas de .get()) : si le
+            # client envoie une de ces clés vide/absente (None), on
+            # plantait avec "'NoneType' object is not subscriptable". On
+            # réécrit ici des valeurs sûres dans `data` lui-même (pas
+            # seulement une variable locale) puisque c'est `data` qui est
+            # passé tel quel au contexte de rendu du template.
             totals = data.get('total') or {}
+            data['total'] = totals
+            data['partners'] = data.get('partners') or []
+            data['grand_total'] = data.get('grand_total') or {}
+            # Le template accède aussi à filters['start_date']/['end_date']/
+            # ['partner']/['account']/['options'] par subscript direct : un
+            # dict {} vide y suffit pas, il faut que CES clés existent.
+            filters = data.get('filters') or {}
+            filters.setdefault('start_date', None)
+            filters.setdefault('end_date', None)
+            filters.setdefault('partner', [])
+            filters.setdefault('account', {})
+            filters.setdefault('options', {})
+            data['filters'] = filters
             partner_ids = [
                 p.get('partner_id') for p in totals.values()
                 if p.get('partner_id')

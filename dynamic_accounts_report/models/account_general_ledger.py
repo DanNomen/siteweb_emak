@@ -700,7 +700,25 @@ class IrActionsReportGeneralLedger(models.Model):
     def _get_report_values(self, docids, data=None):
         if self.report_name == 'dynamic_accounts_report.general_ledger':
             data = data or {}
+            # Le template qweb fait des accès directs total[account][...],
+            # filters['...'], grand_total['...'] (pas de .get()) : si le
+            # client envoie une de ces clés vide/absente (None - ex. PDF
+            # imprimé avant la fin du chargement des données), on plantait
+            # avec "'NoneType' object is not subscriptable". On réécrit ici
+            # des valeurs sûres dans `data` lui-même (pas seulement une
+            # variable locale), puisque c'est `data` qui est passé tel quel
+            # au contexte de rendu du template.
             account_total = data.get('total') or {}
+            data['total'] = account_total
+            data['account'] = data.get('account') or []
+            data['grand_total'] = data.get('grand_total') or {}
+            filters = data.get('filters') or {}
+            filters.setdefault('start_date', None)
+            filters.setdefault('end_date', None)
+            filters.setdefault('journal', [])
+            filters.setdefault('analytic', [])
+            filters.setdefault('options', {})
+            data['filters'] = filters
             account_ids = data.get('account_ids') or [
                 acc.get('account_id') for acc in account_total.values()
                 if acc.get('account_id')
