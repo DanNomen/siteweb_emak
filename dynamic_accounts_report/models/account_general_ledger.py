@@ -700,48 +700,67 @@ class AccountGeneralLedger(models.TransientModel):
         output.close()
 
 
-class IrActionsReportGeneralLedger(models.Model):
-    """Fetches General Ledger move-line detail server-side when the PDF is
+class ReportGeneralLedger(models.AbstractModel):
+    """Rendering-context provider for the General Ledger PDF.
+
+    Odoo only calls `_get_report_values` on a model named
+    'report.<module>.<report_name>' (see
+    odoo/addons/base/models/ir_actions_report.py,
+    _get_rendering_context/_get_rendering_context_model) - NOT on
+    'ir.actions.report' itself. An earlier version of this fix defined the
+    override on 'ir.actions.report' (`_inherit = 'ir.actions.report'`),
+    which Odoo's rendering pipeline never actually invokes: no
+    'report.dynamic_accounts_report.general_ledger' model existed, so
+    `_get_rendering_context` always took its "no custom report model"
+    fallback branch instead, and every key this method tried to add
+    (account_data, defensive total/filters/... fallbacks) never reached the
+    template - hence "KeyError: 'account_data'" even though this logic
+    looked correct on paper.
+
+    Fetches General Ledger move-line detail server-side when the PDF is
     rendered, instead of the client fetching it via RPC and shipping it back
     through the report action's `data` payload. For a general ledger with
     many accounts/entries that payload could exceed the web server's request
     size limit (413 Request Entity Too Large). Only small filter values and
     account ids travel from the client now.
     """
-    _inherit = 'ir.actions.report'
+    _name = 'report.dynamic_accounts_report.general_ledger'
+    _description = 'General Ledger Report'
 
+    @api.model
     def _get_report_values(self, docids, data=None):
-        if self.report_name == 'dynamic_accounts_report.general_ledger':
-            data = data or {}
-            # Le template qweb fait des accès directs total[account][...],
-            # filters['...'], grand_total['...'] (pas de .get()) : si le
-            # client envoie une de ces clés vide/absente (None - ex. PDF
-            # imprimé avant la fin du chargement des données), on plantait
-            # avec "'NoneType' object is not subscriptable". On réécrit ici
-            # des valeurs sûres dans `data` lui-même (pas seulement une
-            # variable locale), puisque c'est `data` qui est passé tel quel
-            # au contexte de rendu du template.
-            account_total = data.get('total') or {}
-            data['total'] = account_total
-            data['account'] = data.get('account') or []
-            data['grand_total'] = data.get('grand_total') or {}
-            filters = data.get('filters') or {}
-            filters.setdefault('start_date', None)
-            filters.setdefault('end_date', None)
-            filters.setdefault('journal', [])
-            filters.setdefault('analytic', [])
-            filters.setdefault('options', {})
-            data['filters'] = filters
-            account_ids = data.get('account_ids') or [
-                acc.get('account_id') for acc in account_total.values()
-                if acc.get('account_id')
-            ]
-            data['account_data'] = self.env['account.general.ledger'].get_export_lines(
-                account_ids,
-                data.get('journal_ids'),
-                data.get('date_range'),
-                data.get('options'),
-                data.get('analytic_ids'),
-                data.get('method'),
-            ) if account_ids else {}
-        return super()._get_report_values(docids, data=data)
+        data = data or {}
+        # Le template qweb fait des accès directs total[account][...],
+        # filters['...'], grand_total['...'] (pas de .get()) : si le
+        # client envoie une de ces clés vide/absente (None - ex. PDF
+        # imprimé avant la fin du chargement des données), on plantait
+        # avec "'NoneType' object is not subscriptable".
+        account_total = data.get('total') or {}
+        filters = data.get('filters') or {}
+        filters.setdefault('start_date', None)
+        filters.setdefault('end_date', None)
+        filters.setdefault('journal', [])
+        filters.setdefault('analytic', [])
+        filters.setdefault('options', {})
+        account_ids = data.get('account_ids') or [
+            acc.get('account_id') for acc in account_total.values()
+            if acc.get('account_id')
+        ]
+        account_data = self.env['account.general.ledger'].get_export_lines(
+            account_ids,
+            data.get('journal_ids'),
+            data.get('date_range'),
+            data.get('options'),
+            data.get('analytic_ids'),
+            data.get('method'),
+        ) if account_ids else {}
+        return {
+            'doc_ids': docids,
+            'doc_model': 'account.general.ledger',
+            'docs': self.env['account.general.ledger'].browse(docids or []),
+            'total': account_total,
+            'account': data.get('account') or [],
+            'grand_total': data.get('grand_total') or {},
+            'filters': filters,
+            'account_data': account_data,
+        }

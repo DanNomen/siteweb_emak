@@ -155,7 +155,7 @@ class GeneralLedger extends owl.Component {
             'currency':this.state.currency  || false,
         }
         var action_title = self.props.action.display_name;
-        // Move-line detail is fetched server-side (see IrActionsReportGeneralLedger
+        // Move-line detail is fetched server-side (see ReportGeneralLedger
         // ._get_report_values in account_general_ledger.py) instead of being
         // fetched here and shipped through the report action's data payload -
         // for a general ledger with many accounts/entries that payload could

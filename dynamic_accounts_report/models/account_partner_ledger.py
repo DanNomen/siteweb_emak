@@ -654,54 +654,69 @@ class AccountPartnerLedger(models.TransientModel):
         output.close()
 
 
-class IrActionsReportPartnerLedger(models.Model):
-    """Fetches Partner Ledger move-line detail server-side when the PDF is
+class ReportPartnerLedger(models.AbstractModel):
+    """Rendering-context provider for the Partner Ledger PDF.
+
+    Odoo only calls `_get_report_values` on a model named
+    'report.<module>.<report_name>' (see
+    odoo/addons/base/models/ir_actions_report.py,
+    _get_rendering_context/_get_rendering_context_model) - NOT on
+    'ir.actions.report' itself. An earlier version of this fix defined the
+    override on 'ir.actions.report' (`_inherit = 'ir.actions.report'`),
+    which Odoo's rendering pipeline never actually invokes: no
+    'report.dynamic_accounts_report.partner_ledger' model existed, so
+    `_get_rendering_context` always took its "no custom report model"
+    fallback branch instead, and every key this method tried to add
+    (data/lines, defensive total/filters/... fallbacks) never reached the
+    template.
+
+    Fetches Partner Ledger move-line detail server-side when the PDF is
     rendered, instead of relying on the client having pre-loaded it (it
     never had - only the single partner last expanded on-screen was ever
     loaded), which left the PDF with partner totals but no transaction
     detail at all.
     """
-    _inherit = 'ir.actions.report'
+    _name = 'report.dynamic_accounts_report.partner_ledger'
+    _description = 'Partner Ledger Report'
 
+    @api.model
     def _get_report_values(self, docids, data=None):
-        if self.report_name == 'dynamic_accounts_report.partner_ledger':
-            data = data or {}
-            # Le template qweb fait des accès directs total[partner][...],
-            # filters['...'], grand_total['...'] (pas de .get()) : si le
-            # client envoie une de ces clés vide/absente (None), on
-            # plantait avec "'NoneType' object is not subscriptable". On
-            # réécrit ici des valeurs sûres dans `data` lui-même (pas
-            # seulement une variable locale) puisque c'est `data` qui est
-            # passé tel quel au contexte de rendu du template.
-            totals = data.get('total') or {}
-            data['total'] = totals
-            data['partners'] = data.get('partners') or []
-            data['grand_total'] = data.get('grand_total') or {}
-            # Le template accède aussi à filters['start_date']/['end_date']/
-            # ['partner']/['account']/['options'] par subscript direct : un
-            # dict {} vide y suffit pas, il faut que CES clés existent.
-            filters = data.get('filters') or {}
-            filters.setdefault('start_date', None)
-            filters.setdefault('end_date', None)
-            filters.setdefault('partner', [])
-            filters.setdefault('account', {})
-            filters.setdefault('options', {})
-            data['filters'] = filters
-            partner_ids = [
-                p.get('partner_id') for p in totals.values()
-                if p.get('partner_id')
-            ]
-            lines_by_partner = self.env['account.partner.ledger'].get_export_lines(
-                partner_ids,
-                data.get('date_range'),
-                data.get('account'),
-                data.get('options'),
-                data.get('account_ids'),
-            ) if partner_ids else {}
-            # Re-key by partner name to match what the template
-            # (partners/total) already indexes by.
-            data['data'] = {
-                name: lines_by_partner.get(p.get('partner_id'), [])
-                for name, p in totals.items()
-            }
-        return super()._get_report_values(docids, data=data)
+        data = data or {}
+        # Le template qweb fait des accès directs total[partner][...],
+        # filters['...'], grand_total['...'] (pas de .get()) : si le
+        # client envoie une de ces clés vide/absente (None), on plantait
+        # avec "'NoneType' object is not subscriptable".
+        totals = data.get('total') or {}
+        filters = data.get('filters') or {}
+        filters.setdefault('start_date', None)
+        filters.setdefault('end_date', None)
+        filters.setdefault('partner', [])
+        filters.setdefault('account', {})
+        filters.setdefault('options', {})
+        partner_ids = [
+            p.get('partner_id') for p in totals.values()
+            if p.get('partner_id')
+        ]
+        lines_by_partner = self.env['account.partner.ledger'].get_export_lines(
+            partner_ids,
+            data.get('date_range'),
+            data.get('account'),
+            data.get('options'),
+            data.get('account_ids'),
+        ) if partner_ids else {}
+        # Re-key by partner name to match what the template
+        # (partners/total) already indexes by.
+        lines_by_name = {
+            name: lines_by_partner.get(p.get('partner_id'), [])
+            for name, p in totals.items()
+        }
+        return {
+            'doc_ids': docids,
+            'doc_model': 'account.partner.ledger',
+            'docs': self.env['account.partner.ledger'].browse(docids or []),
+            'total': totals,
+            'partners': data.get('partners') or [],
+            'grand_total': data.get('grand_total') or {},
+            'filters': filters,
+            'data': lines_by_name,
+        }

@@ -457,7 +457,7 @@ class PartnerLedger extends owl.Component {
         // expanded (expandPartner/get_partner_lines) - state.data was
         // declared but never populated, so the PDF always had partner
         // totals but zero transaction detail. The server fetches the lines
-        // itself in IrActionsReportPartnerLedger._get_report_values from
+        // itself in ReportPartnerLedger._get_report_values from
         // just the totals (which already carry each partner_id) and the
         // filters below.
         return this.action.doAction({
