@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_fne" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.fne</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+                <button name="action_fne_certify" type="object" string="Certifier (FNE)"
+                        class="btn-primary"
+                        invisible="state != 'posted' or move_type not in ('out_invoice','out_refund') or fne_state in ('certified','to_check','not_applicable')"/>
+                <button name="action_fne_certify" type="object" string="Renvoyer à la FNE"
+                        invisible="fne_state != 'error'"/>
+                <button name="action_fne_force_certified" type="object"
+                        string="Saisir le résultat FNE"
+                        invisible="fne_state != 'to_check'"
+                        groups="account.group_account_manager"/>
+                <field name="fne_state" widget="statusbar"
+                       invisible="fne_state == 'not_applicable'"/>
+            </xpath>
+
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="alert alert-danger" role="alert"
+                     invisible="fne_state != 'error'">
+                    <strong>Certification FNE refusée.</strong>
+                    <field name="fne_error_message" readonly="1" nolabel="1"/>
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="fne_state != 'to_check'">
+                    <strong>Réponse FNE jamais reçue.</strong>
+                    Vérifiez dans votre espace FNE si cette facture a été certifiée
+                    <b>avant</b> tout renvoi, sous peine de double certification.
+                    <field name="fne_error_message" readonly="1" nolabel="1"/>
+                </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="not fne_warning">
+                    <field name="fne_warning" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+
+            <xpath expr="//page[@id='other_tab']" position="after">
+                <page string="FNE" name="fne"
+                      invisible="move_type not in ('out_invoice','out_refund')">
+                    <group>
+                        <group string="Paramètres d'émission">
+                            <field name="fne_invoice_type"/>
+                            <field name="fne_payment_method"/>
+                            <field name="fne_point_of_sale"/>
+                            <field name="fne_establishment"/>
+                            <field name="fne_seller_name"/>
+                            <field name="fne_is_rne"/>
+                            <field name="fne_rne" invisible="not fne_is_rne"
+                                   required="fne_is_rne"/>
+                        </group>
+                        <group string="Résultat de la certification">
+                            <field name="fne_reference"/>
+                            <field name="fne_invoice_id" groups="base.group_no_one"/>
+                            <field name="fne_token" widget="url"/>
+                            <field name="fne_sent_date"/>
+                            <field name="fne_balance_sticker"/>
+                            <field name="fne_qr_image" widget="image" options="{'size': [120, 120]}"
+                                   invisible="not fne_qr_image"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_out_invoice_tree_fne" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.fne</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_out_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="fne_reference" optional="show"/>
+                <field name="fne_state" optional="show" widget="badge"
+                       decoration-success="fne_state == 'certified'"
+                       decoration-danger="fne_state == 'error'"
+                       decoration-warning="fne_state in ('to_check','to_send')"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_fne" model="ir.ui.view">
+        <field name="name">account.move.search.inherit.fne</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='late']" position="after">
+                <separator/>
+                <filter name="fne_not_certified" string="Non certifiées FNE"
+                        domain="[('fne_state','in',['to_send','error','to_check'])]"/>
+                <filter name="fne_to_check" string="FNE à vérifier"
+                        domain="[('fne_state','=','to_check')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_fne_manual_result_wizard_form" model="ir.ui.view">
+        <field name="name">fne.manual.result.wizard.form</field>
+        <field name="model">fne.manual.result.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Saisir le résultat FNE">
+                <div class="alert alert-warning" role="alert">
+                    Ne renseignez ces informations qu'après avoir constaté dans votre
+                    espace FNE que la facture y est bien certifiée.
+                </div>
+                <group>
+                    <field name="move_id"/>
+                    <field name="fne_reference" placeholder="9606123E25000000019"/>
+                    <field name="fne_invoice_id"/>
+                    <field name="fne_token"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirmer"
+                            class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

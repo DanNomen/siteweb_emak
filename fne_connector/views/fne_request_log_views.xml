@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fne_request_log_list" model="ir.ui.view">
+        <field name="name">fne.request.log.list</field>
+        <field name="model">fne.request.log</field>
+        <field name="arch" type="xml">
+            <list string="Échanges FNE" create="false">
+                <field name="create_date" string="Horodatage"/>
+                <field name="move_id"/>
+                <field name="endpoint"/>
+                <field name="status_code"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'success'"
+                       decoration-danger="state in ('error','network_error')"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fne_request_log_form" model="ir.ui.view">
+        <field name="name">fne.request.log.form</field>
+        <field name="model">fne.request.log</field>
+        <field name="arch" type="xml">
+            <form string="Échange FNE" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="create_date" string="Horodatage"/>
+                            <field name="endpoint"/>
+                            <field name="move_id"/>
+                        </group>
+                        <group>
+                            <field name="state"/>
+                            <field name="status_code"/>
+                            <field name="company_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Requête">
+                            <field name="request_body" widget="ace" options="{'mode': 'json'}"/>
+                        </page>
+                        <page string="Réponse">
+                            <field name="response_body" widget="ace" options="{'mode': 'json'}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fne_request_log" model="ir.actions.act_window">
+        <field name="name">Échanges FNE</field>
+        <field name="res_model">fne.request.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_fne_request_log"
+              name="Échanges FNE"
+              parent="account.menu_finance_entries"
+              action="action_fne_request_log"
+              groups="account.group_account_manager"
+              sequence="90"/>
+</odoo>

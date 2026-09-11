@@ -176,7 +176,8 @@ class AgedPayable extends owl.Component {
         // is expanded (expandPartner/get_partner_aged_lines) - state.data
         // was declared but never populated, so the PDF always had partner
         // totals but zero aged-line detail. The server fetches the lines
-        // itself in IrActionsReportAgedPayable._get_report_values from
+        // itself in report.dynamic_accounts_report.aged_payable
+        // (_get_report_values) from
         // just the totals (which already carry each partner_id) and the
         // date filter below.
         return self.action.doAction({

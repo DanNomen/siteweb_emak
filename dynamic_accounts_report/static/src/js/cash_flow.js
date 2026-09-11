@@ -177,7 +177,8 @@ class CashBook extends owl.Component {
         // were declared but never populated, so the PDF always had zero
         // account totals AND zero transaction detail. The account_totals
         // (small) and filters travel here; the server fetches the lines
-        // itself in IrActionsReportCashBook._get_report_values. This also
+        // itself in report.dynamic_accounts_report.cash_book
+        // (_get_report_values). This also
         // fixes 'report_name'/'report_file' which pointed at the Bank
         // Book template, rendering the wrong report entirely.
         const account_totals = self.state.account_data || {};

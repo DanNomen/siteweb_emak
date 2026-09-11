@@ -20,6 +20,7 @@
 #
 ################################################################################
 from . import report_xlsx_utils
+from . import report_qweb_safe
 from . import account_general_ledger
 from . import account_partner_ledger
 from . import account_trial_balance

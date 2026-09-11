@@ -184,7 +184,8 @@ class BankBook extends owl.Component {
         // were declared but never populated, so the PDF always had zero
         // account totals AND zero transaction detail. The account_totals
         // (small) and filters travel here; the server fetches the lines
-        // itself in IrActionsReportBankBook._get_report_values.
+        // itself in report.dynamic_accounts_report.bank_book
+        // (_get_report_values).
         const account_totals = self.state.account_data || {};
         const account_ids = Object.values(account_totals)
             .map(acc => acc.account_id)

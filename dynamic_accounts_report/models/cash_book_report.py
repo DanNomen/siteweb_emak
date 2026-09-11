@@ -266,37 +266,64 @@ class CashBookReport(models.TransientModel):
         output.close()
 
 
-class IrActionsReportCashBook(models.Model):
-    """Fetches Cash Book move-line detail server-side when the PDF is
-    rendered, instead of relying on the client having pre-loaded it (it
-    never had - only the single account last expanded on-screen was ever
-    loaded), which left the PDF with account totals but no transaction
-    detail at all.
-    """
-    _inherit = 'ir.actions.report'
+class ReportCashBook(models.AbstractModel):
+    """Contexte de rendu du PDF Cash Book.
 
+    Odoo n'appelle `_get_report_values` que sur un modèle nommé
+    'report.<module>.<report_name>' (voir
+    odoo/addons/base/models/ir_actions_report.py,
+    _get_rendering_context) - jamais sur 'ir.actions.report' lui-même.
+    La version précédente de ce correctif déclarait la surcharge sur
+    'ir.actions.report' (`_inherit`), que le moteur de rendu n'invoque
+    pas : les lignes de détail n'arrivaient donc jamais au template et
+    `data` restait absent du contexte.
+
+    Les écritures ne sont chargées à l'écran que pour le compte déplié
+    (get_account_lines) : le serveur les récupère lui-même ici, à partir
+    des seuls totaux par compte (qui portent déjà chaque account_id) et
+    des filtres, sans les faire transiter par le payload du client.
+    """
+    _name = 'report.dynamic_accounts_report.cash_book'
+    _description = 'Cash Book Report'
+
+    @api.model
     def _get_report_values(self, docids, data=None):
-        if self.report_name == 'dynamic_accounts_report.cash_book':
-            data = data or {}
-            account_totals = data.get('account_totals') or {}
-            account_ids = data.get('account_ids') or [
-                acc.get('account_id') for acc in account_totals.values()
-                if acc.get('account_id')
-            ]
-            lines_by_account = self.env['cash.book.report'].get_export_lines(
-                account_ids,
-                data.get('partner_id'),
-                data.get('data_range'),
-                data.get('account_list'),
-                data.get('options'),
-                data.get('account_search'),
-                data.get('partner_search'),
-                data.get('piece_search'),
-            ) if account_ids else {}
-            # Re-key by account name to match what the template
-            # (move_lines/total) already indexes by.
-            data['data'] = {
-                name: lines_by_account.get(acc.get('account_id'), [])
-                for name, acc in account_totals.items()
-            }
-        return super()._get_report_values(docids, data=data)
+        data = data or {}
+        account_totals = data.get('account_totals') or data.get('total') or {}
+        filters = data.get('filters') or {}
+        filters.setdefault('start_date', None)
+        filters.setdefault('end_date', None)
+        filters.setdefault('partner', [])
+        filters.setdefault('account', [])
+        filters.setdefault('options', {})
+        account_ids = data.get('account_ids') or [
+            acc.get('account_id') for acc in account_totals.values()
+            if acc.get('account_id')
+        ]
+        lines_by_account = self.env['cash.book.report'].get_export_lines(
+            account_ids,
+            data.get('partner_id'),
+            data.get('data_range'),
+            data.get('account_list'),
+            data.get('options'),
+            data.get('account_search'),
+            data.get('partner_search'),
+            data.get('piece_search'),
+        ) if account_ids else {}
+        # Re-key by account name to match what the template
+        # (move_lines/total) already indexes by.
+        lines_by_name = {
+            name: lines_by_account.get(acc.get('account_id'), [])
+            for name, acc in account_totals.items()
+        }
+        return {
+            'doc_ids': docids,
+            'doc_model': 'cash.book.report',
+            'docs': self.env['cash.book.report'].browse(docids or []),
+            'report_name': data.get('report_name') or data.get('title') or '',
+            'move_lines': data.get('move_lines') or [],
+            'total': account_totals,
+            'grand_total': data.get('grand_total') or {},
+            'filters': filters,
+            'data': lines_by_name,
+        }

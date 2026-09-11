@@ -54,3 +54,7 @@
 #### Version 18.0.1.3.3
 #### UPDT
 - Fixed an issue where records were disappearing after applying date filters.
+#### 11.09.2026
+#### Version 18.0.1.3.4
+#### UPDT
+- Fixed the RPC_ERROR (KeyError) raised when printing any PDF report with data the client had not fully sent (e.g. 'diff0_sum_display' on the Aged Receivable report), and restored the missing detail lines on the Aged Receivable, Aged Payable, Bank Book and Cash Book PDFs.

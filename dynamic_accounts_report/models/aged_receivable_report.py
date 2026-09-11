@@ -299,31 +299,55 @@ class AgeReceivableReport(models.TransientModel):
         output.close()
 
 
-class IrActionsReportAgedReceivable(models.Model):
-    """Fetches Aged Receivable detail lines server-side when the PDF is
-    rendered, instead of relying on the client having pre-loaded them (it
-    never had - only the single partner last expanded on-screen was ever
-    loaded), which left the PDF with partner totals but no aged-line
-    detail at all.
-    """
-    _inherit = 'ir.actions.report'
+class ReportAgedReceivable(models.AbstractModel):
+    """Contexte de rendu du PDF Aged Receivable.
 
+    Odoo n'appelle `_get_report_values` que sur un modèle nommé
+    'report.<module>.<report_name>' (voir
+    odoo/addons/base/models/ir_actions_report.py,
+    _get_rendering_context) - jamais sur 'ir.actions.report' lui-même.
+    La version précédente de ce correctif déclarait la surcharge sur
+    'ir.actions.report' (`_inherit`), que le moteur de rendu n'invoque
+    pas : les lignes de détail n'arrivaient donc jamais au template et
+    `data` restait absent du contexte.
+
+    Les lignes ne sont chargées à l'écran que pour le partenaire déplié
+    (get_partner_aged_lines) : le serveur les récupère lui-même ici, à
+    partir des seuls totaux (qui portent déjà chaque partner_id) et des
+    filtres, sans les faire transiter par le payload du client.
+    """
+    _name = 'report.dynamic_accounts_report.aged_receivable'
+    _description = 'Aged Receivable Report'
+
+    @api.model
     def _get_report_values(self, docids, data=None):
-        if self.report_name == 'dynamic_accounts_report.aged_receivable':
-            data = data or {}
-            totals = data.get('total') or {}
-            partner_ids = [
-                p.get('partner_id') for p in totals.values()
-                if p.get('partner_id')
-            ]
-            lines_by_partner = self.env['age.receivable.report'].get_export_lines(
-                partner_ids, data.get('date'),
-                data.get('account_search'), data.get('piece_search'),
-            ) if partner_ids else {}
-            # Re-key by partner name to match what the template
-            # (move_lines/total) already indexes by.
-            data['data'] = {
-                name: lines_by_partner.get(p.get('partner_id'), [])
-                for name, p in totals.items()
-            }
-        return super()._get_report_values(docids, data=data)
+        data = data or {}
+        totals = data.get('total') or {}
+        filters = data.get('filters') or {}
+        filters.setdefault('end_date', None)
+        filters.setdefault('partner', [])
+        partner_ids = [
+            p.get('partner_id') for p in totals.values()
+            if p.get('partner_id')
+        ]
+        lines_by_partner = self.env['age.receivable.report'].get_export_lines(
+            partner_ids, data.get('date'),
+            data.get('account_search'), data.get('piece_search'),
+        ) if partner_ids else {}
+        # Re-key by partner name to match what the template
+        # (move_lines/total) already indexes by.
+        lines_by_name = {
+            name: lines_by_partner.get(p.get('partner_id'), [])
+            for name, p in totals.items()
+        }
+        return {
+            'doc_ids': docids,
+            'doc_model': 'age.receivable.report',
+            'docs': self.env['age.receivable.report'].browse(docids or []),
+            'report_name': data.get('report_name') or data.get('title') or '',
+            'move_lines': data.get('move_lines') or [],
+            'total': totals,
+            'grand_total': data.get('grand_total') or {},
+            'filters': filters,
+            'data': lines_by_name,
+        }
