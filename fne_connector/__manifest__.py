@@ -19,7 +19,7 @@ d'achat de produits agricoles.
 """,
     "author": "À compléter",
     "license": "LGPL-3",
-    "depends": ["account", "base_setup"],
+    "depends": ["account", "mail", "base_setup"],
     "external_dependencies": {"python": ["requests"]},
     "data": [
         "security/ir.model.access.csv",
@@ -31,6 +31,11 @@ d'achat de produits agricoles.
         "views/fne_request_log_views.xml",
         "views/report_invoice.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "fne_connector/static/src/js/attachment_view_patch.js",
+        ],
+    },
     "installable": True,
     "application": False,
     "auto_install": False,
