@@ -1,0 +1,26 @@
+.o_field_widget[name="fne_state"] {
+    .o_arrow_button[data-value="certified"].o_arrow_button_current {
+        background-color: #198754 !important;
+        color: #ffffff !important;
+        font-weight: bold;
+        &::before {
+            background-color: #146c43 !important;
+        }
+    }
+    .o_arrow_button[data-value="error"].o_arrow_button_current {
+        background-color: #dc3545 !important;
+        color: #ffffff !important;
+        font-weight: bold;
+        &::before {
+            background-color: #b02a37 !important;
+        }
+    }
+    .o_arrow_button[data-value="to_check"].o_arrow_button_current {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+        font-weight: bold;
+        &::before {
+            background-color: #d39e00 !important;
+        }
+    }
+}

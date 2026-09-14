@@ -34,6 +34,7 @@ d'achat de produits agricoles.
     "assets": {
         "web.assets_backend": [
             "fne_connector/static/src/js/attachment_view_patch.js",
+            "fne_connector/static/src/scss/fne_style.scss",
         ],
     },
     "installable": True,
