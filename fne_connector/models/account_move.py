@@ -136,8 +136,8 @@ class AccountMove(models.Model):
             try:
                 image = report.barcode("QR", move.fne_token, width=180, height=180)
                 move.fne_qr_image = base64.b64encode(image)
-            except Exception as e:  # noqa: BLE001
-                _logger.warning("FNE : génération du QR code impossible pour %s : %s", move.name, e, exc_info=True)
+            except Exception:  # noqa: BLE001
+                _logger.warning("FNE : génération du QR code impossible pour %s", move.name)
 
     # ------------------------------------------------------------------
     # Éligibilité
@@ -194,16 +194,23 @@ class AccountMove(models.Model):
         return vat_codes, custom_taxes
 
     def _fne_prepare_line(self, line):
-        vat_codes, custom_taxes = self._fne_line_taxes(line)
         values = {
-            "taxes": vat_codes,
             "description": (line.name or line.product_id.display_name or "")[:255],
             "quantity": line.quantity,
             "amount": line.price_unit,
             "discount": line.discount or 0,
         }
-        if custom_taxes:
-            values["customTaxes"] = custom_taxes
+
+        # API #3 : le bordereau d'achat de produits agricoles n'accepte aucune
+        # taxe. La plateforme refuse la piece avec
+        # externalPurchaseSlipItemMustNotHaveTaxes si taxes ou customTaxes
+        # sont transmis.
+        if self.fne_invoice_type != "purchase":
+            vat_codes, custom_taxes = self._fne_line_taxes(line)
+            values["taxes"] = vat_codes
+            if custom_taxes:
+                values["customTaxes"] = custom_taxes
+
         if line.product_id and line.product_id.default_code:
             values["reference"] = line.product_id.default_code
         if line.product_uom_id:
@@ -244,7 +251,7 @@ class AccountMove(models.Model):
                                   "facture est adossée à un reçu."))
             payload["rne"] = self.fne_rne
 
-        if template == "B2B":
+        if template == "B2B" and self.fne_invoice_type != "purchase":
             if not partner.fne_ncc:
                 raise UserError(
                     _("Le NCC du client « %s » est obligatoire pour une facturation "
