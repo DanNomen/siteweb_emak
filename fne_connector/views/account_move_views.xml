@@ -53,6 +53,15 @@
                             <field name="fne_rne" invisible="not fne_is_rne"
                                    required="fne_is_rne"/>
                         </group>
+                        <group string="Remise et taxes globales"
+                               invisible="move_type == 'out_refund'">
+                            <field name="fne_global_discount"
+                                   readonly="fne_state == 'certified'"/>
+                            <field name="fne_global_custom_tax_ids"
+                                   widget="many2many_tags"
+                                   readonly="fne_state == 'certified'"
+                                   options="{'no_create': True}"/>
+                        </group>
                         <group string="Résultat de la certification">
                             <field name="fne_reference"/>
                             <field name="fne_invoice_id" groups="base.group_no_one"/>
