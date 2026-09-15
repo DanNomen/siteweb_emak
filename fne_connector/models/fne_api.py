@@ -13,14 +13,20 @@ _logger = logging.getLogger(__name__)
 class FneApiError(Exception):
     """Erreur renvoyée par la plateforme FNE ou par le transport HTTP."""
 
-    def __init__(self, message, status_code=None, payload=None, is_network=False):
+    def __init__(self, message, status_code=None, payload=None, is_network=False,
+                 is_indeterminate=False):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.payload = payload
-        # is_network=True => on ne sait pas si la FNE a traité la demande.
-        # Ne JAMAIS rejouer automatiquement une certification dans ce cas.
+        # is_network=True => la requête n'a pas abouti au niveau transport.
         self.is_network = is_network
+        # is_indeterminate=True => on ne sait pas si la FNE a traité la demande.
+        # Ne JAMAIS rejouer automatiquement une certification dans ce cas.
+        # Couvre le HTTP 500, décrit par l'annexe 2 de la procédure DGI comme
+        # « endpoint non disponible » : la plateforme peut avoir certifié la
+        # pièce avant de renvoyer l'erreur.
+        self.is_indeterminate = is_indeterminate or is_network
 
 
 class FneApi(models.AbstractModel):
@@ -96,7 +102,9 @@ class FneApi(models.AbstractModel):
             log_vals.update(state="network_error", response_body=str(exc))
             self._log(log_vals)
             raise FneApiError(
-                _("La plateforme FNE est injoignable : %s", exc), is_network=True
+                _("La plateforme FNE est injoignable : %s", exc),
+                is_network=True,
+                is_indeterminate=True,
             ) from exc
 
         raw = response.text or ""
@@ -125,6 +133,7 @@ class FneApi(models.AbstractModel):
             self._format_error(response.status_code, data, raw),
             status_code=response.status_code,
             payload=data or raw,
+            is_indeterminate=response.status_code >= 500,
         )
 
     @api.model
@@ -145,6 +154,11 @@ class FneApi(models.AbstractModel):
                    "de votre espace FNE et l'URL utilisée (test vs production)."),
             404: _("Endpoint introuvable. Vérifiez que l'URL de base se termine "
                    "bien par /ws pour l'environnement de test."),
+            500: _("Erreur interne de la plateforme FNE. Causes déjà constatées : "
+                   "solde de stickers épuisé, ou indisponibilité du service. "
+                   "Vérifiez votre solde dans « Gestion des stickers » sur votre "
+                   "espace FNE, puis contrôlez si la pièce y a malgré tout été "
+                   "certifiée avant tout renvoi."),
         }
         hint = hints.get(status_code)
         label = _("FNE — HTTP %s : %s", status_code, message)

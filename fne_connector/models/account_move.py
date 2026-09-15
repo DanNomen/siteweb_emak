@@ -107,7 +107,36 @@ class AccountMove(models.Model):
         help="Cochez si la facture est rattachée à un reçu normalisé électronique.",
     )
     fne_rne = fields.Char(string="N° de reçu RNE", copy=False)
-    fne_seller_name = fields.Char(string="Nom du vendeur", copy=False)
+    fne_seller_name = fields.Char(
+        string="Nom du vendeur",
+        compute="_compute_fne_seller_name",
+        store=True,
+        readonly=False,
+        copy=False,
+        help="Transmis dans le champ clientSellerName. Repris du vendeur de la "
+             "facture, modifiable au cas par cas.",
+    )
+
+    # --- Remise et taxes globales (niveau entête du payload FNE) ---
+    fne_global_discount = fields.Float(
+        string="Remise globale FNE (%)",
+        digits=(5, 2),
+        copy=False,
+        help="Remise sur le total HT, transmise dans le champ discount au niveau "
+             "de l'entête. Distincte des remises par ligne.",
+    )
+    fne_global_custom_tax_ids = fields.Many2many(
+        "account.tax",
+        "fne_move_global_custom_tax_rel",
+        "move_id",
+        "tax_id",
+        string="Autres taxes FNE (globales)",
+        domain="[('fne_tax_kind', '=', 'custom')]",
+        copy=False,
+        help="Taxes autres que la TVA s'appliquant à toute la facture (DTD, GRA...), "
+             "transmises dans le champ customTaxes de l'entête. Ces taxes ne sont "
+             "pas calculées par Odoo : elles ne servent qu'à la déclaration FNE.",
+    )
 
     # ------------------------------------------------------------------
     # Calculs
@@ -119,6 +148,13 @@ class AccountMove(models.Model):
                 continue
             term = move.invoice_payment_term_id
             move.fne_payment_method = "deferred" if term else "cash"
+
+    @api.depends("invoice_user_id")
+    def _compute_fne_seller_name(self):
+        for move in self:
+            if move.fne_seller_name:
+                continue
+            move.fne_seller_name = move.invoice_user_id.name or False
 
     @api.depends("company_id")
     def _compute_fne_place(self):
@@ -244,6 +280,16 @@ class AccountMove(models.Model):
             "foreignCurrencyRate": 0,
             "items": [self._fne_prepare_line(line) for line in lines],
         }
+
+        global_custom_taxes = [
+            {"name": tax.fne_custom_name, "amount": tax.amount}
+            for tax in self.fne_global_custom_tax_ids
+            if tax.fne_custom_name
+        ]
+        if global_custom_taxes:
+            payload["customTaxes"] = global_custom_taxes
+        if self.fne_global_discount:
+            payload["discount"] = self.fne_global_discount
 
         if self.fne_is_rne:
             if not self.fne_rne:
@@ -384,10 +430,10 @@ class AccountMove(models.Model):
                 payload = self._fne_prepare_payload()
                 response = fne_api.sign_invoice(self.company_id, payload)
         except FneApiError as exc:
-            state = "to_check" if exc.is_network else "error"
+            state = "to_check" if exc.is_indeterminate else "error"
             self.sudo().write({"fne_state": state, "fne_error_message": exc.message})
             self.message_post(body=_("Certification FNE échouée : %s", exc.message))
-            if raise_on_error and not exc.is_network:
+            if raise_on_error and not exc.is_indeterminate:
                 raise UserError(exc.message) from exc
             return False
         except UserError as exc:
@@ -422,10 +468,19 @@ class AccountMove(models.Model):
         self.message_post(body=body)
 
         threshold = self.company_id.fne_sticker_threshold
-        if threshold and 0 < values["fne_balance_sticker"] <= threshold:
-            _logger.warning(
-                "FNE : solde de stickers faible pour %s (%s restants)",
-                self.company_id.display_name, values["fne_balance_sticker"],
+        balance = values["fne_balance_sticker"]
+        low_balance = bool(threshold and 0 < balance <= threshold)
+
+        if values["fne_warning"] or low_balance:
+            alert = values["fne_warning"] or _(
+                "Solde de stickers faible : %(balance)s restants, seuil d'alerte "
+                "fixé à %(threshold)s.", balance=balance, threshold=threshold
+            )
+            _logger.warning("FNE : %s (%s)", alert, self.company_id.display_name)
+            self.message_post(
+                body=_("Alerte FNE — %s\n\nRechargez votre solde dans « Gestion "
+                       "des stickers » sur votre espace FNE : sans sticker, la "
+                       "plateforme refuse toute certification.", alert)
             )
 
     def _fne_format_warning(self, warning):
