@@ -118,12 +118,40 @@ class AccountMove(models.Model):
     )
 
     # --- Remise et taxes globales (niveau entête du payload FNE) ---
+    #
+    # RETIRÉS DE L'INTERFACE UTILISATEUR le 15/09/2026.
+    #
+    # Ces champs correspondent aux paramètres `discount` et `customTaxes` de
+    # l'entête décrits dans la procédure d'interfaçage API DGI (mai 2025).
+    # Ils ont été testés contre la plateforme réelle et ont révélé des écarts
+    # comptables indéfendables en contrôle fiscal :
+    #
+    #   • Remise globale 10 % sur 1 000 000 HT
+    #     Odoo : 1 180 000 TTC — DGI : 1 062 000 TTC — écart 118 000 CFA
+    #     (facture de test 2241977L26000000004)
+    #     La DGI applique la remise sur le TTC, pas sur le HT.
+    #
+    #   • Taxe globale DTD 5 % sur 1 000 000 HT
+    #     Odoo : 1 180 000 TTC — DGI : 1 239 000 TTC — écart 59 000 CFA
+    #     (facture de test 2241977L26000000005)
+    #     La DGI applique le taux sur le TTC, ce que la documentation
+    #     ne précise pas. Odoo ne recalcule pas le TTC en conséquence.
+    #
+    # RECOMMANDATION : utiliser exclusivement les remises et taxes au niveau
+    # ligne (champ `discount` et taxes Odoo sur les lignes), que le module
+    # transmet déjà correctement dans les champs `discount` et `customTaxes`
+    # de chaque ligne du payload. Les champs ci-dessous sont conservés en
+    # base pour éviter une migration destructive ; ils ne doivent pas être
+    # utilisés dans l'interface normale.
     fne_global_discount = fields.Float(
         string="Remise globale FNE (%)",
         digits=(5, 2),
         copy=False,
-        help="Remise sur le total HT, transmise dans le champ discount au niveau "
-             "de l'entête. Distincte des remises par ligne.",
+        help="[NON EXPOSÉ — NE PAS UTILISER] Remise sur le total HT transmise "
+             "dans le champ discount de l'entête. Retiré de l'UI le 15/09/2026 "
+             "après test : la DGI applique la remise sur le TTC, créant un écart "
+             "de 118 000 CFA sur 1 000 000 HT à 18 % TVA "
+             "(réf. 2241977L26000000004). Utilisez le champ discount par ligne.",
     )
     fne_global_custom_tax_ids = fields.Many2many(
         "account.tax",
@@ -133,9 +161,13 @@ class AccountMove(models.Model):
         string="Autres taxes FNE (globales)",
         domain="[('fne_tax_kind', '=', 'custom')]",
         copy=False,
-        help="Taxes autres que la TVA s'appliquant à toute la facture (DTD, GRA...), "
-             "transmises dans le champ customTaxes de l'entête. Ces taxes ne sont "
-             "pas calculées par Odoo : elles ne servent qu'à la déclaration FNE.",
+        help="[NON EXPOSÉ — NE PAS UTILISER] Taxes autres que la TVA au niveau "
+             "entête. Retiré de l'UI le 15/09/2026 après test : la DGI applique "
+             "le taux sur le TTC (non documenté), créant un écart de 59 000 CFA "
+             "sur DTD 5 % / 1 000 000 HT à 18 % TVA "
+             "(réf. 2241977L26000000005). Ajoutez ces taxes comme taxes Odoo "
+             "normales sur les lignes ; le module les transmet déjà dans "
+             "customTaxes de ligne.",
     )
 
     # ------------------------------------------------------------------
@@ -281,6 +313,11 @@ class AccountMove(models.Model):
             "items": [self._fne_prepare_line(line) for line in lines],
         }
 
+        # Les champs fne_global_discount et fne_global_custom_tax_ids ne sont
+        # plus exposés dans l'interface (retrait le 15/09/2026 — voir leur
+        # docstring). Le code ci-dessous est conservé pour qu'une valeur
+        # éventuellement importée ou renseignée par surcharge soit toujours
+        # transmise à la plateforme, sans créer de comportement silencieux.
         global_custom_taxes = [
             {"name": tax.fne_custom_name, "amount": tax.amount}
             for tax in self.fne_global_custom_tax_ids
@@ -297,13 +334,18 @@ class AccountMove(models.Model):
                                   "facture est adossée à un reçu."))
             payload["rne"] = self.fne_rne
 
-        if template == "B2B" and self.fne_invoice_type != "purchase":
+        if self.fne_invoice_type == "purchase":
+            # L'API #3 ne liste pas clientNcc, mais la plateforme le refuse
+            # s'il est absent (erreur isString). L'exemple de réponse de la
+            # procédure DGI montre une chaîne vide.
+            payload["clientNcc"] = str(partner.fne_ncc or "").strip()
+        elif template == "B2B":
             if not partner.fne_ncc:
                 raise UserError(
                     _("Le NCC du client « %s » est obligatoire pour une facturation "
                       "B2B.", partner.display_name)
                 )
-            payload["clientNcc"] = partner.fne_ncc
+            payload["clientNcc"] = str(partner.fne_ncc).strip()
 
         if self.fne_seller_name:
             payload["clientSellerName"] = self.fne_seller_name

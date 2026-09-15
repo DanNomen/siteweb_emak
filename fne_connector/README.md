@@ -138,16 +138,57 @@ une confirmation par vos spécimens :
 - **`foreignCurrencyRate`** : le module transmet le taux de conversion de la
   devise de la facture vers la devise de la société. Vérifiez le sens attendu
   par la plateforme.
-- **`discount`** : transmis en pourcentage, comme dans Odoo. Un `discount`
-  global au niveau de l'entête n'est pas géré (Odoo n'a pas de champ natif
-  correspondant).
+- **`discount` (ligne)** : transmis en pourcentage par ligne, comme dans Odoo.
+  Un `discount` global au niveau de l'entête existe dans l'API (paramètre
+  `discount`) mais a été testé et retiré — voir section 8.
 - **Totaux** : la FNE recalcule les montants à partir des lignes. Comparez
   systématiquement `vatAmount` renvoyé avec le total de taxes Odoo — un écart
   signale une divergence d'arrondi ou de mapping de taxes.
 - **`measurementUnit`** : le nom de l'UdM Odoo est transmis tel quel. Vérifiez
   que la FNE accepte vos libellés.
 
-## 8. Points d'extension
+## 8. Champs volontairement non exposés
+
+Deux paramètres de l'entête du payload FNE ont été implémentés, testés contre
+la plateforme réelle, puis **retirés de l'interface le 15/09/2026** en raison
+d'écarts comptables mesurés.
+
+### `discount` (remise globale entête)
+
+| | Valeur |
+|---|---|
+| Facture de test | `2241977L26000000004` |
+| Cas | Remise 10 % sur 1 000 000 HT, TVA 18 % |
+| TTC Odoo | 1 180 000 CFA |
+| TTC certifié DGI | 1 062 000 CFA |
+| Écart | **118 000 CFA** |
+| Cause | La DGI applique la remise sur le TTC, pas sur le HT (non documenté) |
+
+**Recommandation** : utilisez le champ `discount` natif d'Odoo **par ligne**.
+Odoo le transmet déjà dans chaque ligne du payload (`items[n].discount`).
+
+### `customTaxes` (taxes globales entête — DTD, GRA…)
+
+| | Valeur |
+|---|---|
+| Facture de test | `2241977L26000000005` |
+| Cas | Taxe DTD 5 % sur 1 000 000 HT, TVA 18 % |
+| TTC Odoo | 1 180 000 CFA |
+| TTC certifié DGI | 1 239 000 CFA |
+| Écart | **59 000 CFA** |
+| Cause | La DGI applique le taux sur le TTC (non documenté) ; Odoo base TVA et taxes sur le HT |
+
+**Recommandation** : ajoutez les taxes DTD/GRA comme des taxes Odoo normales
+sur les **lignes** de la facture. Le module les transmet déjà dans
+`items[n].customTaxes` de chaque ligne, et Odoo calcule alors le TTC correct.
+
+> **Note technique** : les champs `fne_global_discount` et
+> `fne_global_custom_tax_ids` existent toujours en base de données pour
+> éviter une migration destructive. Le code de payload qui les lit est
+> conservé (actif si les champs sont renseignés par import ou surcharge),
+> mais ils ne doivent pas être utilisés dans un flux normal.
+
+## 9. Points d'extension
 
 - `fne.api` est un `AbstractModel` : surchargez `_request` pour brancher un mock
   en tests automatisés.
