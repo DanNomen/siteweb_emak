@@ -157,13 +157,28 @@ class AccountGeneralLedger(models.TransientModel):
         return date_start
 
     @api.model
-    def _compute_initial_balances(self, account_ids, journal_ids, options, analytic, method, date_start):
+    def _compute_initial_balances(self, account_ids, journal_ids, options,
+                                  analytic, method, date_start,
+                                  extra_domain=None):
         """Solde initial (débit - crédit des écritures antérieures à
         date_start) par compte, point de départ du solde progressif -
         mêmes filtres (journal/options/analytique/méthode de caisse) que
-        la période elle-même, sauf la date."""
+        la période elle-même, sauf la date.
+
+        :param account_ids: comptes à calculer, ou None pour *tous* les
+            comptes - ce que fait get_filter_values, afin de détecter aussi
+            les comptes qui n'ont aucun mouvement dans la période mais un
+            solde reporté non nul (sinon ils disparaîtraient du rapport).
+        :param extra_domain: clauses supplémentaires (barre de recherche)
+            à appliquer aussi au solde initial, pour qu'il reste cohérent
+            avec les lignes affichées.
+        """
         domain = self._build_lines_domain(journal_ids, None, options, analytic, method)
-        domain += [('date', '<', date_start), ('account_id', 'in', account_ids)]
+        domain += [('date', '<', date_start)]
+        if account_ids is not None:
+            domain += [('account_id', 'in', account_ids)]
+        if extra_domain:
+            domain += extra_domain
         groups = self.env['account.move.line'].read_group(
             domain=domain, fields=['account_id', 'debit', 'credit'],
             groupby=['account_id'], lazy=False)
@@ -403,17 +418,19 @@ class AccountGeneralLedger(models.TransientModel):
         # utilisé par le read_group ci-dessous, donc elles narrows à la
         # fois les comptes affichés (account_search) et les totaux/comptes
         # visibles (partner_search / piece_search).
+        search_domain = []
         if account_search:
-            domain += ['|',
-                       ('account_id.code', 'ilike', account_search),
-                       ('account_id.name', 'ilike', account_search)]
+            search_domain += ['|',
+                              ('account_id.code', 'ilike', account_search),
+                              ('account_id.name', 'ilike', account_search)]
         if partner_search:
-            domain.append(('partner_id.name', 'ilike', partner_search))
+            search_domain.append(('partner_id.name', 'ilike', partner_search))
         if piece_search:
-            domain += ['|', '|',
-                       ('move_id.name', 'ilike', piece_search),
-                       ('move_id.ref', 'ilike', piece_search),
-                       ('name', 'ilike', piece_search)]
+            search_domain += ['|', '|',
+                              ('move_id.name', 'ilike', piece_search),
+                              ('move_id.ref', 'ilike', piece_search),
+                              ('name', 'ilike', piece_search)]
+        domain += search_domain
 
         currency_id = self.env.company.currency_id.symbol
         groups = self.env['account.move.line'].read_group(
@@ -425,27 +442,58 @@ class AccountGeneralLedger(models.TransientModel):
         account_dict['journal_ids'] = self.env['account.journal'].search_read([], ['name'])
         account_dict['analytic_ids'] = self.env['account.analytic.account'].search_read([], ['name'])
 
-        # Comptes triés par code (plan comptable), pas dans l'ordre
-        # d'apparition du groupby (qui suit l'id interne du compte).
         group_account_ids = [g['account_id'][0] for g in groups if g.get('account_id')]
-        account_code_map = {}
-        if group_account_ids:
-            account_recs = self.env['account.account'].search_read(
-                [('id', 'in', group_account_ids)], ['code'])
-            account_code_map = {a['id']: a['code'] or '' for a in account_recs}
-        groups.sort(key=lambda g: account_code_map.get(g['account_id'][0], '')
-                    if g.get('account_id') else '')
 
         # Solde initial : uniquement pertinent quand un filtre de dates est
         # actif (sinon la période couvre déjà tout l'historique, donc
         # total_debit/total_credit sont déjà le solde complet - pas besoin
-        # de solde initial séparé). C'est ça qui manquait pour que le solde
-        # de fin de janvier redevienne le solde de départ de février.
+        # de solde initial séparé). C'est ça qui permet au solde de fin de
+        # janvier de redevenir le solde de départ de février.
+        # Calculé sur *tous* les comptes (account_ids=None), pas seulement
+        # ceux remontés par le read_group de la période : voir juste en
+        # dessous.
         initial_balances = {}
-        if date_range and group_account_ids:
+        if date_range:
             date_start = self._compute_date_start(date_range)
             initial_balances = self._compute_initial_balances(
-                group_account_ids, journal_id, options, analytic, method, date_start)
+                None, journal_id, options, analytic, method, date_start,
+                extra_domain=search_domain)
+
+        # Comptes sans aucun mouvement dans la période mais avec un solde
+        # reporté non nul : ils doivent quand même figurer au grand livre
+        # (leur solde en fait partie), comme dans le grand livre des
+        # partenaires. Sans ça, filtrer sur juin faisait disparaître un
+        # compte dont le solde vient entièrement des mois précédents.
+        known_account_ids = set(group_account_ids)
+        extra_account_ids = [
+            account_id for account_id, balance in initial_balances.items()
+            if account_id not in known_account_ids and round(balance, 2)
+        ]
+
+        # Comptes triés par code (plan comptable), pas dans l'ordre
+        # d'apparition du groupby (qui suit l'id interne du compte).
+        all_account_ids = group_account_ids + extra_account_ids
+        account_code_map = {}
+        account_name_map = {}
+        if all_account_ids:
+            account_recs = self.env['account.account'].search_read(
+                [('id', 'in', all_account_ids)], ['code', 'display_name'])
+            account_code_map = {a['id']: a['code'] or '' for a in account_recs}
+            account_name_map = {a['id']: a['display_name'] or '' for a in account_recs}
+
+        # Pseudo-groupes à débit/crédit nuls pour ces comptes : la boucle
+        # ci-dessous les traite ensuite exactement comme les autres (seul
+        # leur solde initial est non nul).
+        for account_id in extra_account_ids:
+            groups.append({
+                'account_id': (account_id, account_name_map.get(account_id, '')),
+                'debit': 0.0,
+                'credit': 0.0,
+                'account_id_count': 0,
+            })
+
+        groups.sort(key=lambda g: account_code_map.get(g['account_id'][0], '')
+                    if g.get('account_id') else '')
 
         for group in groups:
             if not group['account_id']:
@@ -455,7 +503,7 @@ class AccountGeneralLedger(models.TransientModel):
             total_credit = round(group['credit'] or 0, 2)
             # Un solde s'affiche du côté débit OU crédit, jamais les deux
             # (convention comptable), comme pour le reste du module.
-            initial_balance = initial_balances.get(account_id, 0.0)
+            initial_balance = round(initial_balances.get(account_id, 0.0), 2)
             if initial_balance > 0:
                 initial_debit, initial_credit = initial_balance, 0.0
             else:

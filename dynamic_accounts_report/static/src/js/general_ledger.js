@@ -80,20 +80,33 @@ class GeneralLedger extends owl.Component {
 
         Object.values(account_totals).forEach(acc => {
             currency = acc.currency_id || currency;
-            totalDebitSum += acc.total_debit || 0;
-            totalCreditSum += acc.total_credit || 0;
             // Ligne récapitulative du compte : solde initial + mouvements
             // de la période (le serveur renvoie déjà
             // combined_debit/combined_credit/balance ; on retombe sur le
             // calcul local si jamais ces clés manquent, ex. view_report
             // sans filtre de dates où il n'y a pas de solde initial).
-            const combinedDebit = acc.combined_debit ?? (acc.total_debit || 0);
-            const combinedCredit = acc.combined_credit ?? (acc.total_credit || 0);
+            const combinedDebit = acc.combined_debit ?? ((acc.initial_debit || 0) + (acc.total_debit || 0));
+            const combinedCredit = acc.combined_credit ?? ((acc.initial_credit || 0) + (acc.total_credit || 0));
             acc.total_debit_display = this.formatNumberWithSeparators(combinedDebit);
             acc.total_credit_display = this.formatNumberWithSeparators(combinedCredit);
             acc.balance_display = this.formatNumberWithSeparators(acc.balance ?? (combinedDebit - combinedCredit));
+            // Ligne "Solde initial" affichée au dépliage du compte (cf.
+            // general_ledger_view.xml), comme dans le grand livre des
+            // partenaires : le solde reporté est le point de départ du
+            // solde progressif des lignes de la période.
+            acc.initial_debit_display = this.formatNumberWithSeparators(acc.initial_debit || 0);
+            acc.initial_credit_display = this.formatNumberWithSeparators(acc.initial_credit || 0);
+            acc.initial_balance_display = this.formatNumberWithSeparators(acc.initial_balance || 0);
+            // Le pied de tableau doit totaliser ce qui est réellement
+            // affiché dans les colonnes Débit/Crédit (solde initial
+            // inclus), sinon la somme ne tombe pas juste à l'écran, au
+            // PDF ni à l'export.
+            totalDebitSum += combinedDebit;
+            totalCreditSum += combinedCredit;
             acc._lines_loaded = false; // lazy load flag
             acc._lines = [];          // will be populated on expand
+            acc._expanded = false;
+            acc._loading = false;
         });
 
         const account_list = Object.keys(account_totals);
@@ -420,17 +433,32 @@ class GeneralLedger extends owl.Component {
                 account_list = Object.keys(account_totals);
                 Object.values(account_totals).forEach(acc => {
                     currency = acc.currency_id;
-                    totalDebitSum += acc.total_debit || 0;
-                    totalCreditSum += acc.total_credit || 0;
                     // Solde initial + mouvements de la période, cf.
                     // _processAccountData ci-dessus (même correctif,
                     // dupliqué ici car applyFilter a sa propre copie de
                     // cette logique plutôt que de réutiliser _processAccountData).
-                    const combinedDebit = acc.combined_debit ?? (acc.total_debit || 0);
-                    const combinedCredit = acc.combined_credit ?? (acc.total_credit || 0);
+                    const combinedDebit = acc.combined_debit ?? ((acc.initial_debit || 0) + (acc.total_debit || 0));
+                    const combinedCredit = acc.combined_credit ?? ((acc.initial_credit || 0) + (acc.total_credit || 0));
                     acc.total_debit_display = this.formatNumberWithSeparators(combinedDebit);
                     acc.total_credit_display = this.formatNumberWithSeparators(combinedCredit);
                     acc.balance_display = this.formatNumberWithSeparators(acc.balance ?? (combinedDebit - combinedCredit));
+                    // Ligne "Solde initial" affichée au dépliage du compte :
+                    // c'est ici qu'elle se remplit réellement, puisque le
+                    // solde reporté n'existe que lorsqu'un filtre de dates
+                    // est appliqué (donc via get_filter_values).
+                    acc.initial_debit_display = this.formatNumberWithSeparators(acc.initial_debit || 0);
+                    acc.initial_credit_display = this.formatNumberWithSeparators(acc.initial_credit || 0);
+                    acc.initial_balance_display = this.formatNumberWithSeparators(acc.initial_balance || 0);
+                    // Le pied de tableau totalise ce qui est affiché dans
+                    // les colonnes Débit/Crédit (solde initial inclus).
+                    totalDebitSum += combinedDebit;
+                    totalCreditSum += combinedCredit;
+                    // Les lignes de détail sont rechargées à la demande
+                    // avec les nouveaux filtres : on repart replié.
+                    acc._lines_loaded = false;
+                    acc._lines = [];
+                    acc._expanded = false;
+                    acc._loading = false;
                 });
             } else if (index === 'journal_ids') {
                 this.state.journals = value;

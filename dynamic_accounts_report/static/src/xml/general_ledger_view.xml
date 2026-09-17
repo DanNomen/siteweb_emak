@@ -262,6 +262,33 @@
                                                 </th>
                                             </tr>
 
+                                            <!-- Solde initial (affiché au dépliage du compte) :
+                                                 report des écritures antérieures à la période
+                                                 filtrée, point de départ du solde progressif -
+                                                 même présentation que le grand livre des
+                                                 partenaires. -->
+                                            <t t-if="state.account_total[account]._expanded and state.account_total[account]['initial_balance']">
+                                                <tr style="border-bottom: 1px solid #f0f0f0; background: #f9f9f9;">
+                                                    <th colspan="6" style="padding: 5px 4px 5px 28px; font-style: italic; color: #888; font-weight: normal; font-size: 0.85rem;">
+                                                        Solde initial
+                                                    </th>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                        <t t-if="state.account_total[account]['initial_debit']"
+                                                           t-esc="state.account_total[account]['initial_debit_display']"/>
+                                                    </th>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                        <t t-if="state.account_total[account]['initial_credit']"
+                                                           t-esc="state.account_total[account]['initial_credit_display']"/>
+                                                    </th>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem; font-weight: 700;">
+                                                        <t t-esc="state.account_total[account]['initial_balance_display']"/>
+                                                    </th>
+                                                </tr>
+                                            </t>
+
                                             <!-- Detail Lines -->
                                             <t t-if="state.account_total[account]._loading">
                                                 <tr class="collapse" t-attf-id="account-{{i}}">
