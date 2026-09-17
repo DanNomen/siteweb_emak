@@ -344,6 +344,49 @@
                                                         </th>
                                                     </tr>
                                                 </t>
+
+                                                <!-- Avertissement de troncature : sans ça, la dernière
+                                                     ligne visible passait pour le solde de clôture alors
+                                                     qu'il manquait des écritures, d'où un écart apparent
+                                                     avec le solde initial du mois suivant. -->
+                                                <t t-if="state.account_total[account]._truncated">
+                                                    <tr style="border-bottom: 1px solid #f0f0f0; background: #fff8e1;">
+                                                        <th colspan="12" style="padding: 5px 4px 5px 28px; font-style: italic; color: #8a6d3b; font-weight: normal; font-size: 0.85rem;">
+                                                            <i class="fa fa-exclamation-triangle" style="margin-right: 4px;"/>
+                                                            Affichage limité aux
+                                                            <t t-esc="state.account_total[account]._shown_count"/>
+                                                            premières écritures sur
+                                                            <t t-esc="state.account_total[account].line_count"/>
+                                                            : le solde progressif ci-dessus s'arrête en cours de
+                                                            période. Le solde final ci-dessous reste exact ; utilisez
+                                                            l'export PDF/XLSX pour le détail complet.
+                                                        </th>
+                                                    </tr>
+                                                </t>
+
+                                                <!-- Solde final de la période : calculé côté serveur
+                                                     (solde initial + tous les mouvements), donc toujours
+                                                     juste même si le détail est tronqué. C'est lui qui
+                                                     devient le solde initial de la période suivante. -->
+                                                <tr style="border-bottom: 1px solid #f0f0f0; background: #f9f9f9;">
+                                                    <th colspan="6" style="padding: 5px 4px 5px 28px; font-style: italic; color: #888; font-weight: normal; font-size: 0.85rem;">
+                                                        Total de la période / Solde final
+                                                    </th>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px;"/>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                        <t t-if="state.account_total[account]['total_debit']"
+                                                           t-esc="this.formatNumberWithSeparators(state.account_total[account]['total_debit'])"/>
+                                                    </th>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem;">
+                                                        <t t-if="state.account_total[account]['total_credit']"
+                                                           t-esc="this.formatNumberWithSeparators(state.account_total[account]['total_credit'])"/>
+                                                    </th>
+                                                    <th style="padding: 5px 6px; text-align: right; font-size: 0.85rem; font-weight: 700;">
+                                                        <t t-esc="state.account_total[account]['balance_display']"/>
+                                                    </th>
+                                                </tr>
                                             </t>
 
                                         </t>

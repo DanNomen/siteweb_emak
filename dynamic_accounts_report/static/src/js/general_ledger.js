@@ -151,6 +151,14 @@ class GeneralLedger extends owl.Component {
             acc._lines = lines;
             acc._lines_loaded = true;
             acc._expanded = true;
+            // line_count vient du read_group serveur : c'est le nombre
+            // réel de lignes de la période. S'il dépasse ce qui a été
+            // rapatrié, le solde progressif de la dernière ligne affichée
+            // n'est PAS le solde de clôture : on le dit explicitement au
+            // lieu de laisser croire à une incohérence avec le mois
+            // suivant.
+            acc._truncated = (acc.line_count || 0) > lines.length;
+            acc._shown_count = lines.length;
         } catch (e) {
             console.error('Failed to load lines for', accountName, e);
         } finally {

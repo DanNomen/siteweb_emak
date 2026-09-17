@@ -29,6 +29,15 @@ from datetime import datetime
 from odoo.tools import date_utils
 from .report_xlsx_utils import to_float, AMOUNT_NUM_FORMAT
 
+# Garde-fou anti-plantage du navigateur quand on déplie un compte très
+# mouvementé à l'écran. Volontairement large : avec l'ancienne valeur (500)
+# le solde progressif s'arrêtait au milieu de la période, si bien que la
+# dernière ligne visible n'était PAS le solde de clôture - et ne
+# correspondait donc pas au solde initial du mois suivant. Surchargeable
+# via le paramètre système
+# 'dynamic_accounts_report.general_ledger_line_limit' (0 = pas de limite).
+GENERAL_LEDGER_SCREEN_LINE_LIMIT = 5000
+
 
 class AccountGeneralLedger(models.TransientModel):
     """For creating General Ledger report"""
@@ -271,7 +280,15 @@ class AccountGeneralLedger(models.TransientModel):
         domain = self._build_lines_domain(journal_ids, date_range, options, analytic, method)
         domain.append(('account_id', '=', account_id))
 
-        move_lines = self.env['account.move.line'].search(domain, order='date asc', limit=500)
+        limit = self.env['ir.config_parameter'].sudo().get_param(
+            'dynamic_accounts_report.general_ledger_line_limit',
+            GENERAL_LEDGER_SCREEN_LINE_LIMIT)
+        try:
+            limit = int(limit)
+        except (TypeError, ValueError):
+            limit = GENERAL_LEDGER_SCREEN_LINE_LIMIT
+        move_lines = self.env['account.move.line'].search(
+            domain, order='date asc', limit=limit or None)
         result = move_lines.read(
             ['date', 'name', 'move_name', 'debit', 'credit',
              'partner_id', 'account_id', 'journal_id', 'move_id'])
