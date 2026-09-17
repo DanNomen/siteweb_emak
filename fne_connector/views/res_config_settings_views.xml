@@ -65,8 +65,14 @@
                                 <field name="fne_commercial_message"/>
                             </div>
                             <div class="row">
+                                <label for="fne_payment_instruction" class="col-lg-4 o_light_label"/>
+                                <field name="fne_payment_instruction"
+                                       placeholder="PAIEMENT PAR ORANGE MONEY  #144*491#&#10;0716828155"/>
+                            </div>
+                            <div class="row">
                                 <label for="fne_footer" class="col-lg-4 o_light_label"/>
-                                <field name="fne_footer"/>
+                                <field name="fne_footer"
+                                       placeholder="SOCIÉTÉ SARL au capital de 3 000 000 FCFA - Adresse - Tél ... - RCCM ..."/>
                             </div>
                         </div>
                     </setting>

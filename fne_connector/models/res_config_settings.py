@@ -14,6 +14,7 @@ class ResConfigSettings(models.TransientModel):
     fne_point_of_sale = fields.Char(related="company_id.fne_point_of_sale", readonly=False)
     fne_establishment = fields.Char(related="company_id.fne_establishment", readonly=False)
     fne_commercial_message = fields.Char(related="company_id.fne_commercial_message", readonly=False)
+    fne_payment_instruction = fields.Text(related="company_id.fne_payment_instruction", readonly=False)
     fne_footer = fields.Char(related="company_id.fne_footer", readonly=False)
     fne_certify_on_post = fields.Boolean(related="company_id.fne_certify_on_post", readonly=False)
     fne_block_on_error = fields.Boolean(related="company_id.fne_block_on_error", readonly=False)

@@ -1,6 +1,6 @@
 {
     "name": "FNE Connector (DGI Côte d'Ivoire)",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Accounting/Localizations/EDI",
     "summary": "Certification des factures Odoo auprès de la plateforme FNE de la DGI de Côte d'Ivoire",
     "description": """

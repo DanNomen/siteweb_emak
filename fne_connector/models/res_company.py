@@ -43,7 +43,19 @@ class ResCompany(models.Model):
         help="Doit correspondre EXACTEMENT à un établissement déclaré dans votre espace FNE.",
     )
     fne_commercial_message = fields.Char(string="Message commercial")
-    fne_footer = fields.Char(string="Message de pied de facture")
+    fne_payment_instruction = fields.Text(
+        string="Instructions de paiement",
+        help="Mention libre imprimée sur la facture, avant le tableau des lignes "
+             "(ex. « PAIEMENT PAR ORANGE MONEY  #144*491# / 0716828155 »). "
+             "Les retours à la ligne sont conservés à l'impression. "
+             "Laisser vide pour ne rien imprimer.",
+    )
+    fne_footer = fields.Char(
+        string="Mention légale de pied de page",
+        help="Mention légale imprimée dans le pied de page du PDF, donc en bas de "
+             "CHAQUE page (ex. capital social, adresse, RCCM). Vient s'ajouter "
+             "sous le pied de page standard de la société.",
+    )
     fne_certify_on_post = fields.Boolean(
         string="Certifier à la validation",
         default=True,
