@@ -285,6 +285,20 @@ class AccountMove(models.Model):
             values["measurementUnit"] = line.product_uom_id.name
         return values
 
+    @api.model
+    def _fne_commercial_message(self, company):
+        """Texte libre transmis à la plateforme FNE, qui l'imprime sur la
+        facture normalisée sous le mode de paiement.
+
+        L'API FNE n'expose qu'UN seul champ de texte libre à cet endroit
+        ("commercialMessage"). Les instructions de paiement (ex. Orange
+        Money) y sont donc concaténées au message commercial : sans ça
+        elles n'apparaîtraient que sur le PDF Odoo, jamais sur la facture
+        officielle rendue par la DGI - qui est le document remis au client.
+        """
+        parts = [company.fne_commercial_message, company.fne_payment_instruction]
+        return "\n".join(part.strip() for part in parts if part and part.strip())
+
     def _fne_prepare_payload(self):
         """Payload de certification d'une facture de vente ou d'un bordereau."""
         self.ensure_one()
@@ -306,7 +320,7 @@ class AccountMove(models.Model):
             "clientEmail": partner.email or "",
             "pointOfSale": self.fne_point_of_sale or "",
             "establishment": self.fne_establishment or "",
-            "commercialMessage": company.fne_commercial_message or "",
+            "commercialMessage": self._fne_commercial_message(company),
             "footer": company.fne_footer or "",
             "foreignCurrency": "",
             "foreignCurrencyRate": 0,
