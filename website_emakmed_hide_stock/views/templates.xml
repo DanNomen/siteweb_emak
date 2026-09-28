@@ -5,7 +5,7 @@
               inherit_id="website_sale.cart"
               name="EmakMed - Alerte stock dans le panier"
               active="True">
-        <xpath expr="//div[hasclass('oe_cart')]" position="before">
+        <xpath expr="//t[@t-call='website_sale.cart_lines']" position="before">
             <t t-set="is_emakmed"
                t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
             <t t-if="is_emakmed">
@@ -30,13 +30,13 @@
         </xpath>
     </template>
 
-    <template id="emakmed_hide_stock_product"
-              inherit_id="website_sale.product"
-              name="EmakMed - Masquer stock page produit"
+    <template id="emakmed_layout_hide_stock"
+              inherit_id="website.layout"
+              name="EmakMed - Meta tag et masquage stock global"
               active="True">
         <xpath expr="//head" position="inside">
             <t t-set="is_emakmed"
-               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
+               t-value="'emakmed' in (website and website.name or '').lower() or 'emakmed' in (website and website.domain or '').lower()"/>
             <t t-if="is_emakmed">
                 <meta name="emakmed-site" content="true"/>
                 <style type="text/css">
@@ -44,27 +44,8 @@
                     .oe_website_sale_stock_product_detail,
                     .availability_message_warning,
                     .o_website_sale_stock_product_detail,
+                    .out_of_stock_message,
                     .css_quantity.js_check_product_quantity {
-                        display: none !important;
-                    }
-                </style>
-            </t>
-        </xpath>
-    </template>
-
-    <template id="emakmed_meta_shop"
-              inherit_id="website_sale.products"
-              name="EmakMed - Meta tag site liste produits"
-              active="True">
-        <xpath expr="//head" position="inside">
-            <t t-set="is_emakmed"
-               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
-            <t t-if="is_emakmed">
-                <meta name="emakmed-site" content="true"/>
-                <style type="text/css">
-                    .oe_website_sale_stock_product_detail,
-                    .availability_message_warning,
-                    .out_of_stock_message {
                         display: none !important;
                     }
                 </style>
