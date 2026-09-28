@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="emakmed_cart_stock_alert"
+              inherit_id="website_sale.cart"
+              name="EmakMed - Alerte stock dans le panier"
+              active="True">
+        <xpath expr="//div[hasclass('oe_cart')]" position="before">
+            <t t-set="is_emakmed"
+               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
+            <t t-if="is_emakmed">
+                <t t-set="emakmed_warning"
+                   t-value="request.session.pop('emakmed_stock_warning', None)"/>
+                <t t-if="emakmed_warning">
+                    <div id="emakmed_stock_alert"
+                         class="alert alert-warning alert-dismissible fade show emakmed-stock-alert mx-3 mt-3"
+                         role="alert">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="fa fa-exclamation-triangle fa-2x text-warning mt-1 flex-shrink-0"/>
+                            <div>
+                                <strong class="d-block mb-1">Information sur la disponibilité</strong>
+                                <span t-esc="emakmed_warning"/>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close"
+                                data-bs-dismiss="alert" aria-label="Fermer"/>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="emakmed_hide_stock_product"
+              inherit_id="website_sale.product"
+              name="EmakMed - Masquer stock page produit"
+              active="True">
+        <xpath expr="//head" position="inside">
+            <t t-set="is_emakmed"
+               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
+            <t t-if="is_emakmed">
+                <meta name="emakmed-site" content="true"/>
+                <style type="text/css">
+                    #availability_status,
+                    .oe_website_sale_stock_product_detail,
+                    .availability_message_warning,
+                    .o_website_sale_stock_product_detail,
+                    .css_quantity.js_check_product_quantity {
+                        display: none !important;
+                    }
+                </style>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="emakmed_meta_shop"
+              inherit_id="website_sale.products"
+              name="EmakMed - Meta tag site liste produits"
+              active="True">
+        <xpath expr="//head" position="inside">
+            <t t-set="is_emakmed"
+               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
+            <t t-if="is_emakmed">
+                <meta name="emakmed-site" content="true"/>
+                <style type="text/css">
+                    .oe_website_sale_stock_product_detail,
+                    .availability_message_warning,
+                    .out_of_stock_message {
+                        display: none !important;
+                    }
+                </style>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>
