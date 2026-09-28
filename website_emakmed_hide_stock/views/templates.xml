@@ -46,7 +46,11 @@
                     .o_website_sale_stock_product_detail,
                     .out_of_stock_message,
                     .css_quantity.js_check_product_quantity,
-                    .oe_website_sale_stock {
+                    .oe_website_sale_stock,
+                    .oe_product_cart div[style*="color: #e00"],
+                    .oe_product_cart div[style*="color:#e00"],
+                    .oe_product_cart div[style*="color: red"],
+                    .oe_product_cart div[style*="color:red"] {
                         display: none !important;
                     }
                 </style>

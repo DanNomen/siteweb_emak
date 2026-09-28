@@ -12,14 +12,12 @@
     function hideStockTextElements() {
         if (!isEmakmedSite()) return;
 
-        // Target ONLY leaf elements with 0 child elements to avoid hiding container divs
-        const candidates = document.querySelectorAll('div, span, p, small, td');
+        const candidates = document.body.querySelectorAll('div, span, p, small, td, b, strong');
         candidates.forEach(el => {
-            if (el.children.length === 0) {
-                const txt = el.textContent.trim();
-                if (/^(En stock|Stock épuisé)\s*:/i.test(txt) ||
-                    txt.startsWith('En stock :') ||
-                    txt.startsWith('Stock épuisé :')) {
+            const txt = el.textContent.trim();
+            if (txt.includes('En stock') || txt.includes('Stock épuisé')) {
+                // Must not be a parent container holding images, forms, inputs, buttons, links, or product cards
+                if (!el.querySelector('img, button, input, a, form, table, .oe_product_cart, .row, .col, .container')) {
                     el.style.setProperty('display', 'none', 'important');
                 }
             }
