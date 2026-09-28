@@ -7,7 +7,7 @@
               active="True">
         <xpath expr="//t[@t-call='website_sale.cart_lines']" position="before">
             <t t-set="is_emakmed"
-               t-value="'emakmed' in (website.name or '').lower() or 'emakmed' in (website.domain or '').lower()"/>
+               t-value="website and website.name != 'Emakhealthcare'"/>
             <t t-if="is_emakmed">
                 <t t-set="emakmed_warning"
                    t-value="request.session.pop('emakmed_stock_warning', None)"/>
@@ -36,7 +36,7 @@
               active="True">
         <xpath expr="//head" position="inside">
             <t t-set="is_emakmed"
-               t-value="'emakmed' in (website and website.name or '').lower() or 'emakmed' in (website and website.domain or '').lower()"/>
+               t-value="website and website.name != 'Emakhealthcare'"/>
             <t t-if="is_emakmed">
                 <meta name="emakmed-site" content="true"/>
                 <style type="text/css">
@@ -45,7 +45,8 @@
                     .availability_message_warning,
                     .o_website_sale_stock_product_detail,
                     .out_of_stock_message,
-                    .css_quantity.js_check_product_quantity {
+                    .css_quantity.js_check_product_quantity,
+                    .oe_website_sale_stock {
                         display: none !important;
                     }
                 </style>

@@ -6,12 +6,21 @@
         if (metaSite) return true;
 
         const hostname = window.location.hostname.toLowerCase();
-        const bodyClass = document.body.className.toLowerCase();
-        return (
-            hostname.includes('emakmed') ||
-            bodyClass.includes('emakmed') ||
-            document.title.toLowerCase().includes('emakmed')
-        );
+        return !hostname.includes('emakhealthcare');
+    }
+
+    function hideStockTextElements() {
+        if (!isEmakmedSite()) return;
+
+        const allElements = document.body.querySelectorAll('div, span, p, small, td');
+        allElements.forEach(el => {
+            if (el.children.length === 0 || (el.children.length === 1 && el.querySelector('t, span'))) {
+                const text = el.textContent.trim();
+                if (text.startsWith('En stock') || text.startsWith('Stock épuisé') || text.includes('En stock :') || text.includes('Stock épuisé :')) {
+                    el.style.setProperty('display', 'none', 'important');
+                }
+            }
+        });
     }
 
     function showStockAlert(message) {
@@ -190,10 +199,14 @@
     }
 
     function init() {
+        hideStockTextElements();
         interceptCartForms();
         interceptAjaxCart();
         checkSessionAlerts();
         validateQtyBeforeSubmit();
+
+        const observer = new MutationObserver(hideStockTextElements);
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     if (document.readyState === 'loading') {

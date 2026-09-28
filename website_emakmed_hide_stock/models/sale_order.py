@@ -4,8 +4,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-EMAKMED_SITE_KEYWORDS = ['emakmed']
-
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -13,9 +11,7 @@ class SaleOrder(models.Model):
     def _is_emakmed_website(self):
         if not self.website_id:
             return False
-        name = (self.website_id.name or '').lower()
-        domain = (self.website_id.domain or '').lower()
-        return any(kw in name or kw in domain for kw in EMAKMED_SITE_KEYWORDS)
+        return self.website_id.name != 'Emakhealthcare'
 
     def _cart_update(self, product_id=None, line_id=None, add_qty=0, set_qty=0, **kwargs):
         if not self._is_emakmed_website():
@@ -80,7 +76,7 @@ class SaleOrder(models.Model):
             )
             result['warning'] = _(
                 "⚠️ Le produit \"%s\" est actuellement en rupture de stock. "
-                "Veuillez nous contacter pour plus d'informations ou vérifier ultérieurement."
+                "Veuillez nous contacter pour plus d'informations."
             ) % product.name
             return result
 

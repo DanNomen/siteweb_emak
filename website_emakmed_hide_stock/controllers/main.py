@@ -7,16 +7,12 @@ from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 _logger = logging.getLogger(__name__)
 
-EMAKMED_SITE_KEYWORDS = ['emakmed']
-
 
 def _is_emakmed_website():
     website = getattr(request, 'website', None)
     if not website:
         return False
-    name = (website.name or '').lower()
-    domain = (website.domain or '').lower()
-    return any(kw in name or kw in domain for kw in EMAKMED_SITE_KEYWORDS)
+    return website.name != 'Emakhealthcare'
 
 
 class WebsiteSaleEmakmedHideStock(WebsiteSale):
