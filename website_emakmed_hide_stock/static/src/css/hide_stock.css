@@ -5,7 +5,9 @@
 .emakmed-site .o_website_sale_stock_product_detail,
 .emakmed-site .out_of_stock_message,
 .emakmed-site [class*="stock_available"],
-.emakmed-site [class*="availability"] {
+.emakmed-site [class*="availability"],
+.emakmed-site .oe_product_cart div[style*="color: #e00"],
+.emakmed-site .oe_product_cart div[style*="color:#e00"] {
     display: none !important;
 }
 

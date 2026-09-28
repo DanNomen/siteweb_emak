@@ -12,11 +12,14 @@
     function hideStockTextElements() {
         if (!isEmakmedSite()) return;
 
-        const allElements = document.body.querySelectorAll('div, span, p, small, td');
-        allElements.forEach(el => {
-            if (el.children.length === 0 || (el.children.length === 1 && el.querySelector('t, span'))) {
-                const text = el.textContent.trim();
-                if (text.startsWith('En stock') || text.startsWith('Stock épuisé') || text.includes('En stock :') || text.includes('Stock épuisé :')) {
+        // Target ONLY leaf elements with 0 child elements to avoid hiding container divs
+        const candidates = document.querySelectorAll('div, span, p, small, td');
+        candidates.forEach(el => {
+            if (el.children.length === 0) {
+                const txt = el.textContent.trim();
+                if (/^(En stock|Stock épuisé)\s*:/i.test(txt) ||
+                    txt.startsWith('En stock :') ||
+                    txt.startsWith('Stock épuisé :')) {
                     el.style.setProperty('display', 'none', 'important');
                 }
             }
