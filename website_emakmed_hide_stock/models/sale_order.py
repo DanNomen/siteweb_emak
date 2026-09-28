@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, api, _
 import logging
+import json
 
 _logger = logging.getLogger(__name__)
 
@@ -14,6 +15,14 @@ class SaleOrder(models.Model):
         return self.website_id.name != 'Emakhealthcare'
 
     def _cart_update(self, product_id=None, line_id=None, add_qty=0, set_qty=0, **kwargs):
+        # Assainir kwargs pour éviter TypeError si des attributs personnalisés arrivent sous forme de chaîne JSON
+        for attr_key in ('product_custom_attribute_values', 'no_variant_attribute_values'):
+            if attr_key in kwargs and isinstance(kwargs[attr_key], str):
+                try:
+                    kwargs[attr_key] = json.loads(kwargs[attr_key])
+                except Exception:
+                    kwargs[attr_key] = []
+
         if not self._is_emakmed_website():
             return super()._cart_update(
                 product_id=product_id, line_id=line_id,

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import json
 
 from odoo import _, http
 from odoo.http import request
@@ -15,6 +16,17 @@ def _is_emakmed_website():
     return website.name != 'Emakhealthcare'
 
 
+def _sanitize_cart_kwargs(kw):
+    """S'assure que les attributs d'options sont convertis depuis JSON si nécessaire."""
+    for attr_key in ('product_custom_attribute_values', 'no_variant_attribute_values'):
+        if attr_key in kw and isinstance(kw[attr_key], str):
+            try:
+                kw[attr_key] = json.loads(kw[attr_key])
+            except Exception:
+                kw[attr_key] = []
+    return kw
+
+
 class WebsiteSaleEmakmedHideStock(WebsiteSale):
 
     @http.route(['/shop/cart/update'], type='http', auth="public", methods=['GET', 'POST'],
@@ -23,6 +35,7 @@ class WebsiteSaleEmakmedHideStock(WebsiteSale):
         if not _is_emakmed_website():
             return super().cart_update(product_id=product_id, add_qty=add_qty, set_qty=set_qty, **kw)
 
+        kw = _sanitize_cart_kwargs(kw)
         order = request.website.sale_get_order(force_create=True)
 
         values = order._cart_update(
@@ -50,6 +63,7 @@ class WebsiteSaleEmakmedHideStock(WebsiteSale):
                 display=display, **kw
             )
 
+        kw = _sanitize_cart_kwargs(kw)
         order = request.website.sale_get_order(force_create=True)
         if not order:
             return {}
