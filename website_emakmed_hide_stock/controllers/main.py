@@ -45,10 +45,23 @@ class WebsiteSaleEmakmedHideStock(WebsiteSale):
             **kw
         )
 
-        if values.get('warning'):
-            request.session['emakmed_stock_warning'] = values['warning']
+        warning = values.get('warning')
+        if warning:
+            request.session['emakmed_stock_warning'] = warning
         else:
             request.session.pop('emakmed_stock_warning', None)
+
+        is_ajax = request.httprequest.headers.get('X-Requested-With') == 'XMLHttpRequest' or kw.get('xhr')
+        if is_ajax:
+            res_data = {
+                'cart_quantity': order.cart_quantity,
+                'warning': warning or False,
+                'notification_info': {'warning': warning} if warning else {}
+            }
+            return request.make_response(
+                json.dumps(res_data),
+                headers=[('Content-Type', 'application/json')]
+            )
 
         return request.redirect('/shop/cart')
 
@@ -63,8 +76,15 @@ class WebsiteSaleEmakmedHideStock(WebsiteSale):
         )
 
         if _is_emakmed_website():
-            warning = result.get('notification_info', {}).get('warning')
+            warning = request.session.pop('emakmed_stock_warning', None)
+            if not warning and result.get('notification_info', {}).get('warning'):
+                warning = result['notification_info']['warning']
             if warning:
                 _logger.info("EmakMed stock alert: %s", warning)
+                if 'notification_info' not in result:
+                    result['notification_info'] = {}
+                result['notification_info']['warning'] = warning
+                result['warning'] = warning
 
         return result
+

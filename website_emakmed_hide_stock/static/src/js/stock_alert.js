@@ -16,7 +16,6 @@
         candidates.forEach(el => {
             const txt = el.textContent.trim();
             if (txt.includes('En stock') || txt.includes('Stock épuisé')) {
-                // Must not be a parent container holding images, forms, inputs, buttons, links, or product cards
                 if (!el.querySelector('img, button, input, a, form, table, .oe_product_cart, .row, .col, .container')) {
                     el.style.setProperty('display', 'none', 'important');
                 }
@@ -35,9 +34,9 @@
                 <div class="emakmed-stock-modal-overlay" onclick="emakmedCloseStockAlert()">
                     <div class="emakmed-stock-modal-box" onclick="event.stopPropagation()">
                         <div class="emakmed-stock-modal-icon">
-                            <i class="fa fa-exclamation-triangle"></i>
+                            <span style="font-size: 2.2rem;">🔴</span>
                         </div>
-                        <h5 class="emakmed-stock-modal-title">Information sur la disponibilité</h5>
+                        <h5 class="emakmed-stock-modal-title" style="color: #dc3545; font-weight: 700;">RUPTURE DE STOCK</h5>
                         <p class="emakmed-stock-modal-message" id="emakmed_stock_alert_message"></p>
                         <button class="btn emakmed-stock-modal-close" onclick="emakmedCloseStockAlert()">
                             Compris
@@ -54,7 +53,7 @@
         modal.style.display = 'flex';
 
         clearTimeout(modal._autoCloseTimer);
-        modal._autoCloseTimer = setTimeout(() => emakmedCloseStockAlert(), 8000);
+        modal._autoCloseTimer = setTimeout(() => emakmedCloseStockAlert(), 10000);
     }
 
     window.emakmedCloseStockAlert = function () {
@@ -65,49 +64,60 @@
         }
     };
 
-    function showBootstrapAlert(message, type = 'warning') {
-        let container = document.getElementById('emakmed_alerts_container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'emakmed_alerts_container';
-            container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;min-width:350px;max-width:450px;';
-            document.body.appendChild(container);
-        }
-
-        const alertId = 'alert_' + Date.now();
-        const alertHtml = `
-            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-lg emakmed-stock-toast"
-                 role="alert" style="border-left: 4px solid var(--bs-${type});">
-                <div class="d-flex align-items-start gap-2">
-                    <i class="fa fa-exclamation-triangle mt-1 flex-shrink-0"></i>
-                    <div>
-                        <strong class="d-block mb-1">Disponibilité du produit</strong>
-                        <span>${message}</span>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-            </div>
-        `;
-
-        container.insertAdjacentHTML('beforeend', alertHtml);
-
-        setTimeout(() => {
-            const alertEl = document.getElementById(alertId);
-            if (alertEl) {
-                alertEl.classList.remove('show');
-                setTimeout(() => alertEl.remove(), 300);
-            }
-        }, 6000);
-    }
-
     function interceptCartForms() {
         if (!isEmakmedSite()) return;
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.a-submit, .emakmed-btn-out-of-stock, [data-out-of-stock="true"]');
+            if (!btn) return;
+
+            const form = btn.closest('form[action*="/shop/cart/update"]') || btn.closest('.oe_product_cart');
+            const isOutOfStock = (btn.dataset.outOfStock === 'true') ||
+                                (form && form.dataset.outOfStock === 'true') ||
+                                btn.classList.contains('emakmed-btn-out-of-stock');
+
+            if (isOutOfStock) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                const productName = btn.dataset.productName ||
+                                  (form ? form.dataset.productName : '') ||
+                                  'ce produit';
+
+                showStockAlert(`🔴 RUPTURE DE STOCK : Le produit "${productName}" est actuellement en rupture de stock. Vous ne pouvez pas l'ajouter au panier.`);
+                return false;
+            }
+        }, true);
 
         document.addEventListener('submit', function (e) {
             const form = e.target;
             if (!form || !form.action) return;
             if (!form.action.includes('/shop/cart/update')) return;
-        });
+
+            if (form.dataset.outOfStock === 'true') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                const productName = form.dataset.productName || 'ce produit';
+                showStockAlert(`🔴 RUPTURE DE STOCK : Le produit "${productName}" est actuellement en rupture de stock. Vous ne pouvez pas l'ajouter au panier.`);
+                return false;
+            }
+        }, true);
+    }
+
+    function disableQtyButtonsForOutOfStock() {
+        if (!isEmakmedSite()) return;
+
+        document.addEventListener('click', function (e) {
+            const qtyBtn = e.target.closest('.emakmed-qty-disabled, [data-out-of-stock="true"] .btn');
+            if (qtyBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }, true);
     }
 
     function interceptAjaxCart() {
@@ -122,7 +132,7 @@
         };
 
         XMLHttpRequest.prototype.send = function (body) {
-            if (this._emakmed_url && this._emakmed_url.includes('/shop/cart/update_json')) {
+            if (this._emakmed_url && (this._emakmed_url.includes('/shop/cart/update') || this._emakmed_url.includes('/shop/cart/update_json'))) {
                 const xhr = this;
                 const originalOnload = xhr.onload;
 
@@ -131,8 +141,9 @@
 
                     try {
                         const response = JSON.parse(xhr.responseText);
-                        if (response && response.notification_info && response.notification_info.warning) {
-                            showBootstrapAlert(response.notification_info.warning, 'warning');
+                        const warning = response?.warning || response?.notification_info?.warning;
+                        if (warning) {
+                            showStockAlert(warning);
                         }
                     } catch (err) {
                     }
@@ -146,12 +157,13 @@
             window.fetch = function (url, options) {
                 const promise = originalFetch.apply(this, arguments);
 
-                if (url && url.toString().includes('/shop/cart/update_json')) {
+                if (url && (url.toString().includes('/shop/cart/update') || url.toString().includes('/shop/cart/update_json'))) {
                     return promise.then(response => {
                         const cloned = response.clone();
                         cloned.json().then(data => {
-                            if (data && data.notification_info && data.notification_info.warning) {
-                                showBootstrapAlert(data.notification_info.warning, 'warning');
+                            const warning = data?.warning || data?.notification_info?.warning;
+                            if (warning) {
+                                showStockAlert(warning);
                             }
                         }).catch(() => {});
                         return response;
@@ -171,40 +183,12 @@
         }
     }
 
-    function validateQtyBeforeSubmit() {
-        if (!isEmakmedSite()) return;
-
-        document.addEventListener('click', function (e) {
-            const btn = e.target.closest('.a-submit, [data-action="o_website_sale_add_cart"]');
-            if (!btn) return;
-
-            const form = btn.closest('form[action*="/shop/cart/update"]');
-            if (!form) return;
-
-            const qtyInput = form.querySelector('input[name="add_qty"]');
-            const qty = qtyInput ? parseInt(qtyInput.value) : 1;
-
-            const maxQty = parseInt(form.dataset.maxQty || qtyInput?.dataset.maxQty || '0');
-
-            if (maxQty > 0 && qty > maxQty) {
-                e.preventDefault();
-                e.stopPropagation();
-                showBootstrapAlert(
-                    `⚠️ La quantité disponible est limitée à ${maxQty} unité(s). Veuillez ajuster votre commande.`,
-                    'warning'
-                );
-                if (qtyInput) qtyInput.value = maxQty;
-                return false;
-            }
-        });
-    }
-
     function init() {
         hideStockTextElements();
         interceptCartForms();
+        disableQtyButtonsForOutOfStock();
         interceptAjaxCart();
         checkSessionAlerts();
-        validateQtyBeforeSubmit();
 
         const observer = new MutationObserver(hideStockTextElements);
         observer.observe(document.body, { childList: true, subtree: true });

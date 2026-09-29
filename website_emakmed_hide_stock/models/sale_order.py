@@ -84,8 +84,8 @@ class SaleOrder(models.Model):
                 add_qty=0, set_qty=0, **kwargs
             )
             result['warning'] = _(
-                "⚠️ Le produit \"%s\" est actuellement en rupture de stock. "
-                "Veuillez nous contacter pour plus d'informations."
+                "🔴 RUPTURE DE STOCK : Le produit \"%s\" est actuellement en rupture de stock. "
+                "Vous ne pouvez pas l'ajouter au panier."
             ) % product.name
             return result
 

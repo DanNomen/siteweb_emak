@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Alerte stock dans le panier -->
     <template id="emakmed_cart_stock_alert"
               inherit_id="website_sale.cart"
               name="EmakMed - Alerte stock dans le panier"
@@ -13,13 +14,13 @@
                    t-value="request.session.pop('emakmed_stock_warning', None)"/>
                 <t t-if="emakmed_warning">
                     <div id="emakmed_stock_alert"
-                         class="alert alert-warning alert-dismissible fade show emakmed-stock-alert mx-3 mt-3"
+                         class="alert alert-danger alert-dismissible fade show emakmed-stock-alert mx-3 mt-3 shadow-sm border-danger"
                          role="alert">
-                        <div class="d-flex align-items-start gap-3">
-                            <i class="fa fa-exclamation-triangle fa-2x text-warning mt-1 flex-shrink-0"/>
+                        <div class="d-flex align-items-center gap-3">
+                            <span style="font-size: 1.5rem;">🔴</span>
                             <div>
-                                <strong class="d-block mb-1">Information sur la disponibilité</strong>
-                                <span t-esc="emakmed_warning"/>
+                                <strong class="d-block mb-1 text-danger fs-6">RUPTURE DE STOCK</strong>
+                                <span class="fw-medium text-dark" t-esc="emakmed_warning"/>
                             </div>
                         </div>
                         <button type="button" class="btn-close"
@@ -30,6 +31,144 @@
         </xpath>
     </template>
 
+    <!-- Cart lines: Désactiver les boutons + et - pour les produits en rupture de stock -->
+    <template id="emakmed_cart_lines_disable_qty"
+              inherit_id="website_sale.cart_lines"
+              name="EmakMed - Désactiver + et - sur quantité dans le panier"
+              priority="50">
+        <xpath expr="//div[@name='website_sale_cart_line_quantity']" position="replace">
+            <t t-set="is_emakmed" t-value="website and website.name != 'Emakhealthcare'"/>
+            <t t-set="line_is_out_of_stock" t-value="is_emakmed and line.product_id and line.product_id._is_emakmed_out_of_stock()"/>
+            
+            <div t-attf-class="css_quantity input-group mb-2 #{'emakmed-qty-disabled' if line_is_out_of_stock else ''}"
+                 name="website_sale_cart_line_quantity">
+                <t t-if="not line._is_not_sellable_line()">
+                    <t t-if="show_qty">
+                        <t t-if="line_is_out_of_stock">
+                            <span class="btn btn-link d-inline-block border-end-0 disabled opacity-50 text-muted" title="Stock épuisé - Modification désactivée">
+                                <i class="position-relative z-1 fa fa-minus"/>
+                            </span>
+                            <input type="text"
+                                   class="js_quantity quantity form-control border-start-0 border-end-0 bg-light text-muted"
+                                   t-att-data-line-id="line.id"
+                                   t-att-data-product-id="line.product_id.id"
+                                   t-att-value="line._get_displayed_quantity()"
+                                   disabled="disabled" readonly="readonly"/>
+                            <span class="btn btn-link d-inline-block border-start-0 disabled opacity-50 text-muted" title="Stock épuisé - Modification désactivée">
+                                <i class="fa fa-plus position-relative z-1"/>
+                            </span>
+                        </t>
+                        <t t-else="">
+                            <a href="#"
+                               class="js_add_cart_json btn btn-link d-inline-block border-end-0"
+                               aria-label="Remove one"
+                               title="Remove one">
+                                <i class="position-relative z-1 fa fa-minus"/>
+                            </a>
+                            <input type="text"
+                                   class="js_quantity quantity form-control border-start-0 border-end-0"
+                                   t-att-data-line-id="line.id"
+                                   t-att-data-product-id="line.product_id.id"
+                                   t-att-value="line._get_displayed_quantity()"/>
+                            <t t-if="line._get_shop_warning(clear=False)">
+                                <a href="#" class="btn btn-link">
+                                    <i class='fa fa-warning text-warning'
+                                       t-att-title="line._get_shop_warning()"
+                                       role="img"
+                                       aria-label="Warning"/>
+                                </a>
+                            </t>
+                            <a t-else=""
+                               href="#"
+                               class="js_add_cart_json d-inline-block float_left btn btn-link border-start-0"
+                               aria-label="Add one"
+                               title="Add one">
+                                <i class="fa fa-plus position-relative z-1"/>
+                            </a>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <input type="hidden"
+                               class="js_quantity form-control quantity"
+                               t-att-data-line-id="line.id"
+                               t-att-data-product-id="line.product_id.id"
+                               t-att-value="line._get_displayed_quantity()"/>
+                    </t>
+                </t>
+            </div>
+            <t t-if="line_is_out_of_stock">
+                <div class="mt-1 text-danger small fw-bold">
+                    🔴 RUPTURE DE STOCK
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Product Card (Catalog / Shop) - EmakMed -->
+    <template id="emakmed_products_item_hide_stock_qty"
+              inherit_id="website_sale.products_item"
+              name="EmakMed - Masquer + / - si stock 0 dans le catalogue"
+              priority="50">
+        <xpath expr="//form[hasclass('oe_product_cart')]" position="attributes">
+            <attribute name="t-att-data-out-of-stock">website and website.name != 'Emakhealthcare' and product._is_emakmed_out_of_stock() and 'true' or 'false'</attribute>
+            <attribute name="t-att-data-product-name">product.name</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_wsale_product_btn')]" position="replace">
+            <t t-set="is_emakmed" t-value="website and website.name != 'Emakhealthcare'"/>
+            <t t-set="product_is_out_of_stock" t-value="is_emakmed and product._is_emakmed_out_of_stock()"/>
+
+            <div class="o_wsale_product_btn d-flex align-items-center justify-content-between gap-3 mt-3 border-top pt-3">
+                <!-- Contrôle de quantité -->
+                <t t-if="product_is_out_of_stock">
+                    <!-- Désactiver + et - pour les produits avec stock 0 -->
+                    <div class="d-flex align-items-center border rounded-pill px-2 py-1 bg-light opacity-50 pe-none shadow-none"
+                         title="Stock épuisé - Quantité non modifiable">
+                        <span class="btn btn-sm btn-light border-0 px-2 fw-bold text-muted" style="cursor: not-allowed;">−</span>
+                        <input type="number" name="add_qty" value="0" min="0" max="0" disabled="disabled" readonly="readonly"
+                            class="form-control form-control-sm border-0 text-center fw-semibold bg-transparent text-muted"
+                            style="width: 45px;" />
+                        <span class="btn btn-sm btn-light border-0 px-2 fw-bold text-muted" style="cursor: not-allowed;">+</span>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="d-flex align-items-center border rounded-pill px-2 py-1 bg-light shadow-sm">
+                        <button type="button"
+                            class="btn btn-sm btn-light border-0 px-2 fw-bold"
+                            onclick="updateQty(this, -1)">−</button>
+                        <input type="number" name="add_qty" value="1" min="1"
+                            class="form-control form-control-sm border-0 text-center fw-semibold bg-transparent"
+                            style="width: 45px;" />
+                        <button type="button"
+                            class="btn btn-sm btn-light border-0 px-2 fw-bold"
+                            onclick="updateQty(this, 1)">+</button>
+                    </div>
+                </t>
+
+                <!-- Bouton Ajouter au panier -->
+                <div class="d-flex gap-2">
+                    <t t-set="product_variant_id"
+                        t-value="product._get_first_possible_variant_id()" />
+                    <input name="product_id" t-att-value="product_variant_id" type="hidden" />
+                    <input name="product_template_id" t-att-value="product.id" type="hidden" />
+                    <t t-if="product_variant_id and template_price_vals['price_reduce'] or not website.prevent_zero_price_sale">
+                        <a t-if="product._website_show_quick_add()"
+                           href="#"
+                           role="button"
+                           t-attf-class="btn #{'btn-danger' if product_is_out_of_stock else 'btn-primary'} a-submit rounded-pill px-3 d-flex align-items-center gap-2 #{'emakmed-btn-out-of-stock' if product_is_out_of_stock else ''}"
+                           t-att-data-out-of-stock="product_is_out_of_stock and 'true' or 'false'"
+                           t-att-data-product-name="product.name"
+                           aria-label="Shopping cart"
+                           title="Shopping cart">
+                            <span class="fa fa-shopping-cart" />
+                            <span>Ajouter au panier</span>
+                        </a>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Global layout configuration -->
     <template id="emakmed_layout_hide_stock"
               inherit_id="website.layout"
               name="EmakMed - Meta tag et masquage stock global"
@@ -45,7 +184,6 @@
                     .availability_message_warning,
                     .o_website_sale_stock_product_detail,
                     .out_of_stock_message,
-                    .css_quantity.js_check_product_quantity,
                     .oe_website_sale_stock,
                     .oe_product_cart div[style*="color: #e00"],
                     .oe_product_cart div[style*="color:#e00"],
