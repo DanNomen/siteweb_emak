@@ -56,33 +56,15 @@ class WebsiteSaleEmakmedHideStock(WebsiteSale):
                 website=True, csrf=False)
     def cart_update_json(self, product_id, line_id=None, add_qty=None, set_qty=None,
                          display=True, **kw):
-        if not _is_emakmed_website():
-            return super().cart_update_json(
-                product_id=product_id, line_id=line_id,
-                add_qty=add_qty, set_qty=set_qty,
-                display=display, **kw
-            )
-
-        kw = _sanitize_cart_kwargs(kw)
-        order = request.website.sale_get_order(force_create=True)
-        if not order:
-            return {}
-
-        values = order._cart_update(
-            product_id=int(product_id),
-            line_id=line_id,
-            add_qty=add_qty,
-            set_qty=set_qty,
-            **kw
+        result = super().cart_update_json(
+            product_id=product_id, line_id=line_id,
+            add_qty=add_qty, set_qty=set_qty,
+            display=display, **kw
         )
 
-        order = request.website.sale_get_order()
-        result = {
-            'cart_quantity': order.cart_quantity if order else 0,
-            'warning': values.get('warning', ''),
-        }
-
-        if values.get('warning'):
-            _logger.info("EmakMed stock alert: %s", values['warning'])
+        if _is_emakmed_website():
+            warning = result.get('notification_info', {}).get('warning')
+            if warning:
+                _logger.info("EmakMed stock alert: %s", warning)
 
         return result
