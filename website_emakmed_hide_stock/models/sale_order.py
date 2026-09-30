@@ -53,8 +53,8 @@ class SaleOrder(models.Model):
                 add_qty=add_qty, set_qty=set_qty, **kwargs
             )
 
-        warehouse = self.website_id.warehouse_id or self.warehouse_id
-        product_with_ctx = product.with_context(warehouse=warehouse.id) if warehouse else product
+        warehouse = self.sudo().website_id.warehouse_id or self.sudo().warehouse_id
+        product_with_ctx = product.sudo().with_context(warehouse=warehouse.id) if warehouse else product.sudo()
 
         available_qty = product_with_ctx.virtual_available
 

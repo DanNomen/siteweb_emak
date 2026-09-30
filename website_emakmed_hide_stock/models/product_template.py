@@ -7,14 +7,14 @@ class ProductTemplate(models.Model):
 
     def _is_emakmed_out_of_stock(self):
         self.ensure_one()
-        website = self.env['website'].get_current_website()
+        website = self.env['website'].sudo().get_current_website()
         if website and website.name == 'Emakhealthcare':
             return False
-        product = self.product_variant_id or (self.sudo().product_variant_ids[:1] if self.product_variant_ids else False)
+        product = self.sudo().product_variant_id or (self.sudo().product_variant_ids[:1] if self.sudo().product_variant_ids else False)
         if not product:
             return True
         warehouse = website.warehouse_id if website else False
-        product_ctx = product.with_context(warehouse=warehouse.id) if warehouse else product
+        product_ctx = product.sudo().with_context(warehouse=warehouse.id) if warehouse else product.sudo()
         is_storable = getattr(product_ctx, 'is_storable', False) or product_ctx.type in ('product',)
         if not is_storable:
             return False
@@ -26,11 +26,11 @@ class ProductProduct(models.Model):
 
     def _is_emakmed_out_of_stock(self):
         self.ensure_one()
-        website = self.env['website'].get_current_website()
+        website = self.env['website'].sudo().get_current_website()
         if website and website.name == 'Emakhealthcare':
             return False
         warehouse = website.warehouse_id if website else False
-        product_ctx = self.with_context(warehouse=warehouse.id) if warehouse else self
+        product_ctx = self.sudo().with_context(warehouse=warehouse.id) if warehouse else self.sudo()
         is_storable = getattr(product_ctx, 'is_storable', False) or product_ctx.type in ('product',)
         if not is_storable:
             return False
