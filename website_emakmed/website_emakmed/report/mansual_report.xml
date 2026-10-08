@@ -44,8 +44,8 @@
                                         <td class="fw-semibold"><t t-esc="invoice.name or 'N/A'"/></td>
                                         <td><t t-esc="invoice.invoice_date or '—'"/></td>
                                         <td>
-                                            <t t-set="state_labels" t-value="{'draft': 'Brouillon', 'posted': 'Payé', 'cancel': 'Annulée'}"/>
-                                            <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                            <t t-set="status_label" t-value="'Brouillon' if invoice.state == 'draft' else 'Annulée' if invoice.state == 'cancel' else 'Payé' if invoice.payment_state in ('paid', 'in_payment') else 'Paiement partiel' if invoice.payment_state == 'partial' else 'Non payé'"/>
+                                            <t t-esc="status_label"/>
                                         </td>
                                         <td class="text-end">
                                             <t t-esc="'%.2f' % (invoice.amount_untaxed * sign)"/>

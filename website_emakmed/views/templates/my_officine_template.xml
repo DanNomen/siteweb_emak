@@ -30,20 +30,11 @@
                                                 </small>
                                             </div>
                                             <div style="margin-right: 10px;">
-                                                <t 
-                                                    t-set="state_labels" 
-                                                    t-value="{
-                                                        'draft': 'Brouillon',
-                                                        'posted': 'Payé',
-                                                        'cancel': 'Annulée'
-                                                    }"
-                                                />
+                                                <t t-set="status_label" t-value="'Brouillon' if invoice.state == 'draft' else 'Annulée' if invoice.state == 'cancel' else 'Payé' if invoice.payment_state in ('paid', 'in_payment') else 'Paiement partiel' if invoice.payment_state == 'partial' else 'Non payé'"/>
+                                                <t t-set="status_bg" t-value="'bg-warning' if invoice.state == 'draft' else 'bg-secondary' if invoice.state == 'cancel' else 'bg-success' if invoice.payment_state in ('paid', 'in_payment') else 'bg-warning' if invoice.payment_state == 'partial' else 'bg-danger'"/>
 
-                                                <span t-attf-class="badge rounded-pill 
-                                                    #{'bg-success' if invoice.state == 'posted' else 
-                                                    'bg-warning' if invoice.state == 'draft' else 
-                                                    'bg-danger'}">
-                                                    <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                                <span t-attf-class="badge rounded-pill #{status_bg}">
+                                                    <t t-esc="status_label"/>
                                                 </span>
                                             </div>
                                         </div>
@@ -167,20 +158,11 @@
                                                 </small>
                                             </div>
                                             <div style="margin-right: 10px;">
-                                                <t 
-                                                    t-set="state_labels" 
-                                                    t-value="{
-                                                        'draft': 'Brouillon',
-                                                        'posted': 'Payé',
-                                                        'cancel': 'Annulée'
-                                                    }"
-                                                />
+                                                <t t-set="status_label" t-value="'Brouillon' if credit.state == 'draft' else 'Annulée' if credit.state == 'cancel' else 'Payé' if credit.payment_state in ('paid', 'in_payment') else 'Paiement partiel' if credit.payment_state == 'partial' else 'Non payé'"/>
+                                                <t t-set="status_bg" t-value="'bg-warning' if credit.state == 'draft' else 'bg-secondary' if credit.state == 'cancel' else 'bg-success' if credit.payment_state in ('paid', 'in_payment') else 'bg-warning' if credit.payment_state == 'partial' else 'bg-danger'"/>
 
-                                                <span t-attf-class="badge rounded-pill 
-                                                    #{'bg-success' if credit.state == 'posted' else 
-                                                    'bg-warning' if credit.state == 'draft' else 
-                                                    'bg-danger'}">
-                                                    <t t-esc="state_labels.get(credit.state, credit.state)"/>
+                                                <span t-attf-class="badge rounded-pill #{status_bg}">
+                                                    <t t-esc="status_label"/>
                                                 </span>
                                             </div>
                                         </div>
@@ -310,9 +292,10 @@
                                                                 <td class="fw-semibold"><t t-esc="invoice.name or 'N/A'"/></td>
                                                                 <td><t t-esc="invoice.invoice_date or '—'"/></td>
                                                                 <td>
-                                                                    <t t-set="state_labels" t-value="{'draft': 'Brouillon', 'posted': 'Payé', 'cancel': 'Annulée'}"/>
-                                                                    <span t-attf-class="badge rounded-pill #{'bg-success' if invoice.state == 'posted' else 'bg-warning' if invoice.state == 'draft' else 'bg-danger'}">
-                                                                        <t t-esc="state_labels.get(invoice.state, invoice.state)"/>
+                                                                    <t t-set="status_label" t-value="'Brouillon' if invoice.state == 'draft' else 'Annulée' if invoice.state == 'cancel' else 'Payé' if invoice.payment_state in ('paid', 'in_payment') else 'Paiement partiel' if invoice.payment_state == 'partial' else 'Non payé'"/>
+                                                                    <t t-set="status_bg" t-value="'bg-warning' if invoice.state == 'draft' else 'bg-secondary' if invoice.state == 'cancel' else 'bg-success' if invoice.payment_state in ('paid', 'in_payment') else 'bg-warning' if invoice.payment_state == 'partial' else 'bg-danger'"/>
+                                                                    <span t-attf-class="badge rounded-pill #{status_bg}">
+                                                                        <t t-esc="status_label"/>
                                                                     </span>
                                                                 </td>
                                                                 <td>
