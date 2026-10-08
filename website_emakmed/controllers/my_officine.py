@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import json
 from odoo import http
 from odoo.http import request
 from collections import defaultdict
 from datetime import datetime
-import babel.dates 
+import babel.dates
+from odoo.addons.web.controllers.report import ReportController
+
+_logger = logging.getLogger(__name__)
 
 
 class MyOfficine(http.Controller):
@@ -138,3 +143,72 @@ class MyOfficine(http.Controller):
         pdf_response.headers.set('Content-Type', 'application/pdf')
         pdf_response.headers.set('Content-Disposition', f'attachment; filename="releve_{month}.pdf"')
         return pdf_response
+
+
+class CustomReportController(ReportController):
+
+    @staticmethod
+    def _is_invoice_allowed(user, invoice):
+        if not invoice or not invoice.exists():
+            return False
+        user_partner = user.partner_id
+        user_commercial = user_partner.commercial_partner_id or user_partner
+        
+        inv_partner = invoice.partner_id
+        inv_commercial = inv_partner.commercial_partner_id or inv_partner
+        
+        # 1. Direct or commercial partner hierarchy match
+        if inv_commercial == user_commercial or inv_partner == user_partner or inv_partner in user_commercial.child_ids:
+            return True
+            
+        # 2. Check if user's partner is a follower / message partner on invoice
+        if user_partner in invoice.message_partner_ids:
+            return True
+            
+        # 3. Check allowed_clients (for company/multi-client portal users)
+        if getattr(user, 'allow_company_orders', False) and getattr(user, 'allowed_clients', False):
+            allowed_partners = user.allowed_clients
+            allowed_commercials = allowed_partners.mapped('commercial_partner_id') | allowed_partners
+            allowed_all = allowed_commercials | allowed_commercials.mapped('child_ids')
+            if inv_partner in allowed_all or inv_commercial in allowed_commercials:
+                return True
+                
+        return False
+
+    @http.route([
+        '/report/<converter>/<reportname>',
+        '/report/<converter>/<reportname>/<docids>',
+    ], type='http', auth='user', website=True, readonly=True)
+    def report_routes(self, reportname, docids=None, converter=None, **data):
+        user = request.env.user
+
+        # Intercept invoice reports for non-internal users (e.g. portal / website users)
+        if not user.has_group('base.group_user') and docids:
+            try:
+                ir_report = request.env['ir.actions.report'].sudo()._get_report_from_name(reportname)
+                is_invoice_rep = (ir_report and ir_report.model == 'account.move') or ('invoice' in reportname)
+                if is_invoice_rep:
+                    parsed_docids = [int(i) for i in docids.split(',') if i.isdigit()]
+                    if parsed_docids:
+                        invoices = request.env['account.move'].sudo().browse(parsed_docids)
+                        if invoices and all(self._is_invoice_allowed(user, inv) for inv in invoices):
+                            context = dict(request.env.context)
+                            if data.get('options'):
+                                data.update(json.loads(data.pop('options')))
+                            if data.get('context'):
+                                data['context'] = json.loads(data['context'])
+                                context.update(data['context'])
+
+                            report_sudo = ir_report.sudo() if ir_report else request.env['ir.actions.report'].sudo()._get_report_from_name(reportname).sudo()
+
+                            if converter == 'pdf':
+                                pdf = report_sudo.with_context(context)._render_qweb_pdf(reportname, parsed_docids, data=data)[0]
+                                pdfhttpheaders = [('Content-Type', 'application/pdf'), ('Content-Length', len(pdf))]
+                                return request.make_response(pdf, headers=pdfhttpheaders)
+                            elif converter == 'html':
+                                html = report_sudo.with_context(context)._render_qweb_html(reportname, parsed_docids, data=data)[0]
+                                return request.make_response(html)
+            except Exception as e:
+                _logger.error("Error generating portal invoice report %s for docids %s: %s", reportname, docids, e)
+
+        return super().report_routes(reportname, docids=docids, converter=converter, **data)
